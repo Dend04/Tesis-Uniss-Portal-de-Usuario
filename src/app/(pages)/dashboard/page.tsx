@@ -179,7 +179,10 @@ export default function Dashboard() {
         isDarkMode ? "bg-gray-900 text-white" : "bg-gray-50"
       }`}
     >
-      <Header onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} />
+       <Header 
+        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        isDarkMode={isDarkMode}
+      />
 
       {loading ? (
         <div className="flex flex-col lg:flex-row gap-8 p-8">
