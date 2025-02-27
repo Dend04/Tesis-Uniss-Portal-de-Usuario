@@ -1,70 +1,103 @@
+// tests/sigenu.service.test.ts
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { SigenuService } from '../src/services/sigenu.services';
+import { AcademicStatus, StudentMainData, StudentPhoto } from '../src/interface/student.interface';
 
 const mock = new MockAdapter(axios);
-const CI_VALIDO = '03021373180';
+const MOCK_CI = '00000000000'; // CI genérico para pruebas
+
+// Datos mockeados
+const mockMainData: StudentMainData = {
+  personalData: {
+    fullName: 'Juan Pérez García',
+    identification: MOCK_CI,
+    birthDate: '2000-01-01',
+    address: 'Calle 123 #456',
+    contact: '5551234567',
+    origin: 'La Habana, Cuba'
+  },
+  academicData: {
+    faculty: 'Facultad de Ingeniería',
+    career: 'Ingeniería en Ciencias Informáticas',
+    year: '2° Año',
+    status: '02',
+    academicIndex: '4.50'
+  },
+  familyData: {
+    mother: 'Ana García - Doctora (Nivel Superior)',
+    father: 'Carlos Pérez - Ingeniero (Nivel Medio)'
+  },
+  rawData: {}
+};
+
+const mockPhoto: StudentPhoto = {
+  photoBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+};
+
+const mockStatuses: AcademicStatus[] = [
+  { id: '02', name: 'Activo', description: 'Estudiante regular' }
+];
 
 describe('SigenuService', () => {
   afterEach(() => {
     mock.reset();
   });
 
-  describe('getStudentMainData', () => {
-    test('Obtener datos principales exitosamente', async () => {
-      mock.onGet(/getStudentAllData/).reply(200, [{ personalData: { identification: CI_VALIDO } }]);
-      
-      const result = await SigenuService.getStudentMainData(CI_VALIDO);
-      
+  describe('getStudentData', () => {
+    test('Obtener todos los datos combinados exitosamente', async () => {
+      // Configurar mocks
+      mock.onGet(/getStudentAllData/).reply(200, [mockMainData.rawData]);
+      mock.onGet(/photo-base64/).reply(200, mockPhoto.photoBase64);
+      mock.onGet(/getstudentstatus/).reply(200, mockStatuses);
+
+      const result = await SigenuService.getStudentData(MOCK_CI);
+
       expect(result.success).toBe(true);
-      expect(result.data).toHaveProperty('personalData');
+      if (result.success) {
+        expect(result.data.mainData).toMatchObject(mockMainData);
+        expect(result.data.photoData).toEqual(mockPhoto);
+        expect(result.data.statusData).toEqual(mockStatuses);
+      }
+    });
+
+    test('Manejar error en múltiples endpoints', async () => {
+      mock.onGet(/getStudentAllData/).reply(500);
+      mock.onGet(/photo-base64/).reply(404);
+      mock.onGet(/getstudentstatus/).reply(200, mockStatuses);
+
+      const result = await SigenuService.getStudentData(MOCK_CI);
+      
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toMatch(/Principal/);
+        expect(result.error).toMatch(/Foto/);
+      }
+    });
+
+    test('Manejar datos incompletos', async () => {
+      mock.onGet(/getStudentAllData/).reply(200, []);
+      mock.onGet(/photo-base64/).reply(200, 'invalid-base64');
+      mock.onGet(/getstudentstatus/).reply(200, {});
+
+      const result = await SigenuService.getStudentData(MOCK_CI);
+      
+      expect(result.success).toBe(false);
     });
   });
 
-  describe('getStudentPhoto', () => {
-    test('Obtener foto en base64 exitosamente', async () => {
-      mock.onGet(/photo-base64/).reply(200, 'iVBORw0KGgoAAAANSUhEUgAA...');
-      
-      const result = await SigenuService.getStudentPhoto(CI_VALIDO);
-      
-      expect(result.success).toBe(true);
-      expect(result.data).toMatch(/^iVBORw0KGgo/);
-    });
-  });
-
-  describe('getStudentStatusList', () => {
-    test('Obtener lista de estados académicos', async () => {
-      mock.onGet(/getstudentstatus/).reply(200, [{ id: '02', name: 'Activo' }]);
-      
-      const result = await SigenuService.getStudentStatusList();
-      
-      expect(result.success).toBe(true);
-      expect(result.data).toEqual(expect.arrayContaining([expect.objectContaining({ id: '02' })]));
-    });
-  });
-
-  describe('getCompleteStudentData', () => {
-    test('Obtener todos los datos combinados', async () => {
-      mock.onGet(/getStudentAllData/).reply(200, [{}]);
-      mock.onGet(/photo-base64/).reply(200, 'base64data');
-      mock.onGet(/getstudentstatus/).reply(200, []);
-      
-      const result = await SigenuService.getCompleteStudentData(CI_VALIDO);
-      
-      expect(result.success).toBe(true);
-      expect(result.data).toHaveProperty('photo');
-      expect(result.data).toHaveProperty('statusMetadata');
+  // Test para casos específicos
+  describe('Casos especiales', () => {
+    test('Manejar CI inválido', async () => {
+      const result = await SigenuService.getStudentData('123');
+      expect(result.success).toBe(false);
     });
 
-    test('Manejar error parcial en endpoints', async () => {
-      mock.onGet(/getStudentAllData/).reply(200, [{}]);
-      mock.onGet(/photo-base64/).reply(500);
-      mock.onGet(/getstudentstatus/).reply(200, []);
-      
-      const result = await SigenuService.getCompleteStudentData(CI_VALIDO);
-      
-      expect(result.success).toBe(true);
-      expect(result.data.photo).toBeNull();
+    test('Manejar timeout', async () => {
+      mock.onGet(/getStudentAllData/).timeout();
+      const result = await SigenuService.getStudentData(MOCK_CI);
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/timeout/i);
     });
   });
 });

@@ -8,13 +8,16 @@ import { Request, Response } from 'express';
 import studentRoutes from './routes/student.routes';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger/swagger';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
 // Middlewares
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL,
   credentials: true
 }));
 
