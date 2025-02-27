@@ -1,65 +1,45 @@
-// @ts-ignore: Ignorar errores de tipo para ldapjs
 import ldap from 'ldapjs';
-import { Request, Response } from 'express';
+import dotenv from 'dotenv';
 
-type LDAPClient = any; // Usamos 'any' como tipo temporal
+dotenv.config();
 
-export const createLDAPClient = (url: string): LDAPClient => {
-  return ldap.createClient({ url });
+type LDAPClient = any;
+
+// Configuración básica LDAP
+export const createLDAPClient = (): LDAPClient => {
+  return ldap.createClient({ 
+    url: process.env.LDAP_URL || 'ldap://10.16.1.2'
+  });
 };
 
-export const bindAsync = (
-  client: LDAPClient,
-  username: string,
-  password: string
-): Promise<void> => {
+// Autenticación LDAP
+export const ldapAuth = async (client: LDAPClient, username: string, password: string): Promise<void> => {
+  const userPrincipalName = username.includes('@') 
+    ? username 
+    : `${username}@uniss.edu.cu`;
+
   return new Promise((resolve, reject) => {
-    client.bind(username, password, (err: any) => { // Usar 'any' para los parámetros
+    client.bind(userPrincipalName, password, (err: any) => {
       err ? reject(err) : resolve();
     });
   });
 };
 
-export const authenticateUser = async (req: Request, res: Response) => {
-  const { username, password } = req.body;
-  
-  if (!process.env.LDAP_URL) {
-    return res.status(500).json({
-      success: false,
-      message: 'Configuración LDAP no disponible'
-    });
-  }
+// Cambio de contraseña LDAP
+export const ldapChangePassword = async (client: LDAPClient, username: string, newPassword: string): Promise<void> => {
+  const userDN = `CN=${username},OU=Users,DC=uniss,DC=edu,DC=cu`;
+  const encodedPassword = Buffer.from(`"${newPassword}"`, 'utf16le');
 
-  const client = createLDAPClient(process.env.LDAP_URL);
-
-  try {
-    const userPrincipalName = username.includes('@') 
-      ? username 
-      : `${username}@uniss.edu.cu`;
-
-    await bindAsync(client, userPrincipalName, password);
-    
-    res.json({
-      success: true,
-      message: 'Autenticación exitosa',
-      user: {
-        username,
-        domain: 'uniss.edu.cu'
+  return new Promise((resolve, reject) => {
+    const change = new ldap.Change({
+      operation: 'replace',
+      modification: {
+        unicodePwd: encodedPassword
       }
     });
-    
-  } catch (error: unknown) {
-    const message = error instanceof Error 
-      ? error.message 
-      : 'Error desconocido en autenticación LDAP';
-    
-    console.error('Error LDAP:', message);
-    res.status(401).json({
-      success: false,
-      message: message
+
+    client.modify(userDN, [change], (err: any) => {
+      err ? reject(err) : resolve();
     });
-    
-  } finally {
-    client.unbind();
-  }
+  });
 };

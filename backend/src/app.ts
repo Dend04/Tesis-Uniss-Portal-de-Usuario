@@ -5,6 +5,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import authRoutes from './routes/auth.routes';
 import { Request, Response } from 'express';
+import studentRoutes from './routes/student.routes';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './swagger/swagger';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,6 +20,7 @@ app.use(cors({
 
 app.use(helmet());
 app.use(express.json());
+
 // Manejador de errores
 app.use((
   err: Error,
@@ -28,8 +32,12 @@ app.use((
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
+// Documentación API
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api', studentRoutes);
 
 // Health Check
 app.get('/health', (_: Request, res: Response) => {
@@ -38,4 +46,5 @@ app.get('/health', (_: Request, res: Response) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor en http://localhost:${PORT}`);
+  console.log(`📄 Documentación disponible en http://localhost:${PORT}/api-docs`);
 });

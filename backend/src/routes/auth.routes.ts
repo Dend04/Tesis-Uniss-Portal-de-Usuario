@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { 
   loginController,
+  changePasswordController
 } from '../controllers/auth.controllers';
 
 const router = Router();
 
-// Ruta de login
 router.post('/login', loginController);
-
+router.post('/change-password', changePasswordController);
 
 export default router;
