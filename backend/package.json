@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@types/winston": "^2.4.4",
     "axios": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -8,9 +9,13 @@
     "jsonwebtoken": "^9.0.2",
     "ldapjs": "^3.0.7",
     "ldapts": "^7.3.1",
+    "mocha": "^11.1.0",
     "pg": "^8.13.3",
+    "rate-limiter-flexible": "^5.0.5",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",
@@ -21,6 +26,7 @@
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.3",
     "@types/ldapjs": "^3.0.6",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^22.13.5",
     "@types/pino": "^7.0.5",
     "@types/swagger-jsdoc": "^6.0.4",
@@ -30,12 +36,15 @@
     "nodemon": "^3.1.9",
     "ts-jest": "^29.2.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.2"
   },
   "scripts": {
     "dev": "nodemon --exec ts-node src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
-    "type-check": "tsc --noEmit"
-  }
+    "type-check": "tsc --noEmit",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "npm test -- --watch"
+  },
+  "types": "modules"
 }

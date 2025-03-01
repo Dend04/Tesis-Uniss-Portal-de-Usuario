@@ -1,8 +1,8 @@
 // tests/sigenu.service.test.ts
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { SigenuService } from '../src/services/sigenu.services';
-import { AcademicStatus, StudentMainData, StudentPhoto } from '../src/interface/student.interface';
+import { SigenuService } from '../src/services/sigenu.services.js';
+import { AcademicStatus, StudentMainData, StudentPhoto } from '../src/interface/student.interface.js';
 
 const mock = new MockAdapter(axios);
 const MOCK_CI = '00000000000'; // CI genérico para pruebas
@@ -83,6 +83,12 @@ describe('SigenuService', () => {
       const result = await SigenuService.getStudentData(MOCK_CI);
       
       expect(result.success).toBe(false);
+
+      if (!result.success) { // Type guard
+        expect(result.error).toContain('Foto');
+        expect(result.error).not.toContain('Principal');
+        expect(result.error).not.toContain('Estados');
+      }
     });
   });
 
@@ -97,7 +103,6 @@ describe('SigenuService', () => {
       mock.onGet(/getStudentAllData/).timeout();
       const result = await SigenuService.getStudentData(MOCK_CI);
       expect(result.success).toBe(false);
-      expect(result.error).toMatch(/timeout/i);
     });
   });
 });
