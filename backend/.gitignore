@@ -10,6 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 
+# Ignorar TODOS los node_modules
+**/node_modules/
+
 # testing
 /coverage
 
@@ -29,6 +32,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# Logs generales
+*.log
+logs/
+npm-logs/
+yarn-logs/
+pnpm-logs/
 
 # env files (can opt-in for committing if needed)
 .env*

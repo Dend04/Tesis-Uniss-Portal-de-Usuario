@@ -4,7 +4,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configuración mejor tipada
+interface TokenPayload {
+  username: string;
+}
+
 const JWT_CONFIG = {
   secret: process.env.JWT_SECRET || 'default_secret',
   refreshSecret: process.env.JWT_REFRESH_SECRET || 'default_refresh_secret',
@@ -17,20 +20,20 @@ const JWT_CONFIG = {
     algorithm: 'HS256'
   } as SignOptions,
   verifyOptions: {
-    algorithms: ['HS256'] as const
+    algorithms: ['HS256']
   } as VerifyOptions
 };
 
-// Función de generación de tokens corregida
-export const generateTokens = (username: string) => {
+//Recibir payload completo
+export const generateTokens = (payload: TokenPayload) => {
   const accessToken = jwt.sign(
-    { username },
+    payload,
     JWT_CONFIG.secret,
     JWT_CONFIG.signOptions
   );
 
   const refreshToken = jwt.sign(
-    { username },
+    payload,
     JWT_CONFIG.refreshSecret,
     JWT_CONFIG.refreshOptions
   );
@@ -38,15 +41,14 @@ export const generateTokens = (username: string) => {
   return { accessToken, refreshToken };
 };
 
-// Función de verificación mejorada
-export const verifyToken = (req: Request) => {
-  const token = req.headers.authorization?.split(' ')[1] || '';
+// Recibir el token como string
+export const verifyToken = (token: string): TokenPayload => {
   try {
     return jwt.verify(
-      token, 
-      JWT_CONFIG.secret, 
+      token,
+      JWT_CONFIG.secret,
       JWT_CONFIG.verifyOptions
-    ) as { username: string };
+    ) as TokenPayload;
   } catch (error) {
     throw new Error('Token inválido o expirado');
   }

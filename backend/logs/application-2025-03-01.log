@@ -21,3 +21,13 @@
 2025-03-01 11:58:34 [info]: 📄 Docs: http://localhost:5000/api-docs
 2025-03-01 11:58:34 [warn]: 🔓 Modo de operación alternativo activado (sin LDAP)
 2025-03-01 11:58:34 [warn]: ⚠️ La autenticación se realizará localmente
+2025-03-01 16:20:28 [error]: ❌ Fallo en conexión LDAP: name (string) required
+2025-03-01 16:20:28 [info]: 🚀 Servidor en http://localhost:5000
+2025-03-01 16:20:28 [info]: 📄 Docs: http://localhost:5000/api-docs
+2025-03-01 16:20:28 [warn]: 🔓 Modo de operación alternativo activado (sin LDAP)
+2025-03-01 16:20:28 [warn]: ⚠️ La autenticación se realizará localmente
+2025-03-01 16:20:44 [error]: ❌ Fallo en conexión LDAP: name (string) required
+2025-03-01 16:20:44 [info]: 🚀 Servidor en http://localhost:5000
+2025-03-01 16:20:44 [info]: 📄 Docs: http://localhost:5000/api-docs
+2025-03-01 16:20:44 [warn]: 🔓 Modo de operación alternativo activado (sin LDAP)
+2025-03-01 16:20:44 [warn]: ⚠️ La autenticación se realizará localmente
