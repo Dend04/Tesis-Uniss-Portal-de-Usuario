@@ -1,6 +1,6 @@
+// src/services/sigenu.services.ts
 import https from 'https';
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
-
 import dotenv from "dotenv";
 import {
   AcademicStatus,
@@ -13,11 +13,28 @@ import {
 
 dotenv.config();
 
-// Configuración reutilizable
 const API_BASE_URL = "https://sigenu.uniss.edu.cu/sigenu-rest";
-const DEFAULT_TIMEOUT = 5000;
+const DEFAULT_TIMEOUT = 15000;
 
 export class SigenuService {
+  // Configuración principal del servicio
+  private static getConfig(): AxiosRequestConfig {
+    return {
+      timeout: DEFAULT_TIMEOUT,
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false,
+        keepAlive: true,
+        maxSockets: 10
+      }),
+      headers: {
+        Authorization: `Basic ${this.getAuthCredentials()}`,
+        Accept: "application/json",
+        'X-Request-Source': 'student-portal-api'
+      }
+    };
+  }
+
+  // Método principal para obtener todos los datos
   static async getStudentData(
     ci: string
   ): Promise<ApiResponse<StudentCompleteData>> {
@@ -45,57 +62,8 @@ export class SigenuService {
     }
   }
 
-  private static async getStudentPhoto(
-    ci: string
-  ): Promise<ApiResponse<StudentPhoto>> {
-    try {
-      const url = `${API_BASE_URL}/student/${ci}/photo-base64`;
-      const response = await axios.get(url, this.getConfig());
-      
-      if (typeof response.data !== "string") {
-        return {
-          success: false,
-          error: "Formato de foto inválido"
-        };
-      }
-
-      return {
-        success: true,
-        data: { photoBase64: response.data },
-      };
-    } catch (error) {
-      return this.handleError(error, "getStudentPhoto");
-    }
-  }
-
-  private static async getStudentStatusList(): Promise<ApiResponse<AcademicStatus[]>> {
-    try {
-      const url = `${API_BASE_URL}/dss/getstudentstatus`;
-      const response = await axios.get(url, this.getConfig());
-      
-      if (!Array.isArray(response.data)) {
-        return {
-          success: false,
-          error: "Formato de estados académicos inválido"
-        };
-      }
-
-      const mappedData = response.data.map(s => ({
-        id: s.idEstatus?.toString() || "unknown",
-        name: s.nombreEstatus || "Sin nombre",
-        description: s.descripcion || ""
-      }));
-
-      return {
-        success: true,
-        data: mappedData
-      };
-    } catch (error) {
-      return this.handleError(error, "getStudentStatusList");
-    }
-  }
-
-  private static async getMainStudentData(
+  // Obtener datos principales del estudiante
+  static async getMainStudentData(
     ci: string
   ): Promise<ApiResponse<StudentMainData>> {
     try {
@@ -118,6 +86,60 @@ export class SigenuService {
     }
   }
 
+  // Obtener foto del estudiante con reintentos
+  static async getStudentPhoto(
+    ci: string
+  ): Promise<ApiResponse<StudentPhoto>> {
+    try {
+      if (!this.validateCI(ci)) {
+        return {
+          success: false,
+          error: "Formato de CI inválido"
+        };
+      }
+
+      const url = `${API_BASE_URL}/student/${ci}/photo-base64`;
+      const response = await axios.get(url, this.getConfig());
+
+      if (!response.data || typeof response.data !== "string") {
+        return {
+          success: false,
+          error: "La foto no está disponible"
+        };
+      }
+
+      return {
+        success: true,
+        data: { photoBase64: response.data },
+      };
+    } catch (error) {
+      return this.handleErrorWithRetry(error, ci);
+    }
+  }
+
+  // Obtener lista de estados académicos
+  static async getStudentStatusList(): Promise<ApiResponse<AcademicStatus[]>> {
+    try {
+      const url = `${API_BASE_URL}/dss/getstudentstatus`;
+      const response = await axios.get(url, this.getConfig());
+      
+      if (!Array.isArray(response.data)) {
+        return {
+          success: false,
+          error: "Formato de estados inválido"
+        };
+      }
+
+      return {
+        success: true,
+        data: this.mapStatusData(response.data)
+      };
+    } catch (error) {
+      return this.handleError(error, "getStudentStatusList");
+    }
+  }
+
+  // Transformación de datos principales
   private static transformMainData(rawData: RawStudentData): StudentMainData {
     const personal = rawData.personalData || {};
     const docent = rawData.docentData || {};
@@ -151,44 +173,49 @@ export class SigenuService {
     };
   }
 
+  // Mapeo de estados académicos
+  private static mapStatusData(data: any[]): AcademicStatus[] {
+    return data.map(s => ({
+      id: s.idEstatus?.toString() || "unknown",
+      name: s.nombreEstatus || "Sin nombre",
+      description: s.descripcion || ""
+    }));
+  }
+
+  // Manejo de errores parciales
   private static handlePartialErrors(
-  main: ApiResponse<StudentMainData>,
-  photo: ApiResponse<StudentPhoto>,
-  status: ApiResponse<AcademicStatus[]>
-): ApiResponse<never> {
-  // Filtrar solo los errores reales
-  const errors = [
-    main.success ? null : `Principal: ${main.error}`,
-    photo.success ? null : `Foto: ${photo.error}`,
-    status.success ? null : `Estados: ${status.error}`
-  ].filter(Boolean);
+    main: ApiResponse<StudentMainData>,
+    photo: ApiResponse<StudentPhoto>,
+    status: ApiResponse<AcademicStatus[]>
+  ): ApiResponse<never> {
+    const errors = [
+      main.success ? null : `Principal: ${main.error}`,
+      photo.success ? null : `Foto: ${photo.error}`,
+      status.success ? null : `Estados: ${status.error}`
+    ].filter(Boolean);
 
-  return {
-    success: false,
-    error: errors.length > 0 
-      ? `Errores en:\n${errors.join('\n')}`
-      : 'Error desconocido en múltiples endpoints'
-  };
-}
+    return {
+      success: false,
+      error: errors.length > 0 
+        ? `Errores en:\n${errors.join('\n')}`
+        : 'Error desconocido'
+    };
+  }
 
- // Modificar el método getConfig() en SigenuService
-private static getConfig(): AxiosRequestConfig {
-  const httpsAgent = new https.Agent({ 
-    rejectUnauthorized: false, // Ignora certificados inválidos
-    checkServerIdentity: () => undefined // Elimina validación de hostname
-  });
+  // Manejo de errores con reintentos
+  private static async handleErrorWithRetry(
+    error: any,
+    ci: string,
+    retries = 2
+  ): Promise<ApiResponse<StudentPhoto>> {
+    if (retries > 0 && axios.isAxiosError(error)) {
+      await new Promise(resolve => setTimeout(resolve, 1000 * (3 - retries)));
+      return this.getStudentPhoto(ci);
+    }
+    return this.handleError(error, "getStudentPhoto") as ApiResponse<StudentPhoto>;
+  }
 
-  return {
-    timeout: DEFAULT_TIMEOUT,
-    httpsAgent,
-    headers: {
-      Authorization: `Basic ${this.getAuthCredentials()}`,
-      Accept: "application/json",
-    },
-    validateStatus: (status) => status >= 200 && status < 300,
-  };
-}
-
+  // Formateo de fecha
   private static formatDate(dateString: string): string {
     try {
       return new Date(dateString).toLocaleDateString("es-CU", {
@@ -201,6 +228,7 @@ private static getConfig(): AxiosRequestConfig {
     }
   }
 
+  // Limpieza de dirección
   private static cleanAddress(address: string): string {
     return address
       .replace(/\s+/g, " ")
@@ -208,18 +236,23 @@ private static getConfig(): AxiosRequestConfig {
       .trim();
   }
 
+  // Mapeo de códigos de carrera
   private static mapCareerCode(code: string): string {
     const careers = this.getCareerMapping();
     return careers[code] || `Carrera (${code})`;
   }
 
+  // Obtención de mapeo de carreras
   private static getCareerMapping(): Record<string, string> {
     return {
       "00101": "Ingeniería en Ciencias Informáticas",
-      // Agregar más mapeos desde configuración externa
+      "00102": "Ingeniería Industrial",
+      "00103": "Derecho",
+      // Agregar más mapeos según sea necesario
     };
   }
 
+  // Formateo de datos de padres
   private static formatParentData(parent: any): string {
     const parts = [];
     if (parent?.name) parts.push(parent.name);
@@ -231,6 +264,12 @@ private static getConfig(): AxiosRequestConfig {
       : "No registrado";
   }
 
+  // Validación de CI
+  private static validateCI(ci: string): boolean {
+    return /^\d{11}$/.test(ci);
+  }
+
+  // Obtención de credenciales
   private static getAuthCredentials(): string {
     const user = process.env.SIGENU_API_USER;
     const pass = process.env.SIGENU_API_PASSWORD;
@@ -242,18 +281,23 @@ private static getConfig(): AxiosRequestConfig {
     return Buffer.from(`${user}:${pass}`).toString("base64");
   }
 
-  private static handleError(error: unknown, context: string): ApiResponse<never> {
+  // Manejo genérico de errores
+  private static handleError<T = never>(
+    error: unknown,
+    context: string
+  ): ApiResponse<T> {
     const errorMessage = axios.isAxiosError(error)
       ? `[${context}] Error ${error.response?.status || "DESCONOCIDO"}: ${error.message}`
       : error instanceof Error
       ? `[${context}] ${error.message}`
       : `[${context}] Error desconocido`;
-
-    console.error("Error SIGENU:", errorMessage, error);
-
+  
+    console.error("Error SIGENU:", errorMessage);
+  
     return {
       success: false,
       error: errorMessage,
-    };
+    } as ApiResponse<T>;
   }
+  
 }
