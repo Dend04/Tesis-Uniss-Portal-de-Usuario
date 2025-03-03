@@ -1,80 +1,80 @@
+// src/controllers/auth.controller.ts
 import { Request, Response } from 'express';
-import { createLDAPClient, ldapAuth } from '../utils/ldap.utils';
+import { 
+  authenticateUser,
+  createLDAPClient,
+  bindAsync,
+  ldapChangePassword
+} from '../utils/ldap.utils'; // Agregar las importaciones faltantes
 import { generateTokens, verifyToken } from '../utils/jwt.utils';
-import User from '../models/User';
-
-// Interface para el payload del token
-interface TokenPayload {
-  username: string;
-}
 
 export const loginController = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
     
-    // Autenticar con LDAP
-    const client = createLDAPClient();
-    await ldapAuth(client, username, password);
+    // Autenticar contra LDAP
+    await authenticateUser(req, res);
     
-    // Obtener usuario de MongoDB
-    const user = await User.findOne({ username });
-    if (!user) {
-      throw new Error('Usuario no encontrado en la base de datos');
-    }
-
-    // Generar tokens JWT
+    // Si la autenticación fue exitosa, generar tokens
     const tokens = generateTokens({ username });
     
     res.json({
       success: true,
-      user: {
-        username: user.username,
-        institutionalEmail: user.institutionalEmail
-      },
-      ...tokens
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: { username }
     });
-
+    
   } catch (error) {
-    res.status(401).json({
+    res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Error de autenticación'
+      message: 'Error interno del servidor'
     });
-  } 
+  }
 };
 
-export const changePasswordController = async (req: Request, res: Response) => {
+export const changePasswordController = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { oldPassword, newPassword } = req.body;
+    const authHeader = req.headers.authorization;
     
-    // Verificar token JWT
-    const decoded = verifyToken(req.headers.authorization || '') as TokenPayload;
-    
-    // Obtener usuario
-    const user = await User.findOne({ username: decoded.username });
-    if (!user) {
-      throw new Error('Usuario no encontrado');
+    if (!authHeader) {
+      res.status(401).json({ success: false, message: 'Token no proporcionado' });
+      return;
     }
 
-    // Validar contraseña actual con LDAP
-    const client = createLDAPClient();
-    await ldapAuth(client, decoded.username, currentPassword);
-
-    // Sincronizar nueva contraseña
-    await user.syncPassword(newPassword);
-
-    // Generar nuevos tokens
-    const tokens = generateTokens({ username: decoded.username });
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
     
-    res.json({
-      success: true,
-      message: 'Contraseña actualizada exitosamente',
-      ...tokens
-    });
-
-  } catch (error: any) {
-    res.status(400).json({
+    const client = createLDAPClient(process.env.LDAP_URL!);
+    
+    try {
+      await bindAsync(client, decoded.username, oldPassword);
+      await ldapChangePassword(client, decoded.username, newPassword);
+      
+      const newTokens = generateTokens({ username: decoded.username });
+      
+      res.json({
+        success: true,
+        message: 'Contraseña actualizada exitosamente',
+        tokens: newTokens
+      });
+      
+    } catch (error) {
+      console.error('Error al cambiar contraseña:', error);
+      res.status(400).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Error al cambiar contraseña'
+      });
+    } finally {
+      client.unbind();
+    }
+    
+  } catch (error) {
+    console.error('Error en cambio de contraseña:', error);
+    res.status(401).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Error al cambiar contraseña'
+      message: 'Token inválido o expirado'
     });
   }
 };

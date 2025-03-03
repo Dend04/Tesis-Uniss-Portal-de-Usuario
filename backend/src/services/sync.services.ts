@@ -1,4 +1,4 @@
-import User from '../models/User';
+/* import User from '../models/User';
 import { IUser } from '../models/User';
 import { createLDAPClient, ldapChangePassword } from '../utils/ldap.utils';
 
@@ -46,4 +46,4 @@ class SyncService {
   }
 }
 
-export default new SyncService();
+export default new SyncService(); */

@@ -1,4 +1,6 @@
+import https from 'https';
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
+
 import dotenv from "dotenv";
 import {
   AcademicStatus,
@@ -169,16 +171,23 @@ export class SigenuService {
   };
 }
 
-  private static getConfig(): AxiosRequestConfig {
-    return {
-      timeout: DEFAULT_TIMEOUT,
-      headers: {
-        Authorization: `Basic ${this.getAuthCredentials()}`,
-        Accept: "application/json",
-      },
-      validateStatus: (status) => status >= 200 && status < 300,
-    };
-  }
+ // Modificar el método getConfig() en SigenuService
+private static getConfig(): AxiosRequestConfig {
+  const httpsAgent = new https.Agent({ 
+    rejectUnauthorized: false, // Ignora certificados inválidos
+    checkServerIdentity: () => undefined // Elimina validación de hostname
+  });
+
+  return {
+    timeout: DEFAULT_TIMEOUT,
+    httpsAgent,
+    headers: {
+      Authorization: `Basic ${this.getAuthCredentials()}`,
+      Accept: "application/json",
+    },
+    validateStatus: (status) => status >= 200 && status < 300,
+  };
+}
 
   private static formatDate(dateString: string): string {
     try {

@@ -1,139 +1,102 @@
-import ldap from 'ldapjs';
-import dotenv from 'dotenv';
-import { RateLimiterMemory } from 'rate-limiter-flexible';
+// src/utils/ldap.utils.ts
+import ldap, { Client, ClientOptions } from 'ldapjs';
+import { Request, Response } from 'express';
 
-dotenv.config();
+type LDAPClient = ldap.Client;
 
-// Configuración de límite de intentos de autenticación
-const rateLimiter = new RateLimiterMemory({
-  points: 5, // 5 intentos
-  duration: 300, // en 5 minutos
-});
-
-// Tipo seguro para el cliente LDAP
-type SecureLDAPClient = ldap.Client;
-
-export const createLDAPClient = (): SecureLDAPClient => {
-  // Validación de variables de entorno
-  const requiredVars = ['LDAP_URL', 'LDAP_BASE_DN'];
-  requiredVars.forEach(varName => {
-    if (!process.env[varName]) {
-      throw new Error(`${varName} no está definido en las variables de entorno`);
-    }
-  });
-
-  // Configuración segura de TLS
-  const client = ldap.createClient({
-    url: process.env.LDAP_URL!,
+export const createLDAPClient = (url: string): LDAPClient => {
+  const clientOptions: ClientOptions = {
+    url,
     tlsOptions: {
-      rejectUnauthorized: true, // Validación estricta de certificados
-      minVersion: 'TLSv1.2' // Versión mínima segura de TLS
+      rejectUnauthorized: false // Solo para desarrollo
     },
-    connectTimeout: 5000, // Timeout de conexión de 5 segundos
-    timeout: 10000 // Timeout de operaciones de 10 segundos
-  });
+    connectTimeout: 10000, // 10 segundos
+    timeout: 30000 // 30 segundos
+  };
 
-  // Manejadores de errores globales
-  client.on('error', (err) => {
-    // Solo registrar errores de conexión activa
-    if (['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED'].includes(err.code)) {
-      console.error('Error de conexión LDAP:', err.message);
-      client.unbind(); // Cierra la conexión inmediatamente
+  const client = ldap.createClient(clientOptions);
+
+  // Manejador de reconexión manual
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 3;
+
+  client.on('close', () => {
+    if (reconnectAttempts < maxReconnectAttempts) {
+      reconnectAttempts++;
+      console.log(`Intento de reconexión ${reconnectAttempts}/${maxReconnectAttempts}`);
+        
+      const newClient = createLDAPClient(url);
+      replaceClient(client, newClient);
     }
   });
 
   return client;
 };
 
-export const ldapAuth = async (
-  client: SecureLDAPClient,
+// Función para reemplazar el cliente en uso
+const replaceClient = (oldClient: LDAPClient, newClient: LDAPClient) => {
+  oldClient.unbind();
+  // Aquí deberías actualizar cualquier referencia al cliente antiguo
+};
+
+// Resto del código se mantiene igual
+export const bindAsync = (
+  client: LDAPClient,
   username: string,
   password: string
 ): Promise<void> => {
-  try {
-    // Validación de entrada
-    if (!username || !password) {
-      throw new Error('Credenciales inválidas');
-    }
-
-    // Sanitización de entrada
-    const sanitizedUsername = username.replace(/[^a-zA-Z0-9@._-]/g, '');
-    
-    // Verificación de tasa de intentos
-    await rateLimiter.consume(sanitizedUsername);
-
-    const userPrincipalName = sanitizedUsername.includes('@') 
-      ? sanitizedUsername 
-      : `${sanitizedUsername}@uniss.edu.cu`;
-
-    return new Promise((resolve, reject) => {
-      client.bind(userPrincipalName, password, (err) => {
-        if (err) {
-          // Error genérico para evitar leaks de información
-          reject(new Error('Autenticación fallida'));
-          return;
-        }
-        
-        // Autenticación exitosa
-        resolve();
-      });
+  return new Promise((resolve, reject) => {
+    client.bind(username, password, (err) => {
+      err ? reject(err) : resolve();
     });
-  } catch (err) {
-    // Limpieza segura de contraseña en memoria
-    password = ''; 
-    throw err;
-  } finally {
-    // Siempre cerrar conexión después de autenticar
-    client.unbind();
-  }
+  });
 };
 
 export const ldapChangePassword = async (
-  client: SecureLDAPClient,
+  client: LDAPClient,
   username: string,
   newPassword: string
 ): Promise<void> => {
-  try {
-    // Validación de fortaleza de contraseña
-    if (newPassword.length < 12) {
-      throw new Error('La contraseña debe tener al menos 12 caracteres');
-    }
+  return new Promise((resolve, reject) => {
+    const userDN = `uid=${username},ou=users,dc=uniss,dc=edu,dc=cu`;
 
-    // Construcción segura del DN
-    const sanitizedUsername = username.replace(/[^a-zA-Z0-9]/g, '');
-    const userDN = `CN=${sanitizedUsername},${process.env.LDAP_BASE_DN}`;
-
-    // Codificación correcta según especificación LDAP
+    // Codificación correcta para LDAP
     const encodedPassword = Buffer.from(`"${newPassword}"`, 'utf16le');
 
-    return new Promise((resolve, reject) => {
-      const change = new ldap.Change({
-        operation: 'replace',
-        modification: {
-          unicodePwd: encodedPassword
-        }
-      });
-
-      // Timeout para operación
-      const timeout = setTimeout(() => {
-        reject(new Error('Timeout al cambiar contraseña'));
-        client.unbind();
-      }, 10000);
-
-      client.modify(userDN, [change], (err) => {
-        clearTimeout(timeout);
-        if (err) {
-          // Log seguro sin detalles sensibles
-          console.error('Error al cambiar contraseña');
-          reject(new Error('No se pudo actualizar la contraseña'));
-          return;
-        }
-        resolve();
-      });
+    const change = new ldap.Change({
+      operation: 'replace',
+      modification: {
+        userPassword: encodedPassword
+      }
     });
+
+    client.modify(userDN, [change], (err) => {
+      if (err) {
+        reject(new Error(`Error LDAP: ${err.message}`));
+        return;
+      }
+      resolve();
+    });
+  });
+};
+
+export const authenticateUser = async (req: Request, res: Response) => {
+  const { username, password } = req.body;
+  
+  if (!process.env.LDAP_URL) {
+    throw new Error('Configuración LDAP no disponible');
+  }
+
+  const client = createLDAPClient(process.env.LDAP_URL);
+
+  try {
+    const userPrincipalName = username.includes('@') 
+      ? username 
+      : `${username}@uniss.edu.cu`;
+
+    await bindAsync(client, userPrincipalName, password);
+    
   } finally {
-    // Limpieza de contraseña en memoria
-    newPassword = '';
     client.unbind();
   }
 };

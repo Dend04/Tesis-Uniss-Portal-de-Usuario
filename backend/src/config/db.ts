@@ -2,14 +2,12 @@ import mongoose from 'mongoose';
 
 const connectDB = async (): Promise<void> => {
   try {
-    await mongoose.connect(process.env.MONGO_URI!, {
-      serverSelectionTimeoutMS: 5000, // Timeout de 5 segundos
-      socketTimeoutMS: 45000 // Timeout de socket de 45 segundos
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/mi-base-datos', {
+      serverSelectionTimeoutMS: 5000 // Timeout de 5 segundos
     });
-    
-    console.log('✅ MongoDB connected');
+    console.log('✅ MongoDB local conectado');
   } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
+    console.error('❌ Error de conexión:', error);
     process.exit(1);
   }
 };

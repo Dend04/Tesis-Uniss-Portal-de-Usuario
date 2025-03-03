@@ -11,18 +11,20 @@ import swaggerSpec from './swagger/swagger';
 import logger from './utils/logger';
 import { createLDAPClient } from './utils/ldap.utils';
 import connectDB from './config/db';
-import setupSyncSchedule from './sincronizacion/sync.schedule';
+/* import setupSyncSchedule from './sincronizacion/sync.schedule'; */
+import deviceRoutes from './routes/dispositivosRoutes';
+
 
 dotenv.config();
 
 // Inicialización
 const app = express();
 connectDB();
-setupSyncSchedule();
+/* setupSyncSchedule(); */
 const PORT = process.env.PORT;
 
 // Función de verificación LDAP
-const checkLDAPConnection = async (): Promise<boolean> => {
+/* const checkLDAPConnection = async (): Promise<boolean> => {
   if (!process.env.LDAP_URL || !process.env.LDAP_BASE_DN) {
     logger.warn('⚠️ LDAP no configurado - Variables de entorno faltantes');
     return false;
@@ -63,7 +65,7 @@ const checkLDAPConnection = async (): Promise<boolean> => {
   }
 
   return connectionEstablished;
-};
+}; */
 
 // Middlewares
 app.use(cors({
@@ -108,6 +110,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', studentRoutes);
+app.use('/api/devices', deviceRoutes);
 
 // Health Check
 app.get('/health', (_: Request, res: Response) => {
@@ -115,14 +118,14 @@ app.get('/health', (_: Request, res: Response) => {
 });
 
 app.listen(PORT, async () => {
-  const ldapStatus = await checkLDAPConnection();
-  app.locals.ldapAvailable = ldapStatus;
+  /* const ldapStatus = await checkLDAPConnection(); */
+  /* app.locals.ldapAvailable = ldapStatus; */
 
   logger.info(`🚀 Servidor en http://localhost:${PORT}`);
   logger.info(`📄 Docs: http://localhost:${PORT}/api-docs`);
   
-  if (!ldapStatus) {
+  /* if (!ldapStatus) {
     logger.warn('🔓 Modo de operación alternativo activado (sin LDAP)');
     logger.warn('⚠️ La autenticación se realizará localmente');
-  }
+  } */
 });
