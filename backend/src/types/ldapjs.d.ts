@@ -38,6 +38,36 @@ declare module 'ldapjs' {
     export class Attribute {
       constructor(options: { type: string; values: string[] });
     }
+
+    declare module 'ldapjs' {
+      interface Client {
+        add(dn: string, entry: object, callback: (err: Error | null) => void): void;
+        modify(dn: string, change: object, callback: (err: Error | null) => void): void;
+      }
+    }
+    declare module 'ldapjs' {
+      interface AttributeOptions {
+        type: string;
+        values?: string[];
+        buffers?: Buffer[];
+      }
+    
+      class Attribute {
+        constructor(options: AttributeOptions);
+      }
+    }
+
+    declare module 'ldapjs' {
+      interface SearchEntry {
+        attributes: Attribute[];
+      }
+    
+      interface Attribute {
+        type: string;
+        values: any[];
+        json: Record<string, any>;
+      }
+    }
   
     export function createClient(options: ClientOptions): Client;
   }

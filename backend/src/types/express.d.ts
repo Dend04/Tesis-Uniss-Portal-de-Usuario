@@ -1,5 +1,5 @@
-// src/types/express.d.ts
-import { TokenPayload } from '../utils/jwt.utils';
+// src/types/express/index.d.ts
+import { TokenPayload } from '../../utils/jwt.utils';
 
 declare global {
   namespace Express {
@@ -8,5 +8,3 @@ declare global {
     }
   }
 }
-
-export {};
