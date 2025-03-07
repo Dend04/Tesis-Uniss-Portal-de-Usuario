@@ -128,28 +128,33 @@ export const Header = ({ onToggleDarkMode, isDarkMode }: HeaderProps) => {
             />
 
             {/* Perfil de usuario */}
-            <div className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all">
-              {user.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt="Perfil"
-                  className="h-8 w-8 rounded-full"
-                />
-              ) : (
-                <UserCircleIcon
-                  className={`h-8 w-8 ${
-                    isDarkMode ? "text-gray-300" : "text-gray-600"
+            <Link
+              href="/perfil"
+              className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
+            >
+              <div className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all">
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt="Perfil"
+                    className="h-8 w-8 rounded-full"
+                  />
+                ) : (
+                  <UserCircleIcon
+                    className={`h-8 w-8 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-600"
+                    }`}
+                  />
+                )}
+                <span
+                  className={`hidden md:block text-sm font-medium ${
+                    isDarkMode ? "text-gray-200" : "text-gray-700"
                   }`}
-                />
-              )}
-              <span
-                className={`hidden md:block text-sm font-medium ${
-                  isDarkMode ? "text-gray-200" : "text-gray-700"
-                }`}
-              >
-                {user.name}
-              </span>
-            </div>
+                >
+                  {user.name}
+                </span>
+              </div>
+            </Link>
 
             {/* Botón de cerrar sesión */}
             <button className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all">
