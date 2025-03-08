@@ -42,10 +42,15 @@ export default function ProfilePage() {
   const [student, setStudent] = useState<StudentData | null>(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
+    setIsMounted(true);
+    const token = localStorage.getItem('authToken');
+    /* if (!token) router.push('/'); */
+    
     const fetchData = async () => {
       try {
         const ci = "01110172948";
@@ -66,20 +71,23 @@ export default function ProfilePage() {
         setStudent(studentData.data);
 
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error desconocido");
+        const errorMessage = err instanceof Error ? err.message : "Error desconocido";
+        setError(errorMessage);
       } finally {
         setLoadingProgress(0);
       }
     };
 
     fetchData();
-  }, [API_URL]);
+  }, [API_URL, router]);
 
   const formatPhoneNumber = (phone: string) => {
     const cleaned = phone.replace(/\D/g, '');
     return `+53 ${cleaned.slice(0, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`;
   };
-  
+
+  if (!isMounted) return null;
+
   if (error) {
     return (
       <div className="max-w-4xl mx-auto py-8 px-4 text-center">
@@ -93,7 +101,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
   return (
     <div className="max-w-6xl mx-auto py-8 px-4">
       {!student ? (
