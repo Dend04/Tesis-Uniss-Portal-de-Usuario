@@ -14,6 +14,7 @@ declare module 'ldapjs' {
       unbind(callback?: (err: Error | null) => void): void;
       search(base: string, options: SearchOptions, callback: (err: Error | null, res: SearchResponse) => void): void;
       modify(dn: string, change: Change, callback: (err: Error | null) => void): void;
+      add(dn: string, entry: object, callback: (err: Error | null) => void): void;
     }
   
     export interface SearchOptions {
@@ -24,11 +25,13 @@ declare module 'ldapjs' {
   
     export interface SearchResponse extends EventEmitter {
       on(event: 'searchEntry', listener: (entry: SearchEntry) => void): this;
+      on(event: 'error', listener: (err: Error) => void): this;
       on(event: 'end', listener: (result: any) => void): this;
     }
   
     export interface SearchEntry {
-      object: Record<string, any>;
+      dn: string;
+      attributes: Attribute[];
     }
   
     export class Change {
@@ -36,7 +39,17 @@ declare module 'ldapjs' {
     }
   
     export class Attribute {
-      constructor(options: { type: string; values: string[] });
+      type: string;
+      vals: string[] | Buffer[];
+      json: Record<string, any>;
+      values?: string;
+
+      constructor(options: {
+        type: string;
+        vals?: string[] | Buffer[];
+        buffers?: Buffer[];
+        values?: string[];
+      });
     }
 
     declare module 'ldapjs' {
@@ -62,10 +75,12 @@ declare module 'ldapjs' {
         attributes: Attribute[];
       }
     
-      interface Attribute {
+      export interface Attribute {
         type: string;
         values: any[];
         json: Record<string, any>;
+        vals?: string[] | Buffer[];
+        buffers?: Buffer[];
       }
     }
   

@@ -8,6 +8,8 @@ import {
   addLogEntry,
   searchAsync,
   LDAPClient,
+  getUserData,
+  getUserDataByEmail,
 } from "../utils/ldap.utils"; // Agregar las importaciones faltantes
 import { generateTokens, TokenPayload, verifyToken } from "../utils/jwt.utils";
 import * as ldap from "ldapjs";
@@ -20,20 +22,22 @@ export const loginController = async (req: Request, res: Response) => {
     // Autenticar contra LDAP
     await authenticateUser(req, res);
 
-    // Si la autenticación fue exitosa, generar tokens
-    const tokens = generateTokens({ username });
+    // Obtener sAMAccountName real desde LDAP
+    const ldapUser = await getUserData(username); // Busca por uid o email
+
+    // Generar token con identificador LDAP real
+    const tokens = generateTokens({ 
+      username: ldapUser.sAMAccountName // o userPrincipalName
+    });
 
     res.json({
       success: true,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      user: { username },
+      user: ldapUser
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error interno del servidor",
-    });
+    res.status(500).json({ success: false, message: "Error interno" });
   }
 };
 
@@ -44,7 +48,7 @@ export const changePasswordController = async (
   try {
     // 1. Obtener usuario del token (seguro)
     const user = (req as any).user as { username: string } | undefined;
-    
+
     if (!user?.username) {
       res.status(401).json({ error: "Usuario no autenticado" });
       return;
@@ -53,7 +57,9 @@ export const changePasswordController = async (
     // 2. Validar nueva contraseña
     const { newPassword } = req.body;
     if (!newPassword || newPassword.length < 8) {
-      res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres" });
+      res
+        .status(400)
+        .json({ error: "La contraseña debe tener al menos 8 caracteres" });
       return;
     }
 
@@ -71,19 +77,19 @@ export const changePasswordController = async (
     res.status(200).json({
       success: true,
       message: `¡Contraseña actualizada para ${user.username}!`,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     // 6. Manejo de errores específico
-    const errorMessage = error instanceof Error 
-      ? `Error: ${error.message}`
-      : "Error desconocido en el servidor";
+    const errorMessage =
+      error instanceof Error
+        ? `Error: ${error.message}`
+        : "Error desconocido en el servidor";
 
     res.status(500).json({
       success: false,
       error: errorMessage,
-      details: "Verifica los logs del servidor para más información"
+      details: "Verifica los logs del servidor para más información",
     });
   }
 };
@@ -91,9 +97,10 @@ export const changePasswordController = async (
 export const getUserProfileController = async (
   req: Request,
   res: Response
-): Promise<void> => { // <-- Añadir tipo de retorno explícito
+): Promise<void> => {
+  // <-- Añadir tipo de retorno explícito
   let client: LDAPClient | null = null;
-  
+
   try {
     // 1. Obtener usuario del token
     const user = (req as any).user as TokenPayload;
@@ -103,24 +110,32 @@ export const getUserProfileController = async (
     }
 
     // 2. Validar configuración LDAP
-    if (!process.env.LDAP_URL || !process.env.LDAP_ADMIN_DN || !process.env.LDAP_ADMIN_PASSWORD) {
+    if (
+      !process.env.LDAP_URL ||
+      !process.env.LDAP_ADMIN_DN ||
+      !process.env.LDAP_ADMIN_PASSWORD
+    ) {
       throw new Error("Configuración LDAP incompleta");
     }
 
     // 3. Conectar y autenticar como admin
     client = createLDAPClient(process.env.LDAP_URL);
-    await bindAsync(client, process.env.LDAP_ADMIN_DN, process.env.LDAP_ADMIN_PASSWORD);
+    await bindAsync(
+      client,
+      process.env.LDAP_ADMIN_DN,
+      process.env.LDAP_ADMIN_PASSWORD
+    );
 
     // 4. Buscar usuario en LDAP
     const searchOptions: ldap.SearchOptions = {
       filter: `(uid=${user.username})`,
       scope: "sub",
-      attributes: ['cn', 'uid', 'mail', 'givenName', 'sn', 'displayName']
+      attributes: ["cn", "uid", "mail", "givenName", "sn", "displayName"],
     };
 
     const entries = await searchAsync(
       client,
-      'ou=users,dc=uniss,dc=edu,dc=cu',
+      "ou=UNISS_Users,dc=uniss,dc=edu,dc=cu",
       searchOptions
     );
 
@@ -130,29 +145,30 @@ export const getUserProfileController = async (
     }
 
     // 5. Mapear datos del usuario
-    const getLdapAttribute = (entry: ldap.SearchEntry, name: string): string => {
+    const getLdapAttribute = (
+      entry: ldap.SearchEntry,
+      name: string
+    ): string => {
       const attributes = entry.attributes as unknown as Attribute[];
-      const attr = attributes.find(a => a.type === name);
-      
+      const attr = attributes.find((a) => a.type === name);
+
       if (!attr || !attr.values || attr.values.length === 0) {
-        return '';
+        return "";
       }
-      
+
       return String(attr.values[0]);
     };
-    
 
     // Cambia la línea de obtención de atributos por:
-const attributes = (entries[0] as any).attributes; // Esto debería funcionar ahora
+    const attributes = (entries[0] as any).attributes; // Esto debería funcionar ahora
 
-    
     const userData = {
-      username: getLdapAttribute(entries[0], 'uid'),
-      nombreCompleto: getLdapAttribute(entries[0], 'cn'),
-      email: getLdapAttribute(entries[0], 'mail'),
-      nombre: getLdapAttribute(entries[0], 'givenName'),
-      apellido: getLdapAttribute(entries[0], 'sn'),
-      displayName: getLdapAttribute(entries[0], 'displayName')
+      username: getLdapAttribute(entries[0], "uid"),
+      nombreCompleto: getLdapAttribute(entries[0], "cn"),
+      email: getLdapAttribute(entries[0], "mail"),
+      nombre: getLdapAttribute(entries[0], "givenName"),
+      apellido: getLdapAttribute(entries[0], "sn"),
+      displayName: getLdapAttribute(entries[0], "displayName"),
     };
 
     // 6. Registrar acceso
@@ -163,13 +179,52 @@ const attributes = (entries[0] as any).attributes; // Esto debería funcionar ah
     );
 
     res.json(userData);
-
   } catch (error: any) {
     console.error("Error obteniendo perfil:", error);
     res.status(500).json({
-      error: error.message || "Error obteniendo datos del usuario"
+      error: error.message || "Error obteniendo datos del usuario",
     });
   } finally {
     if (client) client.unbind();
+  }
+};
+
+export const getUserController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = (req as any).user as { username: string } | undefined;
+    // Verificar autenticación
+    if (!user?.username) {
+      res.status(401).json({ 
+        success: false, 
+        message: "Usuario no autenticado" 
+      });
+      return;
+    }
+
+    // Construir el correo institucional
+    const rawUsername = user.username;
+    const username = rawUsername.includes('@') 
+      ? rawUsername.split('@')[0] 
+      : rawUsername;
+    
+    const institutionalEmail = `${username}@uniss.edu.cu`;
+
+    // Buscar en LDAP usando el correo institucional
+    const userData = await getUserDataByEmail(institutionalEmail);
+
+    res.json({
+      success: true,
+      user: {
+        username: username,
+        email: institutionalEmail,
+        ...userData
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener datos del usuario",
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    });
   }
 };

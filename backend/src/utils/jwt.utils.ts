@@ -1,6 +1,4 @@
-// src/utils/jwt.utils.ts
 import jwt, { SignOptions, VerifyOptions } from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -25,7 +23,7 @@ const JWT_CONFIG = {
   } as VerifyOptions
 };
 
-// Función principal de verificación (sin cambios)
+// Función pura de verificación de token
 export const verifyToken = (token: string): TokenPayload => {
   try {
     return jwt.verify(
@@ -38,33 +36,7 @@ export const verifyToken = (token: string): TokenPayload => {
   }
 };
 
-// Middleware corregido usando verifyToken
-export const verifyTokenMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
-      res.status(401).json({ message: 'Token no proporcionado' });
-      return;
-    }
-
-    // Usamos la función verifyToken existente
-    const decoded = verifyToken(token);
-    
-    // Extender el tipo Request
-    (req as any).user = decoded;
-    
-    next();
-  } catch (error) {
-    res.status(401).json({ message: 'Token inválido o expirado' });
-  }
-};
-
-// Generación de tokens (sin cambios)
+// Función pura de generación de tokens
 export const generateTokens = (payload: TokenPayload) => {
   const accessToken = jwt.sign(
     payload,

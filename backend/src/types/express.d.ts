@@ -1,4 +1,4 @@
-// src/types/express/index.d.ts
+// src/types/express.d.ts
 import { TokenPayload } from '../../utils/jwt.utils';
 
 declare global {
@@ -8,3 +8,5 @@ declare global {
     }
   }
 }
+
+export {};

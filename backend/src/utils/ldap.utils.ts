@@ -1,9 +1,12 @@
 // src/utils/ldap.utils.ts
 import ldap, { Client, ClientOptions } from "ldapjs";
 import { Request, Response } from "express";
+import { Attribute } from "ldapts";
+import { LdapTreeNode } from "../interface/ldap-tree.interface";
 
 export type LDAPClient = ldap.Client;
 
+// Conexión LDAP: Crea y configura cliente con manejo de reconexión
 export const createLDAPClient = (url: string): LDAPClient => {
   const clientOptions: ClientOptions = {
     url,
@@ -35,13 +38,13 @@ export const createLDAPClient = (url: string): LDAPClient => {
   return client;
 };
 
-// Función para reemplazar el cliente en uso
+// Seguridad: Reemplaza cliente desconectado por nueva instancia
 const replaceClient = (oldClient: LDAPClient, newClient: LDAPClient) => {
   oldClient.unbind();
   // Aquí deberías actualizar cualquier referencia al cliente antiguo
 };
 
-// Resto del código se mantiene igual
+// Autenticación: Promisifica método bind para uso con async/await
 export const bindAsync = (
   client: LDAPClient,
   username: string,
@@ -54,6 +57,7 @@ export const bindAsync = (
   });
 };
 
+// Seguridad: Cambia contraseña usuario validando entorno y usando admin
 export const ldapChangePassword = async (
   username: string,
   newPassword: string
@@ -101,6 +105,8 @@ export const ldapChangePassword = async (
   }
 };
 
+// Autenticación: Valida credenciales contra servidor LDAP
+// [!] Considerar migrar a estrategia passport-ldap
 export const authenticateUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
@@ -121,6 +127,7 @@ export const authenticateUser = async (req: Request, res: Response) => {
   }
 };
 
+// Auditoría: Registra acción en estructura LDAP específica para logs
 export const addLogEntry = async (
   username: string,
   action: string,
@@ -170,7 +177,7 @@ export const addLogEntry = async (
   }
 };
 
-// Corregir la función searchAsync
+// Búsqueda: Promisifica búsqueda LDAP con manejo de resultados/errores
 export const searchAsync = (
   client: LDAPClient,
   base: string,
@@ -194,4 +201,198 @@ export const searchAsync = (
       });
     });
   });
+};
+
+// Perfil: Obtiene datos básicos usuario por UID
+// [!] Validar existencia de atributos requeridos
+export const getUserData = async (username: string): Promise<any> => {
+  let client: LDAPClient | null = null;
+  try {
+    if (
+      !process.env.LDAP_URL ||
+      !process.env.LDAP_ADMIN_DN ||
+      !process.env.LDAP_ADMIN_PASSWORD
+    ) {
+      throw new Error("Configuración LDAP incompleta");
+    }
+
+    client = createLDAPClient(process.env.LDAP_URL);
+    await bindAsync(
+      client,
+      process.env.LDAP_ADMIN_DN,
+      process.env.LDAP_ADMIN_PASSWORD
+    );
+
+    const searchOptions: ldap.SearchOptions = {
+      filter: `(|(sAMAccountName=${username})(userPrincipalName=${username}))`,
+      scope: "sub",
+      attributes: ["cn", "sAMAccountName","uid", "mail", "givenName", "sn", "displayName","userPrincipalName"],
+    };
+
+    const entries = await searchAsync(
+      client,
+      "ou=UNISS_Users,dc=uniss,dc=edu,dc=cu",
+      searchOptions
+    );
+
+    if (entries.length === 0) {
+      throw new Error("Usuario no encontrado");
+    }
+
+    const getLdapAttribute = (
+      entry: ldap.SearchEntry,
+      name: string
+    ): string => {
+      const attributes = entry.attributes as unknown as Attribute[];
+      const attr = attributes.find((a) => a.type === name);
+
+      if (!attr || !attr.values || attr.values.length === 0) {
+        return "";
+      }
+
+      return String(attr.values[0]);
+    };
+
+    return {
+      username: getLdapAttribute(entries[0], "uid"),
+      nombreCompleto: getLdapAttribute(entries[0], "cn"),
+      email: getLdapAttribute(entries[0], "mail"),
+      nombre: getLdapAttribute(entries[0], "givenName"),
+      apellido: getLdapAttribute(entries[0], "sn"),
+      displayName: getLdapAttribute(entries[0], "displayName"),
+    };
+  } finally {
+    if (client) client.unbind();
+  }
+};
+
+// Búsqueda: Obtiene datos extendidos por email (uso interno/admin)
+// [!] Considerar paginación para resultados masivos
+export const getUserDataByEmail = async (email: string): Promise<any> => {
+  let client: ldap.Client | null = null;
+
+  try {
+    // 1. Validar configuración LDAP
+    if (
+      !process.env.LDAP_URL ||
+      !process.env.LDAP_ADMIN_DN ||
+      !process.env.LDAP_ADMIN_PASSWORD
+    ) {
+      throw new Error("Configuración LDAP incompleta");
+    }
+
+    // 2. Conectar a LDAP
+    client = ldap.createClient({ url: process.env.LDAP_URL });
+    await bindAsync(
+      client,
+      process.env.LDAP_ADMIN_DN,
+      process.env.LDAP_ADMIN_PASSWORD
+    );
+
+    // 3. Parámetros de búsqueda
+    const searchOptions: ldap.SearchOptions = {
+      filter: `(mail=${email})`,
+      scope: "sub",
+      attributes: [
+        "cn", // Nombre completo
+        "givenName", // Nombre
+        "sn", // Apellido
+        "uid", // ID de usuario
+        "title", // Cargo
+        "department", // Departamento
+        "telephoneNumber",
+      ],
+    };
+
+    // 4. Ejecutar búsqueda
+    const entries = await searchAsync(
+      client,
+      "ou=users,dc=uniss,dc=edu,dc=cu", // Ajustar según tu estructura LDAP
+      searchOptions
+    );
+
+    if (entries.length === 0) {
+      throw new Error("Usuario no encontrado en LDAP");
+    }
+
+    // 5. Procesar resultados
+    const entry = entries[0];
+    const attributes = entry.attributes as unknown as ldap.Attribute[];
+
+    const getAttribute = (name: string): string => {
+      const attr = attributes.find((a) => a.type === name);
+      return attr?.values?.[0]?.toString() || "";
+    };
+
+    return {
+      fullName: getAttribute("cn"),
+      firstName: getAttribute("givenName"),
+      lastName: getAttribute("sn"),
+      position: getAttribute("title"),
+      department: getAttribute("department"),
+      phone: getAttribute("telephoneNumber"),
+    };
+  } finally {
+    if (client) client.unbind();
+  }
+};
+
+// Estructura: Genera árbol jerárquico de nodos LDAP (recursivo)
+// [!] Limitar profundidad máxima en producción
+export const getLdapStructure = async (
+  client: LDAPClient,
+  baseDN: string,
+  maxDepth: number = 3,
+  currentDepth: number = 0
+): Promise<LdapTreeNode[]> => {
+  if (currentDepth > maxDepth) return [];
+  const result: LdapTreeNode[] = [];
+
+  const searchOptions: ldap.SearchOptions = {
+    scope: "one",
+    filter: "(objectClass=*)",
+    attributes: ["objectClass", "cn", "ou", "sn", "dn", "givenName", "mail"],
+  };
+
+  const entries = await searchAsync(client, baseDN, searchOptions);
+
+  for (const entry of entries) {
+    const node: LdapTreeNode = {
+      dn: entry.dn,
+      name:
+        (entry.attributes.find((a) => a.type === "cn" || a.type === "ou")
+          ?.values?.[0] as string) || entry.dn,
+      type: entry.attributes
+        .find((a) => a.type === "objectClass")
+        ?.values?.includes("organizationalUnit")
+        ? "folder"
+        : "item",
+      children: [],
+      attributes: {
+        sn: entry.attributes.find((a) => a.type === "sn")?.values?.[0] as
+          | string
+          | undefined,
+        givenName: entry.attributes.find((a) => a.type === "givenName")
+          ?.values?.[0] as string | undefined,
+        mail: entry.attributes.find((a) => a.type === "mail")?.values?.[0] as
+          | string
+          | undefined,
+        objectClass: entry.attributes.find((a) => a.type === "objectClass")
+          ?.values as string[] | undefined,
+      },
+    };
+
+    if (node.type === "folder") {
+      node.children = await getLdapStructure(
+        client,
+        entry.dn,
+        maxDepth,
+        currentDepth + 1
+      );
+    }
+
+    result.push(node);
+  }
+
+  return result;
 };

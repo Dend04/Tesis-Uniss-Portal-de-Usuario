@@ -1,7 +1,7 @@
 // src/routes/auth.routes.ts
 import { Router } from 'express';
-import { verifyTokenMiddleware } from '../utils/jwt.utils';
-import { changePasswordController, getUserProfileController, loginController } from '../controllers/auth.controllers';
+import { changePasswordController, getUserController, getUserProfileController, loginController } from '../controllers/auth.controllers';
+import { verifyTokenMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -12,5 +12,6 @@ router.get(
     verifyTokenMiddleware,
     getUserProfileController
   );
+  router.get('/user', verifyTokenMiddleware, getUserController);
 
 export default router;

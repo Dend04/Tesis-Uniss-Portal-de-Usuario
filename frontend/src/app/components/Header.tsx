@@ -6,6 +6,7 @@ import {
   UserCircleIcon,
   SunIcon,
   MoonIcon,
+  ChatBubbleOvalLeftIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useState } from "react";
@@ -68,6 +69,23 @@ export const Header = ({ onToggleDarkMode, isDarkMode }: HeaderProps) => {
 
             {/* Botones con hover animado */}
             <div className="hidden md:flex items-center gap-6">
+              {/*Botón de chatIA */}
+            <Link
+              href="/chatIa"
+              className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
+            >
+              <div className="flex items-center gap-1">
+                <ChatBubbleOvalLeftIcon
+                  className={`h-6 w-6 ${
+                    isDarkMode ? "text-gray-300" : "text-gray-600"
+                  } group-hover:text-uniss-blue dark:group-hover:text-uniss-gold transition-colors`}
+                />
+                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 opacity-0 group-hover:opacity-100 translate-y-0 group-hover:translate-y-1 transition-all duration-200 whitespace-nowrap text-sm bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 px-2 py-1 rounded-md">
+                  Asistente Virtual
+                  <div className="absolute w-2 h-2 bg-gray-800 dark:bg-gray-200 -top-1 left-1/2 -translate-x-1/2 rotate-45" />
+                </span>
+              </div>
+            </Link>
               {/* Botón de Configuración */}
               <Link
                 href="/config"

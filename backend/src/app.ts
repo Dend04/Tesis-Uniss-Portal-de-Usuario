@@ -12,7 +12,9 @@ import logger from './utils/logger';
 import { createLDAPClient } from './utils/ldap.utils';
 import connectDB from './config/db';
 /* import setupSyncSchedule from './sincronizacion/sync.schedule'; */
-import deviceRoutes from './routes/dispositivosRoutes';
+import deviceRoutes from './routes/dispositivos.routes';
+import gemini from './routes/gemini.routes';
+import ldap from './routes/ldap.routes';
 
 
 dotenv.config();
@@ -111,6 +113,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRoutes);
 app.use('/api', studentRoutes);
 app.use('/api/devices', deviceRoutes);
+app.use('/api/gemini', gemini);
+app.use('api', ldap)
 
 // Health Check
 app.get('/health', (_: Request, res: Response) => {

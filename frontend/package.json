@@ -11,6 +11,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^4.1.1",
+    "deep-chat-react": "^2.1.1",
     "framer-motion": "^12.4.7",
     "heroicons": "^2.2.0",
     "next": "15.1.7",
