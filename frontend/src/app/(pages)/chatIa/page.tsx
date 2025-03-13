@@ -1,136 +1,192 @@
-// components/GeminiChat.tsx (Diseño mejorado y funcional)
-'use client';
-import { DeepChat } from 'deep-chat-react';
-import { useEffect, useState } from 'react';
-import { ExclamationTriangleIcon } from '@heroicons/react/24/solid';
-import Loader from '@/app/components/Loader';
+// components/GeminiChat.tsx
+"use client";
+import { useEffect, useState, useRef } from "react";
+import {
+  ExclamationTriangleIcon,
+  PaperAirplaneIcon,
+} from "@heroicons/react/24/outline";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+type Message = {
+  content: string;
+  isUser: boolean;
+  timestamp: Date;
+  isStreaming?: boolean;
+};
 
 export default function GeminiChat() {
-  const [isCuba, setIsCuba] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const checkLocation = async () => {
-      try {
-        const response = await fetch('https://ipapi.co/json/');
-        const data = await response.json();
-        setIsCuba(data.country === 'CU');
-      } catch (error) {
-        console.error('Error detectando ubicación:', error);
-        setIsCuba(false);
-      } finally {
-        setLoading(false);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    try {
+      setError(null);
+      const userMessage: Message = {
+        content: input,
+        isUser: true,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [
+        ...prev,
+        userMessage,
+        {
+          content: "",
+          isUser: false,
+          timestamp: new Date(),
+          isStreaming: true,
+        },
+      ]);
+
+      setInput("");
+      setIsLoading(true);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/gemini/chat`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: input }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Error en la respuesta");
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let aiResponse = "";
+
+      while (true) {
+        const { done, value } = await reader!.read();
+        if (done) break;
+
+        aiResponse += decoder.decode(value);
+
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+
+          if (lastMessage.isStreaming) {
+            lastMessage.content = aiResponse;
+            lastMessage.timestamp = new Date();
+          }
+
+          return newMessages;
+        });
       }
-    };
-    checkLocation();
-  }, []);
-
-  if (loading) return <Loader className="min-h-[400px]" />;
-
-  if (isCuba) {
-    return (
-      <div className="max-w-2xl mx-auto p-6 my-8 bg-yellow-50 border border-yellow-200 rounded-xl">
-        <div className="flex flex-col items-center text-center">
-          <ExclamationTriangleIcon className="h-12 w-12 text-yellow-600 mb-4" />
-          <h2 className="text-2xl font-semibold text-yellow-800 mb-2">
-            Acceso Requiere VPN
-          </h2>
-          <p className="text-yellow-700 text-lg mb-4">
-            Para usar el asistente virtual desde Cuba:
-          </p>
-          <ol className="space-y-2 text-yellow-700 text-left text-lg list-decimal pl-6">
-            <li>Activa tu aplicación de VPN</li>
-            <li>Conéctate a un servidor internacional</li>
-            <li>Recarga esta página</li>
-          </ol>
-        </div>
-      </div>
-    );
-  }
+    } catch (err) {
+      setError("Error al conectar con el servicio");
+      setMessages((prev) => prev.filter((msg) => msg.isUser));
+    } finally {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.isStreaming ? { ...msg, isStreaming: false } : msg
+        )
+      );
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 min-h-screen">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-        <DeepChat
-         demo={true}
-          style={{ 
-            height: '70vh',
-            borderRadius: '0.75rem',
-            fontSize: '1.1rem',
-            backgroundColor: '#f8fafc'
-          }}
-          request={{ 
-            url: `${process.env.NEXT_PUBLIC_API_URL}/gemini/chat`,/* http://localhost:5000/api/gemini/chat */
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }}
-          textInput={{ 
-            placeholder: {
-              text: 'Escribe tu pregunta aquí...' // ✅ Estructura correcta
-            },
-            styles: {
-              container: {
-                padding: '1rem',
-                backgroundColor: '#ffffff'
-              },
-              text: {
-                fontSize: '1.1rem',
-                color: '#1e293b'
-              }
-            }
-          }}
-          messageStyles={{
-            user: { 
-              background: '#3b82f6',
-              color: '#ffffff',
-              borderRadius: '1rem',
-              padding: '1rem',
-              fontSize: '1.1rem',
-              margin: '0.5rem 0'
-            },
-            ai: { 
-              background: '#ffffff',
-              color: '#1e293b',
-              borderRadius: '1rem',
-              padding: '1rem',
-              fontSize: '1.1rem',
-              margin: '0.5rem 0',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-            }
-          }}
-          initialMessages={[
-            { 
-              text: '¡Hola! Soy tu asistente virtual UNISS. ¿En qué puedo ayudarte hoy?',
-              role: 'ai',
-              styles: {
-                text: {
-                  fontSize: '1.2rem',
-                  fontWeight: '500'
-                }
-              }
-            }
-          ]}
-          errorMessages={{
-            userError: (error: any) => (
-              <div className="flex items-center gap-2 text-red-600">
-                <ExclamationTriangleIcon className="h-5 w-5" />
-                {error.message || 'Error al procesar la solicitud'}
-              </div>
-            ),
-            default: (
-              <div className="flex items-center gap-2 text-gray-600">
-                <Loader className="h-5 w-5" />
-                Conectando con el servicio...
-              </div>
-            )
-          }}
-          streaming={true}
-          streamSpeed={50}
-          streamBubbleColor="#3b82f6"
-        />
+    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg mb-8">
+      {/* Área de mensajes */}
+      <div className="h-[60vh] overflow-y-auto p-4 bg-gray-50">
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} mb-4`}
+          >
+            <div
+              className={`max-w-[85%] p-4 rounded-2xl ${
+                message.isUser
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white border border-gray-200 shadow-sm'
+              } transition-all duration-300`}
+            >
+             {message.isStreaming ? (
+  <div className="flex space-x-2 items-center">
+    <div className="flex space-x-1">
+      <span className="h-2 w-2 bg-current rounded-full animate-dotTyping"></span>
+      <span className="h-2 w-2 bg-current rounded-full animate-dotTyping animation-delay-200"></span>
+      <span className="h-2 w-2 bg-current rounded-full animate-dotTyping animation-delay-400"></span>
+    </div>
+  </div>
+) : (
+                <div className="prose text-lg max-w-none">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      strong: ({ node, ...props }) => (
+                        <strong className="font-semibold" {...props} />
+                      ),
+                      p: ({ node, ...props }) => (
+                        <p className="mb-2 leading-relaxed text-gray-800" {...props} />
+                      ),
+                      ul: ({ node, ...props }) => (
+                        <ul className="list-disc pl-6 space-y-2 marker:text-blue-500" {...props} />
+                      ),
+                      ol: ({ node, ...props }) => (
+                        <ol className="list-decimal pl-6 space-y-2 marker:text-blue-500" {...props} />
+                      )
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+              )}
+              <p className="text-xs mt-2 opacity-70">
+                {message.timestamp.toLocaleTimeString('es-ES', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
       </div>
+
+      {/* Área de entrada */}
+      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Escribe tu pregunta aquí..."
+            className="flex-1 p-4 text-lg border border-gray-300 rounded-xl
+                     focus:outline-none focus:ring-2 focus:ring-blue-500
+                     disabled:opacity-50 transition-all placeholder-gray-400"
+            disabled={isLoading}
+          />
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700
+                     disabled:opacity-50 transition-colors"
+          >
+            <PaperAirplaneIcon className="h-6 w-6 transform rotate-45" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="mt-2 flex items-center text-red-600 bg-red-50 p-3 rounded-lg">
+            <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
+      </form>
     </div>
   );
 }

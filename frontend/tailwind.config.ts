@@ -11,14 +11,13 @@ export default {
     extend: {
       colors: {
         'uniss-black': '#1A1A1A',
-        'uniss-blue': '#1D4ED8',    // Ejemplo azul institucional
-        'uniss-gold': '#D4AF37',    // Ejemplo dorado institucional
-        'uniss-green': '#2E7D32',   // Ejemplo verde para estado
+        'uniss-blue': '#1D4ED8',
+        'uniss-gold': '#D4AF37',
+        'uniss-green': '#2E7D32',
       },
       fontFamily: {
-        // Fuentes personalizadas
-        title: ['Poppins', 'sans-serif'], // Ejemplo de fuente para títulos
-        body: ['Roboto', 'sans-serif'] // Ejemplo de fuente para cuerpo
+        title: ['Poppins', 'sans-serif'],
+        body: ['Roboto', 'sans-serif']
       },
       keyframes: {
         typing: {
@@ -28,10 +27,21 @@ export default {
         blink: {
           '50%': { borderColor: 'transparent' },
         },
+        dotTyping: {
+          '0%, 80%, 100%': { 
+            transform: 'translateY(0)',
+            opacity: '0.5'
+          },
+          '40%': {
+            transform: 'translateY(-6px)',
+            opacity: '1'
+          }
+        }
       },
       animation: {
         typing: 'typing 3s steps(40) forwards',
         blink: 'blink 0.75s step-end infinite',
+        dotTyping: 'dotTyping 1.4s infinite ease-in-out'
       },
     },
   },

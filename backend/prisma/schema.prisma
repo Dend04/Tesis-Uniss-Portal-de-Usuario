@@ -1,0 +1,67 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Empleados_Gral {
+  Id_Expediente    Int     @id @default(autoincrement())
+  No_CI            String
+  Id_Empleado      Int
+  Nombre           String
+  Apellido_1       String
+  Apellido_2       String?
+  Direccion        String?
+  Ciudad           String?
+  Id_CCosto        Int
+  Baja             Boolean @default(false)
+  Id_Tipo_Contrato Int
+  Id_Provincia     Int
+  Id_Municipio     Int
+  Id_Cargo         Int
+
+  Centro_Costo  Centro_Costo       @relation(fields: [Id_CCosto], references: [Id_CCosto])
+  Contrato_Tipo RH_Contratos_Tipos @relation(fields: [Id_Tipo_Contrato], references: [Id_Tipo_Contrato])
+  Provincia     RH_Provincias      @relation(fields: [Id_Provincia], references: [Id_Provincia], onDelete: NoAction, onUpdate: NoAction)
+  Municipio     RH_Municipios      @relation(fields: [Id_Municipio], references: [Id_Municipio], onDelete: NoAction, onUpdate: NoAction)
+
+  Cargo RH_Cargos @relation(fields: [Id_Cargo], references: [Id_Cargo])
+}
+
+model Centro_Costo {
+  Id_CCosto   Int              @id @default(autoincrement())
+  Desc_Ccosto String
+  Empleados   Empleados_Gral[]
+}
+
+model RH_Contratos_Tipos {
+  Id_Tipo_Contrato   Int              @id @default(autoincrement())
+  Desc_Tipo_Contrato String
+  Clasificacion      String?
+  Empleados          Empleados_Gral[]
+}
+
+model RH_Provincias {
+  Id_Provincia   Int              @id @default(autoincrement())
+  Desc_Provincia String
+  Empleados      Empleados_Gral[]
+  municipios     RH_Municipios[]  @relation("ProvinciaMunicipios") // Relación con nombre
+}
+
+model RH_Municipios {
+  Id_Municipio   Int              @id @default(autoincrement())
+  Desc_Municipio String
+  Id_Provincia   Int
+  Provincia      RH_Provincias    @relation("ProvinciaMunicipios", fields: [Id_Provincia], references: [Id_Provincia]) // Mismo nombre
+  Empleados      Empleados_Gral[]
+}
+
+model RH_Cargos {
+  Id_Cargo   Int              @id @default(autoincrement())
+  Desc_Cargo String
+  Empleados  Empleados_Gral[]
+}
