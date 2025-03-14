@@ -10,7 +10,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger/swagger';
 import logger from './utils/logger';
 import { createLDAPClient } from './utils/ldap.utils';
-import connectDB from './config/db';
+/* import connectDB from './config/db'; */
 /* import setupSyncSchedule from './sincronizacion/sync.schedule'; */
 import deviceRoutes from './routes/dispositivos.routes';
 import gemini from './routes/gemini.routes';
@@ -21,7 +21,7 @@ dotenv.config();
 
 // Inicialización
 const app = express();
-connectDB();
+/* connectDB(); */
 /* setupSyncSchedule(); */
 const PORT = process.env.PORT;
 
