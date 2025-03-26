@@ -14,4 +14,5 @@ router.get(
   );
   router.get('/user', verifyTokenMiddleware, getUserController);
 
+
 export default router;

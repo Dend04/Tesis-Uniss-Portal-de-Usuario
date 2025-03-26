@@ -139,6 +139,7 @@ export class SigenuService {
       return this.handleError(error, "getStudentStatusList");
     }
   }
+  
 
   // Transformación de datos principales
   private static transformMainData(rawData: RawStudentData): StudentMainData {

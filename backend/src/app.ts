@@ -15,6 +15,7 @@ import { createLDAPClient } from './utils/ldap.utils';
 import deviceRoutes from './routes/dispositivos.routes';
 import gemini from './routes/gemini.routes';
 import ldap from './routes/ldap.routes';
+import users from './routes/user.routes';
 
 
 dotenv.config();
@@ -114,7 +115,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api', studentRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/gemini', gemini);
-app.use('api', ldap)
+app.use('/api', ldap)
+app.use('/api', users)
 
 // Health Check
 app.get('/health', (_: Request, res: Response) => {
