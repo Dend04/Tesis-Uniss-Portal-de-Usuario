@@ -9,7 +9,6 @@ import {
   searchAsync,
   LDAPClient,
   getUserData,
-  getUserDataByEmail,
 } from "../utils/ldap.utils"; // Agregar las importaciones faltantes
 import { generateTokens, TokenPayload, verifyToken } from "../utils/jwt.utils";
 import * as ldap from "ldapjs";
@@ -25,22 +24,78 @@ export const loginController = async (req: Request, res: Response) => {
     // Obtener sAMAccountName real desde LDAP
     const ldapUser = await getUserData(username); // Busca por uid o email
 
+    // Verificar si el campo EmployedID existe
+    let EmployedID = ldapUser.EmployedID;
+
+    if (!EmployedID) {
+      EmployedID = "";
+      await addEmployedIDToLDAP(username, EmployedID);
+    }
+
     // Generar token con identificador LDAP real
-    const tokens = generateTokens({ 
-      username: ldapUser.sAMAccountName // o userPrincipalName
+    const tokens = generateTokens({
+      username: ldapUser.sAMAccountName, // o userPrincipalName
     });
 
+    // Retornar la respuesta con los datos del usuario y el EmployedID
     res.json({
       success: true,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      user: ldapUser
+      user: {
+        ...ldapUser,
+        EmployedID, // Incluir el EmployedID en la respuesta
+      },
     });
   } catch (error) {
+    console.error("Error en loginController:", error);
     res.status(500).json({ success: false, message: "Error interno" });
   }
 };
 
+// Función para agregar EmployedID a LDAP
+const addEmployedIDToLDAP = async (username: string, EmployedID: string) => {
+  if (
+    !process.env.LDAP_URL ||
+    !process.env.LDAP_ADMIN_DN ||
+    !process.env.LDAP_ADMIN_PASSWORD
+  ) {
+    throw new Error("Configuración LDAP incompleta");
+  }
+
+  const client = createLDAPClient(process.env.LDAP_URL);
+
+  try {
+    // Autenticación como admin
+    await bindAsync(
+      client,
+      process.env.LDAP_ADMIN_DN,
+      process.env.LDAP_ADMIN_PASSWORD
+    );
+
+    const userDN = `uid=${username},ou=users,dc=uniss,dc=edu,dc=cu`;
+
+    const modification = new ldap.Change({
+      operation: "add",
+      modification: {
+        EmployedID: [EmployedID], // Asegúrate de que sea un array
+      },
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      client.modify(userDN, modification, (err: Error | null) => {
+        if (err) {
+          console.error("Error al agregar EmployedID:", err);
+          reject(new Error(`Error LDAP: ${err.message}`)); // Usar comillas invertidas
+        } else {
+          resolve();
+        }
+      });
+    });
+  } finally {
+    client.unbind();
+  }
+};
 export const changePasswordController = async (
   req: Request,
   res: Response
@@ -56,31 +111,47 @@ export const changePasswordController = async (
 
     // 2. Validar nueva contraseña
     const { newPassword } = req.body;
-    if (!newPassword || newPassword.length < 8) {
-      res
-        .status(400)
-        .json({ error: "La contraseña debe tener al menos 8 caracteres" });
-      return;
+    const errors = [];
+
+    if (!newPassword) {
+      errors.push("La contraseña es requerida.");
+    } else if (newPassword.length < 8) {
+      errors.push("La contraseña debe tener al menos 8 caracteres.");
+    } else if (!/[A-Z]/.test(newPassword)) {
+      errors.push("La contraseña debe contener al menos una letra mayúscula.");
+    } else if (!/[0-9]/.test(newPassword)) {
+      errors.push("La contraseña debe contener al menos un número.");
+    } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+      errors.push("La contraseña debe contener al menos un carácter especial.");
     }
 
-    // 3. Lógica central de cambio
-    await ldapChangePassword(user.username, newPassword);
+    if (errors.length > 0) {
+      res.status(400).json({ errors });
+    } else {
+      // Si todas las validaciones pasan, continuar con el cambio de contraseña
+    }
 
-    // 4. Registrar en logs
+    // 3. Obtener datos del usuario desde LDAP
+    const ldapUser = await getUserData(user.username); // Llama a la función correctamente
+
+    // 4. Cambiar la contraseña usando las credenciales del administrador
+    await ldapChangePassword(ldapUser.sAMAccountName, newPassword); // Cambia la contraseña
+
+    // 5. Registrar en logs
     await addLogEntry(
-      user.username,
+      ldapUser.sAMAccountName,
       "PASSWORD_CHANGE",
       `Cambio exitoso - ${new Date().toLocaleString()}`
     );
 
-    // 5. Respuesta detallada
+    // 6. Respuesta detallada
     res.status(200).json({
       success: true,
-      message: `¡Contraseña actualizada para ${user.username}!`,
+      message: `¡Contraseña actualizada para ${ldapUser.sAMAccountName}!`,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    // 6. Manejo de errores específico
+    // 7. Manejo de errores específico
     const errorMessage =
       error instanceof Error
         ? `Error: ${error.message}`
@@ -188,44 +259,3 @@ export const getUserProfileController = async (
     if (client) client.unbind();
   }
 };
-
-export const getUserController = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const user = (req as any).user as { username: string } | undefined;
-    // Verificar autenticación
-    if (!user?.username) {
-      res.status(401).json({ 
-        success: false, 
-        message: "Usuario no autenticado" 
-      });
-      return;
-    }
-
-    // Construir el correo institucional
-    const rawUsername = user.username;
-    const username = rawUsername.includes('@') 
-      ? rawUsername.split('@')[0] 
-      : rawUsername;
-    
-    const institutionalEmail = `${username}@uniss.edu.cu`;
-
-    // Buscar en LDAP usando el correo institucional
-    const userData = await getUserDataByEmail(institutionalEmail);
-
-    res.json({
-      success: true,
-      user: {
-        username: username,
-        email: institutionalEmail,
-        ...userData
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error al obtener datos del usuario",
-      error: error instanceof Error ? error.message : 'Error desconocido'
-    });
-  }
-};
-

@@ -1,4 +1,3 @@
-// src/services/sigenu.services.ts
 import https from "https";
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import dotenv from "dotenv";
@@ -16,10 +15,13 @@ dotenv.config();
 const API_BASE_URL = "https://sigenu.uniss.edu.cu/sigenu-rest";
 const DEFAULT_TIMEOUT = 15000;
 
+const NodeCache = require("node-cache");
+const cache = new NodeCache();
+
 export class SigenuService {
   private static careerCache: Record<string, string> = {};
-  // Configuración principal del servicio
 
+  // Configuración principal del servicio
   private static getConfig(): AxiosRequestConfig {
     return {
       timeout: DEFAULT_TIMEOUT,
@@ -34,6 +36,63 @@ export class SigenuService {
         "X-Request-Source": "student-portal-api",
       },
     };
+  }
+
+  // Método para obtener las credenciales de autenticación
+  private static getAuthCredentials(): string {
+    const user = process.env.SIGENU_API_USER;
+    const pass = process.env.SIGENU_API_PASSWORD;
+
+    if (!user || !pass) {
+      throw new Error("Configuración incompleta: Faltan credenciales SIGENU");
+    }
+
+    return Buffer.from(`${user}:${pass}`).toString("base64");
+  }
+
+  // Función para obtener las carreras nacionales y almacenarlas en caché
+  public static async getNationalCareers() {
+    try {
+      const response = await axios.get("http://sigenu.uniss.edu.cu/sigenu-rest/dss/getcareermodel", {
+        headers: {
+          Authorization: `Basic ${this.getAuthCredentials()}`, // Usar la función para obtener las credenciales
+        },
+      });
+      const careers = response.data;
+  
+      // Asegúrate de que la caché se esté llenando correctamente
+      careers.forEach((career: { idCarrera: string; nombre: string }) => {
+        const normalizedId = career.idCarrera.padStart(5, '0'); // Normalizar el ID
+        this.careerCache[normalizedId] = career.nombre; // Almacenar en la caché
+      });
+  
+      cache.set("nationalCareers", careers, 3600000); // Almacenar por 1 hora
+      return careers;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error obteniendo carreras nacionales:", error.response ? error.response.data : error.message);
+      } else {
+        console.error("Error desconocido al obtener carreras nacionales:", error);
+      }
+      return [];
+    }
+  }
+  
+  private static async getNationalCareerFromCache() {
+    const careers = cache.get("nationalCareers");
+    if (!careers) {
+      return this.getNationalCareers();
+    }
+    return careers;
+  }
+  
+  private static async getNationalCareerName(careerCode: string): Promise<string> {
+    const careers = await this.getNationalCareerFromCache();
+    const career = careers.find((c: { idCarrera: string }) => c.idCarrera === careerCode);
+    if (career) {
+      return career.nombre;
+    }
+    return careerCode; // Si no se encuentra, devolver el código original
   }
 
   // Método principal para obtener todos los datos
@@ -80,9 +139,15 @@ export class SigenuService {
         };
       }
 
+      const studentData = response.data[0];
+      const careerName = await this.getNationalCareerName(studentData.career); // Obtener el nombre de la carrera
+
       return {
         success: true,
-        data: this.transformMainData(response.data[0]),
+        data: this.transformMainData({
+          ...studentData,
+          career: careerName , // Reemplazar el código de carrera con el nombre
+        }),
       };
     } catch (error) {
       return this.handleError(error, "getMainStudentData");
@@ -139,7 +204,6 @@ export class SigenuService {
       return this.handleError(error, "getStudentStatusList");
     }
   }
-  
 
   // Transformación de datos principales
   private static transformMainData(rawData: RawStudentData): StudentMainData {
@@ -243,60 +307,52 @@ export class SigenuService {
   }
 
   // Nuevo método para obtener y cachear las carreras
-  // 1. Método para obtener carreras (cache)
-// 1. Modificar el método fetchCareerData para debuggear y asegurar el formato
-private static async fetchCareerData(): Promise<void> {
-  try {
-    if (Object.keys(this.careerCache).length > 0) return;
+  private static async fetchCareerData(): Promise<void> {
+    try {
+      if (Object.keys(this.careerCache).length > 0) return;
 
-    const url = `${API_BASE_URL}/dss/getcareermodel`;
-    const response = await axios.get(url, this.getConfig());
-    
-    // Debug: Ver respuesta cruda
-    console.log('Respuesta completa de carreras:', JSON.stringify(response.data, null, 2));
-
-    // Asegurar que estamos accediendo al array correcto (ajusta según estructura real)
-    const carreras = response.data.data || response.data; // Dependiendo de la estructura
-    
-    if (Array.isArray(carreras)) {
-      this.careerCache = carreras.reduce((acc: Record<string, string>, carrera) => {
-        // Asegurar acceso al campo correcto y formato
-        const rawId = carrera.idCarrera?.toString() || '';
-        const id = rawId.padStart(5, '0');
-        
-        // Debug: Ver IDs y nombres
-        console.log(`Registrando carrera: ${rawId} -> ${id} = ${carrera.nombre}`);
-        
-        acc[id] = carrera.nombre;
-        return acc;
-      }, {});
-
-      // Debug: Ver muestra del cache
-      console.log('Career Cache Sample:', 
-        Object.entries(this.careerCache).slice(0, 3));
+      const url = `${API_BASE_URL}/dss/getcareermodel`;
+      const response = await axios.get(url, this.getConfig());
+      
+      // Asegurar que estamos accediendo al array correcto
+      const carreras = response.data.data || response.data; // Dependiendo de la estructura
+      
+      if (Array.isArray(carreras)) {
+        this.careerCache = carreras.reduce((acc: Record<string, string>, carrera) => {
+          const rawId = carrera.idCarrera?.toString() || '';
+          const id = rawId.padStart(5, '0');
+          acc[id] = carrera.nombre;
+          return acc;
+        }, {});
+      }
+    } catch (error) {
+      console.error('Error cargando carreras:', error);
+      this.careerCache = {};
     }
-  } catch (error) {
-    console.error('Error cargando carreras:', error);
-    this.careerCache = {};
   }
-}
 
-// 2. Mejorar el mapeo con validación completa
-private static mapCareerCode(code: string): string {
-  if (!code) return 'Carrera no especificada';
+  // Mapeo de código de carrera
+  private static mapCareerCode(code: string): string {
+    if (!code) return 'Carrera no especificada';
+    
+    const baseCode = code.toString().replace(/\D/g, ''); // Eliminar todo lo que no sea dígito
+    const normalizedCode = baseCode.padStart(5, '0');
   
-  // Debug: Valor original recibido
-  console.log(`Código original recibido: ${code} (tipo: ${typeof code})`);
-
-  // Normalización robusta
-  const baseCode = code.toString().replace(/\D/g, ''); // Eliminar todo lo que no sea dígito
-  const normalizedCode = baseCode.padStart(5, '0');
-
-  // Debug: Búsqueda en cache
-  console.log(`Buscando: ${normalizedCode} en cache. Existente?: ${!!this.careerCache[normalizedCode]}`);
+    // Debug: Ver qué código se está buscando
+    console.log(`Buscando carrera con código normalizado: ${normalizedCode}`);
   
-  return this.careerCache[normalizedCode] || `Carrera (${code})`;
-}
+    // Buscar en la caché de carreras
+    const careerName = this.careerCache[normalizedCode];
+  
+    // Debug: Ver el resultado de la búsqueda
+    if (careerName) {
+      console.log(`Carrera encontrada: ${careerName}`);
+    } else {
+      console.log(`Carrera no encontrada para el código: ${normalizedCode}`);
+    }
+  
+    return careerName || `Carrera (${code})`; // Si no se encuentra, devolver el código original
+  }
   // Formateo de datos de padres
   private static formatParentData(parent: any): string {
     const parts = [];
@@ -312,27 +368,13 @@ private static mapCareerCode(code: string): string {
     return /^\d{11}$/.test(ci);
   }
 
-  // Obtención de credenciales
-  private static getAuthCredentials(): string {
-    const user = process.env.SIGENU_API_USER;
-    const pass = process.env.SIGENU_API_PASSWORD;
-
-    if (!user || !pass) {
-      throw new Error("Configuración incompleta: Faltan credenciales SIGENU");
-    }
-
-    return Buffer.from(`${user}:${pass}`).toString("base64");
-  }
-
   // Manejo genérico de errores
   private static handleError<T = never>(
     error: unknown,
     context: string
   ): ApiResponse<T> {
     const errorMessage = axios.isAxiosError(error)
-      ? `[${context}] Error ${error.response?.status || "DESCONOCIDO"}: ${
-          error.message
-        }`
+      ? `[${context}] Error ${error.response?.status || "DESCONOCIDO"}: ${error.message}`
       : error instanceof Error
       ? `[${context}] ${error.message}`
       : `[${context}] Error desconocido`;

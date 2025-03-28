@@ -14,7 +14,7 @@ export const getDeviceManufacturer = async (
     if (!mac || !macRegex.test(mac)) {
       res.status(400).json({ 
         error: 'Formato MAC inválido',
-        formato_esperado: 'XX:XX:XX:XX:XX:XX o XXXXXXXXXXXX',
+        formato_esperado: 'XX:XX:XX:XX:XX:XX',
         ejemplo_valido: '00:14:22:01:23:45'
       });
       return;

@@ -13,10 +13,9 @@ import { createLDAPClient } from './utils/ldap.utils';
 /* import connectDB from './config/db'; */
 /* import setupSyncSchedule from './sincronizacion/sync.schedule'; */
 import deviceRoutes from './routes/dispositivos.routes';
-import gemini from './routes/gemini.routes';
 import ldap from './routes/ldap.routes';
 import users from './routes/user.routes';
-
+import { SigenuService } from './services/sigenu.services'
 
 dotenv.config();
 
@@ -114,7 +113,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRoutes);
 app.use('/api', studentRoutes);
 app.use('/api/devices', deviceRoutes);
-app.use('/api/gemini', gemini);
 app.use('/api', ldap)
 app.use('/api', users)
 
@@ -126,6 +124,8 @@ app.get('/health', (_: Request, res: Response) => {
 app.listen(PORT, async () => {
   /* const ldapStatus = await checkLDAPConnection(); */
   /* app.locals.ldapAvailable = ldapStatus; */
+
+  await SigenuService.getNationalCareers();
 
   logger.info(`🚀 Servidor en http://localhost:${PORT}`);
   logger.info(`📄 Docs: http://localhost:${PORT}/api-docs`);
