@@ -60,7 +60,9 @@
     "start": "node dist/app.js",
     "type-check": "tsc --noEmit",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:watch": "npm test -- --watch"
+    "test:watch": "npm test -- --watch",
+    "build-ldap": "ts-node src/utils/ldap.structure.ts",
+    "ldap-schedule": "ts-node src/utils/ldap.structure.ts --schedule"
   },
   "types": "modules"
 }

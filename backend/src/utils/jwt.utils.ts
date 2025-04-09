@@ -4,7 +4,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export interface TokenPayload {
-  username: string;
+  username: string,
+  sAMAccountName: string,
 }
 
 const JWT_CONFIG = {

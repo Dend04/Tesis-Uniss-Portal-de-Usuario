@@ -67,13 +67,35 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
     try {
-      // Simular llamada a LDAP
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      // Aquí iría la lógica real de autenticación
-    } catch (error) {
-      setErrors({ general: "Error de conexión con el servidor" });
-    } finally {
-      setIsSubmitting(false);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Error en la autenticación");
+      }
+
+      // Guardar token en localStorage
+      localStorage.setItem("token", data.token);
+
+      // Redirigir al dashboard o página principal
+      window.location.href = "/dashboard";
+    } catch (error: any) {
+      let errorMessage = "Error de conexión";
+
+      if (error.name === "AbortError") {
+        errorMessage = "La solicitud tardó demasiado";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setErrors({ general: errorMessage });
     }
   };
 
@@ -202,7 +224,7 @@ export default function LoginPage() {
                   href="/activate-account"
                   className="w-full bg-uniss-green text-white py-3 rounded-lg hover:bg-opacity-90 transition-all font-medium text-center"
                 >
-                  Activar cuenta institucional
+                  Solicitar credenciales
                 </Link>
               </div>
             </form>

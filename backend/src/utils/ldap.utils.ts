@@ -9,7 +9,8 @@ import { LdapTreeNode } from "../interface/ldap-tree.interface";
 import { Worker } from "worker_threads";
 import path from "path";
 import { ClientOptions } from "ldapts";
-interface LDAPUser {
+import NodeCache from "node-cache";
+export interface LDAPUser {
   samAccountName: string;
   uid: string;
   employeeID: string;
@@ -23,22 +24,21 @@ interface LDAPUser {
   userPrincipalName: string;
 }
 
-const escapeLDAPValue = (value: string): string => {
+export const escapeLDAPValue = (value: string): string => {
   const escapeMap: { [key: string]: string } = {
-      '*': '\\2a',
-      '(': '\\28',
-      ')': '\\29',
-      '\\': '\\5c',
-      '\0': '\\00',
-      '/': '\\2f'
+    "*": "\\2a",
+    "(": "\\28",
+    ")": "\\29",
+    "\\": "\\5c",
+    "\0": "\\00",
+    "/": "\\2f",
   };
 
-  return value.replace(/[*()\\\0\/]/g, match => escapeMap[match] || match);
+  return value.replace(/[*()\\\0\/]/g, (match) => escapeMap[match] || match);
 };
 
-
-
-
+const cache: { [key: string]: ldap.SearchEntry[] } = {}; // Objeto de caché
+const userDnCache = new NodeCache({ stdTTL: 3600 }); // 1 hora de cache
 
 export interface SearchEntry extends LdapSearchEntry {
   parsedAttributes: Record<string, any>;
@@ -246,6 +246,14 @@ export const searchAsync = (
 // Perfil: Obtiene datos básicos usuario por UID
 // [!] Validar existencia de atributos requeridos
 export const getUserData = async (username: string): Promise<any> => {
+  const cacheKey = `userDn-${username}`;
+  const cachedDn = userDnCache.get(cacheKey);
+  if (cachedDn) {
+    return {
+      ...cachedDn,
+      fromCache: true, // Para debug
+    };
+  }
   let client: LDAPClient | null = null;
   try {
     if (
@@ -275,6 +283,7 @@ export const getUserData = async (username: string): Promise<any> => {
         "sn",
         "displayName",
         "userPrincipalName",
+        "employeedID",
       ],
     };
 
@@ -301,15 +310,25 @@ export const getUserData = async (username: string): Promise<any> => {
 
       return String(attr.values[0]);
     };
-
-    return {
+    const userDn = entries[0].dn;
+    const sAMAccountName = getLdapAttribute(entries[0], "sAMAccountName");
+    const userData = {
+      sAMAccountName,
+      dn: userDn,
       username: getLdapAttribute(entries[0], "uid"),
       nombreCompleto: getLdapAttribute(entries[0], "cn"),
       email: getLdapAttribute(entries[0], "mail"),
       nombre: getLdapAttribute(entries[0], "givenName"),
       apellido: getLdapAttribute(entries[0], "sn"),
       displayName: getLdapAttribute(entries[0], "displayName"),
+      employeeID: getLdapAttribute(entries[0], "employeeID"), // Corregir typo
     };
+
+    // Guardar en caché usando sAMAccountName como clave principal
+    userDnCache.set(`userDn-${sAMAccountName}`, userData);
+    userDnCache.set(cacheKey, userData); // Guardar también con username original
+
+    return userData;
   } finally {
     if (client) client.unbind();
   }
@@ -375,43 +394,52 @@ export const getLdapStructure = async (
   return result;
 };
 
-export const unifiedLDAPSearch = async (searchTerm: string): Promise<ldap.SearchEntry[]> =>{
+export const unifiedLDAPSearch = async (
+  searchTerm: string
+): Promise<ldap.SearchEntry[]> => {
+  // Verificar si el resultado está en caché
+  if (cache[searchTerm]) {
+    return cache[searchTerm]; // Retornar el resultado de la caché
+  }
+
   let client: ldap.Client | null = null;
 
   try {
-      const config = getLDAPConfig();
-      client = createConnection(config);
-      await bindAsync(client, config.bindDN, config.password);
+    const config = getLDAPConfig();
+    client = createConnection(config);
+    await bindAsync(client, config.bindDN, config.password);
 
-      // Escapar caracteres especiales
-      const escapedTerm = escapeLDAPValue(searchTerm);
+    // Escapar caracteres especiales
+    const escapedTerm = escapeLDAPValue(searchTerm);
 
-      // Construir filtro sin espacios entre condiciones
-      const filter = `(|` +
-          `(sAMAccountName=${escapedTerm})` +
-          `(cn=*${escapedTerm}*)` +
-          `(uid=${escapedTerm})` +
-          `(employeeID=${escapedTerm})` +
-          `(mail=${escapedTerm})` +
-          `(userPrincipalName=*${escapedTerm}*)` +
-          `(givenName=*${escapedTerm}*)` +
-          `(sn=*${escapedTerm}*)` +
-          `(displayName=*${escapedTerm}*))`;
+    // Construir filtro sin espacios entre condiciones
+    const filter =
+      `(|` +
+      `(sAMAccountName=${escapedTerm})` +
+      `(cn=*${escapedTerm}*)` +
+      `(uid=${escapedTerm})` +
+      `(employeeID=${escapedTerm})` +
+      `(mail=${escapedTerm})` +
+      `(userPrincipalName=*${escapedTerm}*)` +
+      `(givenName=*${escapedTerm}*)` +
+      `(sn=*${escapedTerm}*)` +
+      `(displayName=*${escapedTerm}*))`;
 
-      const searchOptions: ldap.SearchOptions = {
-          scope: "sub",
-          attributes: [
-            "*"
-          ],
-          filter: filter,
-          paged: true
-      };
+    const searchOptions: ldap.SearchOptions = {
+      scope: "sub",
+      attributes: ["*"],
+      filter: filter,
+      paged: true,
+    };
 
-      const entries = await searchAsync(client, config.baseDN, searchOptions);
+    const entries = await searchAsync(client, config.baseDN, searchOptions);
 
-      return entries;
+    // Almacenar el resultado en caché
+    cache[searchTerm] = entries;
+
+    return entries;
   } finally {
-      if (client) client.unbind();
+    if (client) client.unbind();
   }
 };
 
@@ -466,7 +494,6 @@ export const createConnection = (config: LDAPConfig): LDAPClient => {
     console.error("LDAP Connection Error:", err);
     client.unbind();
   });
-  
 
   return client;
 };

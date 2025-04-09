@@ -72,9 +72,40 @@ export default function LoginPage() {
     } catch (error) {
       setErrors({ general: "Error de conexión con el servidor" });
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Error en la autenticación");
+      }
+
+      // Guardar token en localStorage
+      localStorage.setItem("token", data.token);
+
+      // Redirigir al dashboard o página principal
+      window.location.href = "/dashboard";
+    } catch (error: any) {
+      let errorMessage = "Error de conexión";
+
+      if (error.name === "AbortError") {
+        errorMessage = "La solicitud tardó demasiado";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setErrors({ general: errorMessage });
     }
   };
+}
 
   return (
     <div
@@ -225,7 +256,7 @@ export default function LoginPage() {
                   href="/activate-account"
                   className="w-full inline-block text-center bg-gray-100 text-gray-700 py-4 rounded-lg hover:bg-gray-200 transition-all font-semibold text-lg border-2 border-dashed border-gray-300"
                 >
-                  Activar Cuenta Institucional
+                  Solicitar credenciales 
                 </Link>
               </div>
             </form>

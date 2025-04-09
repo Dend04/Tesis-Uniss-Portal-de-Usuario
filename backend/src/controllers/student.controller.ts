@@ -1,7 +1,6 @@
 // src/controllers/student.controller.ts
-import { NextFunction, Request, Response } from 'express';
-import { SigenuService } from '../services/sigenu.services';
-import { ApiResponse } from '../interface/student.interface';
+import { NextFunction, Request, Response } from "express";
+import { SigenuService } from "../services/sigenu.services";
 import { handleServiceResponse } from "../utils/handler.util";
 
 export class StudentController {
@@ -13,64 +12,37 @@ export class StudentController {
     try {
       const { ci } = req.params;
 
+      
+      // 1. Ejecución del servicio
       const result = await SigenuService.getMainStudentData(ci);
-      handleServiceResponse(res, result); 
       
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  static async getPhoto(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { ci } = req.params;
-      
-      const result = await SigenuService.getStudentPhoto(ci);
+      // 2. Respuesta normalizada
       handleServiceResponse(res, result);
-      
     } catch (error) {
-      next(error);
+      // 3. Manejo centralizado de errores
+      next(StudentController.wrapServiceError(error));
     }
   }
 
-  static async getAcademicStatus(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const result = await SigenuService.getStudentStatusList();
-      handleServiceResponse(res, result);
-      
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  private static handleServiceResponse<T>(res: Response, result: ApiResponse<T>): void {
-    if (result.success) {
-      res.json({
-        success: true,
-        data: result.data
-      });
-    } else {
-      const status = result.error?.includes('500') ? 502 : 400;
-      this.sendError(res, status, result.error);
-    }
-  }
-
-  private static sendError(res: Response, code: number, message: string): void {
-    res.status(code).json({
+  // --------------------------
+  // Métodos auxiliares PRIVADOS
+  // --------------------------
+  private static sendValidationError(res: Response, message: string): void {
+    res.status(400).json({
       success: false,
-      error: message
+      error: message,
+      code: "INVALID_INPUT"
     });
   }
 
   private static validateCubanCI(ci: string): boolean {
     return /^\d{11}$/.test(ci);
+  }
+
+  private static wrapServiceError(error: unknown): Error {
+    console.error("Error en controlador:", error);
+    return error instanceof Error 
+      ? error 
+      : new Error("Error desconocido en el servidor");
   }
 }

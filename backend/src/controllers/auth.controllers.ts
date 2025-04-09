@@ -1,5 +1,5 @@
 // src/controllers/auth.controller.ts
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import {
   authenticateUser,
   createLDAPClient,
@@ -9,42 +9,57 @@ import {
   searchAsync,
   LDAPClient,
   getUserData,
+  unifiedLDAPSearch,
 } from "../utils/ldap.utils"; // Agregar las importaciones faltantes
 import { generateTokens, TokenPayload, verifyToken } from "../utils/jwt.utils";
 import * as ldap from "ldapjs";
 import { Attribute } from "ldapts";
+import { CustomSearchEntry } from "../interface/ildapInterface";
+import NodeCache from "node-cache";
+
+const userDnCache = new NodeCache({
+  stdTTL: 3600, // 1 hora en segundos
+  checkperiod: 600, // Verificar caducidad cada 10 minutos
+});
+
+// 1. Definir interfaz para el usuario LDAP
+interface LDAPUser {
+  sAMAccountName: string;
+  employeeID?: string; // Atributo opcional
+  // Agrega otros atributos que necesites
+  cn?: string;
+  mail?: string;
+}
+
+// 2. Tipar la entrada LDAP
+/* const ldapUser = entries[0] as unknown as LDAPUser; // Conversión de tipo
+ */
+// 3. Acceder al employeeID
+/* const employeeID = ldapUser.employeeID; */
 
 export const loginController = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
-    // Autenticar contra LDAP
     await authenticateUser(req, res);
+    const ldapUser = await getUserData(username);
 
-    // Obtener sAMAccountName real desde LDAP
-    const ldapUser = await getUserData(username); // Busca por uid o email
+    // Asegurar que username siempre tenga valor
+    const effectiveUsername =
+      username.trim() !== "" ? username : ldapUser.sAMAccountName;
 
-    // Verificar si el campo EmployedID existe
-    let EmployedID = ldapUser.EmployedID;
-
-    if (!EmployedID) {
-      EmployedID = "";
-      await addEmployedIDToLDAP(username, EmployedID);
-    }
-
-    // Generar token con identificador LDAP real
     const tokens = generateTokens({
-      username: ldapUser.sAMAccountName, // o userPrincipalName
+      sAMAccountName: ldapUser.sAMAccountName, // Campo clave para el token
+      username: effectiveUsername,
     });
 
-    // Retornar la respuesta con los datos del usuario y el EmployedID
     res.json({
       success: true,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       user: {
         ...ldapUser,
-        EmployedID, // Incluir el EmployedID en la respuesta
+        username: effectiveUsername, // Forzar campo en respuesta
       },
     });
   } catch (error) {
@@ -54,117 +69,121 @@ export const loginController = async (req: Request, res: Response) => {
 };
 
 // Función para agregar EmployedID a LDAP
-const addEmployedIDToLDAP = async (username: string, EmployedID: string) => {
-  if (
-    !process.env.LDAP_URL ||
-    !process.env.LDAP_ADMIN_DN ||
-    !process.env.LDAP_ADMIN_PASSWORD
-  ) {
-    throw new Error("Configuración LDAP incompleta");
-  }
-
-  const client = createLDAPClient(process.env.LDAP_URL);
-
+export const checkAndUpdateEmployeeID = async (req: Request, res: Response) => {
   try {
-    // Autenticación como admin
-    await bindAsync(
-      client,
-      process.env.LDAP_ADMIN_DN,
-      process.env.LDAP_ADMIN_PASSWORD
-    );
-
-    const userDN = `uid=${username},ou=users,dc=uniss,dc=edu,dc=cu`;
-
-    const modification = new ldap.Change({
-      operation: "add",
-      modification: {
-        EmployedID: [EmployedID], // Asegúrate de que sea un array
-      },
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      client.modify(userDN, modification, (err: Error | null) => {
-        if (err) {
-          console.error("Error al agregar EmployedID:", err);
-          reject(new Error(`Error LDAP: ${err.message}`)); // Usar comillas invertidas
-        } else {
-          resolve();
-        }
-      });
-    });
-  } finally {
-    client.unbind();
-  }
-};
-export const changePasswordController = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    // 1. Obtener usuario del token (seguro)
-    const user = (req as any).user as { username: string } | undefined;
+    const user = (req as any).user as { username?: string };
 
     if (!user?.username) {
       res.status(401).json({ error: "Usuario no autenticado" });
       return;
     }
 
-    // 2. Validar nueva contraseña
-    const { newPassword } = req.body;
-    const errors = [];
+    // Usa la interfaz para tipar las entradas
+    const entries: CustomSearchEntry[] = await unifiedLDAPSearch(user.username);
 
-    if (!newPassword) {
-      errors.push("La contraseña es requerida.");
-    } else if (newPassword.length < 8) {
-      errors.push("La contraseña debe tener al menos 8 caracteres.");
-    } else if (!/[A-Z]/.test(newPassword)) {
-      errors.push("La contraseña debe contener al menos una letra mayúscula.");
-    } else if (!/[0-9]/.test(newPassword)) {
-      errors.push("La contraseña debe contener al menos un número.");
-    } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
-      errors.push("La contraseña debe contener al menos un carácter especial.");
+    if (entries.length === 0) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
     }
 
-    if (errors.length > 0) {
-      res.status(400).json({ errors });
+    const ldapUser = entries[0];
+    const employeeID = ldapUser.employeeID;
+
+    if (employeeID) {
+      res.status(400).json({ message: "El campo employeeID ya existe." });
     } else {
-      // Si todas las validaciones pasan, continuar con el cambio de contraseña
+      res.status(200).json({ message: "Por favor, complete su employeeID." });
     }
-
-    // 3. Obtener datos del usuario desde LDAP
-    const ldapUser = await getUserData(user.username); // Llama a la función correctamente
-
-    // 4. Cambiar la contraseña usando las credenciales del administrador
-    await ldapChangePassword(ldapUser.sAMAccountName, newPassword); // Cambia la contraseña
-
-    // 5. Registrar en logs
-    await addLogEntry(
-      ldapUser.sAMAccountName,
-      "PASSWORD_CHANGE",
-      `Cambio exitoso - ${new Date().toLocaleString()}`
-    );
-
-    // 6. Respuesta detallada
-    res.status(200).json({
-      success: true,
-      message: `¡Contraseña actualizada para ${ldapUser.sAMAccountName}!`,
-      timestamp: new Date().toISOString(),
-    });
   } catch (error) {
-    // 7. Manejo de errores específico
-    const errorMessage =
-      error instanceof Error
-        ? `Error: ${error.message}`
-        : "Error desconocido en el servidor";
-
-    res.status(500).json({
-      success: false,
-      error: errorMessage,
-      details: "Verifica los logs del servidor para más información",
-    });
+    console.error("Error en checkAndUpdateEmployeeID:", error);
+    res.status(500).json({ success: false, message: "Error interno" });
   }
 };
 
+// Añadir helper modifyAsync en ldap.utils.ts
+export async function modifyAsync(
+  client: LDAPClient,
+  dn: string,
+  change: ldap.Change
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    client.modify(dn, change, (err) => {
+      err ? reject(err) : resolve();
+    });
+  });
+}
+export const changePasswordController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    // 1. Obtener sAMAccountName del token
+    const user = (req as any).user as { sAMAccountName: string };
+    const sAMAccountName = user?.sAMAccountName;
+
+    if (!sAMAccountName) {
+      res
+        .status(401)
+        .json({ error: "Token inválido o usuario no identificado" });
+      return;
+    }
+
+    // 2. Obtener DN desde cache o LDAP
+    let userDN: string;
+    const cachedData = userDnCache.get(`user-${sAMAccountName}`) as {
+      dn?: string;
+    };
+
+    if (cachedData?.dn) {
+      userDN = cachedData.dn;
+    } else {
+      // Buscar en LDAP si no está en caché
+      const ldapUser = await getUserData(sAMAccountName);
+      userDN = ldapUser.dn;
+      userDnCache.set(`user-${sAMAccountName}`, ldapUser);
+    }
+
+    // 3. Validar nueva contraseña
+    const { newPassword } = req.body;
+    const errors: string[] = [];
+
+    // Ejemplo de validaciones
+
+    if (errors.length > 0) {
+      res.status(400).json({ errors });
+      return;
+    }
+
+    // 4. Cambiar contraseña
+    try {
+      await ldapChangePassword(userDN, newPassword);
+
+      // Actualizar caché
+      userDnCache.del(`user-${sAMAccountName}`);
+
+      await addLogEntry(sAMAccountName, "PASSWORD_CHANGE", "Cambio exitoso");
+      res.status(200).json({
+        success: true,
+        message: `¡Contraseña actualizada para ${sAMAccountName}!`,
+      });
+    } catch (error) {
+      userDnCache.del(`user-${sAMAccountName}`);
+      const message =
+        error instanceof Error ? error.message : "Error desconocido";
+      res.status(500).json({
+        error: "Error al actualizar contraseña",
+        details: message,
+      });
+    }
+  } catch (error) {
+    console.error("Error en changePasswordController:", error);
+    const message = error instanceof Error ? error.message : "Error interno";
+    res.status(500).json({
+      success: false,
+      error: message,
+    });
+  }
+};
 export const getUserProfileController = async (
   req: Request,
   res: Response

@@ -16,6 +16,7 @@ import deviceRoutes from './routes/dispositivos.routes';
 import ldap from './routes/ldap.routes';
 import users from './routes/user.routes';
 import { SigenuService } from './services/sigenu.services'
+import { fetchStructureData } from './utils/ldap.data';
 
 dotenv.config();
 
@@ -122,16 +123,18 @@ app.get('/health', (_: Request, res: Response) => {
 });
 
 app.listen(PORT, async () => {
-  /* const ldapStatus = await checkLDAPConnection(); */
-  /* app.locals.ldapAvailable = ldapStatus; */
-
-  await SigenuService.getNationalCareers();
+  try {
+    // Precargar datos en caché al iniciar
+    logger.info('⏳ Precargando datos de estructura LDAP...');
+    await fetchStructureData();
+    logger.info('✅ Datos precargados en caché correctamente');
+  } catch (error) {
+    logger.warn('⚠️ Error al precargar datos, se cargarán bajo demanda');
+    if (error instanceof Error) {
+      logger.warn(`Detalles: ${error.message}`);
+    }
+  }
 
   logger.info(`🚀 Servidor en http://localhost:${PORT}`);
   logger.info(`📄 Docs: http://localhost:${PORT}/api-docs`);
-  
-  /* if (!ldapStatus) {
-    logger.warn('🔓 Modo de operación alternativo activado (sin LDAP)');
-    logger.warn('⚠️ La autenticación se realizará localmente');
-  } */
 });

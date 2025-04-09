@@ -42,11 +42,9 @@ export interface AcademicStatus {
 // Interface combinada
 export interface StudentCompleteData {
   mainData: StudentMainData;
-  photoData: StudentPhoto;
-  statusData: AcademicStatus[];
 }
 
 // Interface para respuesta genérica
-export type ApiResponse<T> = 
+export type ApiResponse<T> =
   | { success: true; data: T }
   | { success: false; error: string };
