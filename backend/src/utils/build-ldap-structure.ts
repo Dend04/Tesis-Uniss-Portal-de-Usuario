@@ -25,7 +25,7 @@ async function main() {
       isFirstRun = false;
     } else {
       console.log('⚡ Ejecución posterior - Actualizando estructura');
-      await builder.updateStructure(structureData);
+      /* await builder.updateStructure(structureData); */
     }
 
     console.log('✅ Estructura LDAP actualizada exitosamente');

@@ -24,18 +24,16 @@ export interface LDAPUser {
   userPrincipalName: string;
 }
 
-export const escapeLDAPValue = (value: string): string => {
-  const escapeMap: { [key: string]: string } = {
-    "*": "\\2a",
-    "(": "\\28",
-    ")": "\\29",
-    "\\": "\\5c",
-    "\0": "\\00",
-    "/": "\\2f",
-  };
-
-  return value.replace(/[*()\\\0\/]/g, (match) => escapeMap[match] || match);
-};
+export function escapeLDAPValue(value: string): string {
+  return value
+    .replace(/\\/g, '\\5c')
+    .replace(/\*/g, '\\2a')
+    .replace(/\(/g, '\\28')
+    .replace(/\)/g, '\\29')
+    .replace(/\u0000/g, '\\00')
+    .replace(/\//g, '\\2f')
+    .replace(/(^ | $)/g, (m) => `\\${m.charCodeAt(0).toString(16)}`);
+}
 
 const cache: { [key: string]: ldap.SearchEntry[] } = {}; // Objeto de caché
 const userDnCache = new NodeCache({ stdTTL: 3600 }); // 1 hora de cache
