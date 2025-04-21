@@ -2,8 +2,7 @@ import { Client } from "ldapjs";
 import { createLDAPClient, bindAsync } from "./ldap.utils";
 import { Career, CourseType, Faculty } from "./ldap.data";
 import { escapeLDAPValue } from "./ldap.utils";
-import logger from "./logger"; // Asegúrate de importar el logger
-import { Attribute, SearchEntry } from "ldapjs";
+import { SearchEntry } from "ldapjs";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -238,8 +237,6 @@ export class LDAPStructureBuilder {
     return cleaned;
   }
 
-  
-
   private async cleanExistingStructure(sigenuDN: string): Promise<void> {
     try {
       console.log("🗑️ Eliminando contenido de:", sigenuDN);
@@ -248,51 +245,6 @@ export class LDAPStructureBuilder {
     } catch (error) {
       console.log("ℹ️ No se encontró estructura previa para limpiar");
     }
-  }
-
-  private async deleteOURecursive(dn: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.client.search(
-        dn,
-        {
-          scope: "one", // Solo hijos directos
-          filter: "(objectClass=organizationalUnit)",
-        },
-        (err, res) => {
-          if (err) return reject(err);
-
-          const deleteQueue: string[] = [];
-
-          res.on("searchEntry", (entry: SearchEntry) => {
-            if (entry.objectName) {
-              deleteQueue.push(entry.objectName);
-            }
-          });
-
-          res.on("error", reject);
-
-          res.on("end", async () => {
-            try {
-              // Eliminar en orden inverso
-              for (const childDN of deleteQueue.reverse()) {
-                await new Promise<void>((resolveDel, rejectDel) => {
-                  this.client.del(childDN, (err) => {
-                    if (err) rejectDel(err);
-                    else {
-                      console.log(`🗑️ Eliminado: ${childDN}`);
-                      resolveDel();
-                    }
-                  });
-                });
-              }
-              resolve();
-            } catch (error) {
-              reject(error);
-            }
-          });
-        }
-      );
-    });
   }
 
   private async deleteAllContent(dn: string): Promise<void> {
@@ -349,13 +301,4 @@ export class LDAPStructureBuilder {
   }
 }
 
-/*  private sanitizeOUName(name: string): string {
-    return name
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // Elimina tildes
-      .replace(/[^a-zA-Z0-9_ -]/g, "") // Permite espacios, guiones y guiones bajos
-      .replace(/\s+/g, " ") // Reduce múltiples espacios a uno solo
-      .trim() // Elimina espacios al inicio/final
-      .substring(0, 64);
-  }
- */
+

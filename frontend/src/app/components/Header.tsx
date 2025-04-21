@@ -9,7 +9,8 @@ import {
   ChatBubbleOvalLeftIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface HeaderProps {
   onToggleDarkMode: () => void;
@@ -18,10 +19,17 @@ interface HeaderProps {
 
 export const Header = ({ onToggleDarkMode, isDarkMode }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
   const user = {
     name: "Juan Pérez",
     avatar: null,
   };
+
+   // Pre-carga de rutas
+    useEffect(() => {
+      router.prefetch("/config");
+      router.prefetch("/activity-logs");
+    }, [router]);
 
   return (
     <header

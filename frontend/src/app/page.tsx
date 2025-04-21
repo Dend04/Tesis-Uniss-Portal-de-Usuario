@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, domAnimation, LazyMotion } from "framer-motion";
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -12,6 +12,9 @@ import {
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,12 +29,34 @@ export default function LoginPage() {
   const containerRef = useRef(null);
   const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@(estudiante\.)?uniss\.edu\.cu$/;
   const USERNAME_REGEX = /^[a-zA-Z0-9]{4,20}$/;
+  const router = useRouter()
 
   // Animaciones simplificadas para mejor rendimiento
   const logoAnimation = {
     initial: { opacity: 0 },
     animate: { opacity: 1 },
     transition: { duration: 0.5 },
+  };
+  useEffect(() => {
+    router.prefetch("/dashboard");
+    router.prefetch("/forgot-password");
+    router.prefetch("/activate-account");
+    const prefetchTimer = setTimeout(() => {
+      router.prefetch("/dashboard");
+    }, 3000);
+    return () => clearTimeout(prefetchTimer);
+  }, []); 
+
+  const startPrefetch = () => {
+    if (typeof window !== 'undefined') { // Asegura que está en cliente
+      router.prefetch("/dashboard");
+    }
+  };
+
+  const LazyHeroIcons = {
+    EyeIcon: dynamic(() => import("@heroicons/react/24/outline").then(mod => mod.EyeIcon)),
+    EyeSlashIcon: dynamic(() => import("@heroicons/react/24/outline").then(mod => mod.EyeSlashIcon)),
+    // ... otros íconos
   };
 
   const formAnimation = {
@@ -92,7 +117,14 @@ export default function LoginPage() {
       localStorage.setItem("token", data.token);
 
       // Redirigir al dashboard o página principal
-      window.location.href = "/dashboard";
+      /* router.push("/dashboard"); */
+      <Link 
+      href="/dashboard" 
+      prefetch={false}
+      onMouseEnter={() => router.prefetch('/dashboard')}
+      aria-hidden="true"
+      className="hidden"
+    />
     } catch (error: any) {
       let errorMessage = "Error de conexión";
 
@@ -103,6 +135,8 @@ export default function LoginPage() {
       }
 
       setErrors({ general: errorMessage });
+    } finally {
+      setIsSubmitting(false); // Corregir para resetear estado
     }
   };
 }
@@ -110,7 +144,8 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen bg-gray-50 flex items-center justify-center p-4"
-      ref={containerRef}
+     /*  ref={containerRef} */
+     onMouseEnter={startPrefetch}
     >
       <div className="w-full max-w-6xl bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row">
         {/* Columna Izquierda - Información */}
@@ -124,6 +159,11 @@ export default function LoginPage() {
               alt="UNISS Logo"
               width={160}
               height={160}
+              priority 
+              quality={85}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              placeholder="blur"
+              blurDataURL="data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAACyAgCdASoKAAoAAUAmJbACdEf/gG2WwAAD+5Nq2v4AP72oAAAA"
               className="object-contain mx-auto"
             />
           </div>
@@ -155,6 +195,7 @@ export default function LoginPage() {
           {...formAnimation}
           className="p-8 md:p-12 md:w-1/2 flex flex-col justify-center"
         >
+          <LazyMotion features={domAnimation}>
           <AnimatePresence>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -237,12 +278,12 @@ export default function LoginPage() {
                 <div className="text-center">
                   <Link
                     href="/forgot-password"
+                    prefetch={false}
                     className="text-blue-600 hover:text-blue-800 text-lg font-medium underline"
                   >
                     ¿No recuerda su contraseña?
                   </Link>
                 </div>
-
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300"></div>
@@ -254,13 +295,15 @@ export default function LoginPage() {
 
                 <Link
                   href="/activate-account"
+                  prefetch={false}
                   className="w-full inline-block text-center bg-gray-100 text-gray-700 py-4 rounded-lg hover:bg-gray-200 transition-all font-semibold text-lg border-2 border-dashed border-gray-300"
                 >
                   Solicitar credenciales 
                 </Link>
               </div>
             </form>
-          </AnimatePresence>
+            </AnimatePresence>
+            </LazyMotion>
         </motion.div>
       </div>
     </div>

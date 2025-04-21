@@ -1,6 +1,6 @@
 // src/controllers/dispositivoController.ts
 import { Request, Response } from 'express';
-import { getManufacturerMultiSource } from '../utils/macUtils';
+import { getManufacturerMultiSource } from '../utils/mac.utils';
 
 export const getDeviceManufacturer = async (
   req: Request<{ mac: string }>,

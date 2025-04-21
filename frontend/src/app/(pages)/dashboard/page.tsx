@@ -1,39 +1,54 @@
 "use client";
 
 import {
-  IdentificationIcon,
-  UserCircleIcon,
-  AcademicCapIcon,
-  DevicePhoneMobileIcon,
-  ComputerDesktopIcon,
-  DeviceTabletIcon,
-  ClockIcon,
-  PencilSquareIcon,
-  TrashIcon,
   EyeIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import dynamic from "next/dynamic";
-import Header from "@/app/components/Header";
-import Loader from "@/app/components/Loader";
+import { useRouter } from "next/navigation";
 
-const Modal = dynamic(() => import("@/app/components/Modal"), { ssr: false });
+
+// Pre-carga de módulos críticos
+const Header = dynamic(() => import("@/app/components/Header"));
+const Loader = dynamic(() => import("@/app/components/Loader"));
+const Modal = dynamic(() => import("@/app/components/Modal"), { 
+  ssr: false,
+  loading: () => <div className="fixed inset-0 bg-black/10 backdrop-blur-sm" />
+});
+
+// Carga diferida de íconos con placeholders
+const createIconLoader = (iconName: string) => dynamic(() => import("@heroicons/react/24/outline").then(mod => mod[iconName]), {
+  loading: () => <div className="w-7 h-7 bg-current opacity-20 rounded-full animate-pulse" />
+});
+
+// Iconos dinámicos
+const IdentificationIcon = createIconLoader("IdentificationIcon");
+const UserCircleIcon = createIconLoader("UserCircleIcon");
+const AcademicCapIcon = createIconLoader("AcademicCapIcon");
+const DevicePhoneMobileIcon = createIconLoader("DevicePhoneMobileIcon");
+const ComputerDesktopIcon = createIconLoader("ComputerDesktopIcon");
+const DeviceTabletIcon = createIconLoader("DeviceTabletIcon");
+const ClockIcon = createIconLoader("ClockIcon");
+const PencilSquareIcon = createIconLoader("PencilSquareIcon");
+const TrashIcon = createIconLoader("TrashIcon");
+
+
+// Optimización de validación con memoización
+const deviceSchema = z.object({
+  type: z.enum(["phone", "laptop", "tablet", "pc"]),
+  model: z.string().min(2, "Mínimo 2 caracteres"),
+  mac: z.string().regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, "MAC inválida")
+});
+
 const ProgressBar = dynamic(() => import("@/app/components/ProgressBar"), {
   ssr: false,
   loading: () => <div className="h-3 bg-gray-200 rounded-full" />,
 });
 
-const deviceSchema = z.object({
-  type: z.enum(["phone", "laptop", "tablet", "pc"]),
-  model: z.string().min(2, "Mínimo 2 caracteres"),
-  mac: z
-    .string()
-    .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, "MAC inválida"),
-});
 
 type DeviceFormData = z.infer<typeof deviceSchema>;
 
@@ -73,31 +88,33 @@ const InfoItem = ({ icon, label, value, darkMode }: InfoItemProps) => (
 );
 
 export default function Dashboard() {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [showDeviceModal, setShowDeviceModal] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
-  const [daysRemaining, setDaysRemaining] = useState<number>(0);
-  const [progressPercentage, setProgressPercentage] = useState<number>(0);
+  const [daysRemaining, setDaysRemaining] = useState(0);
+  const [progressPercentage, setProgressPercentage] = useState(0);
   const [creationDate, setCreationDate] = useState("");
   const [expirationDate, setExpirationDate] = useState("");
   const [isClient, setIsClient] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    setValue,
-    watch,
-  } = useForm<DeviceFormData>({
-    resolver: zodResolver(deviceSchema),
+  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<DeviceFormData>({
+    resolver: zodResolver(deviceSchema)
   });
 
   const macValue = watch("mac");
 
+  // Pre-carga de rutas
+  useEffect(() => {
+    router.prefetch("/config");
+    router.prefetch("/activity-logs");
+  }, [router]);
+
+
   useEffect(() => {
     setIsClient(true);
+    
 
     const accountCreationDate = new Date();
     const expirationMonths = 6;
@@ -145,19 +162,14 @@ export default function Dashboard() {
     setShowDeviceModal(false);
     reset();
   };
+  
 
-  const formatMAC = (value: string) => {
-    let mac = value.replace(/[^a-fA-F0-9]/g, "").toUpperCase();
-    if (mac.length > 12) mac = mac.substring(0, 12);
-
-    let formatted = "";
-    for (let i = 0; i < mac.length; i++) {
-      if (i > 0 && i % 2 === 0) formatted += ":";
-      formatted += mac[i];
-    }
-
-    setValue("mac", formatted);
-  };
+  const formatMAC = useCallback((value: string) => {
+    return value.replace(/[^a-fA-F0-9]/g, "")
+      .toUpperCase()
+      .substring(0, 12)
+      .replace(/(.{2})(?!$)/g, '$1:');
+  }, []);
 
   const studentInfo = {
     name: "Ana María Pérez",

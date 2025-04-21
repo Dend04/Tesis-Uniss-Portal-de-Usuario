@@ -1,5 +1,5 @@
 // src/utils/ldap.structure.ts
-import { LDAPStructureBuilder } from '../utils/ldap.structure';
+import { LDAPStructureBuilder } from './ldap.structure';
 import cron from 'node-cron';
 import { fetchStructureData } from './ldap.data';
 
