@@ -17,6 +17,8 @@ import ldap from './routes/ldap.routes';
 import users from './routes/user.routes';
 import { SigenuService } from './services/sigenu.services'
 import { fetchStructureData } from './utils/ldap.data';
+import studentAccountRoutes from './routes/student-account.routes';
+import workerAccountRoutes from './routes/worker-account.routes';
 
 dotenv.config();
 
@@ -116,6 +118,8 @@ app.use('/api', studentRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api', ldap)
 app.use('/api', users)
+app.use('/api/students', studentAccountRoutes);
+app.use('/api/worker', workerAccountRoutes)
 
 // Health Check
 app.get('/health', (_: Request, res: Response) => {

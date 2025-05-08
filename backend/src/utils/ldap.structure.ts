@@ -6,6 +6,8 @@ import { SearchEntry } from "ldapjs";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+
 export class LDAPStructureBuilder {
   private client: Client;
   private nameCache: Map<string, string> = new Map();
@@ -110,7 +112,7 @@ export class LDAPStructureBuilder {
     });
   }
 
-  private async createOU(
+  async createOU(
     parentDN: string,
     rawName: string,
     attributes: any
@@ -215,7 +217,7 @@ export class LDAPStructureBuilder {
     });
   }
 
-  private sanitizeOUName(name: string): string {
+  sanitizeOUName(name: string): string {
     if (this.nameCache.has(name)) {
       return this.nameCache.get(name)!;
     }

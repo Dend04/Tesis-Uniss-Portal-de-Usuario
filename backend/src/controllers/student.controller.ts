@@ -27,7 +27,7 @@ export class StudentController {
   // --------------------------
   // Métodos auxiliares PRIVADOS
   // --------------------------
-  private static sendValidationError(res: Response, message: string): void {
+/*   private static sendValidationError(res: Response, message: string): void {
     res.status(400).json({
       success: false,
       error: message,
@@ -38,7 +38,7 @@ export class StudentController {
   private static validateCubanCI(ci: string): boolean {
     return /^\d{11}$/.test(ci);
   }
-
+ */
   private static wrapServiceError(error: unknown): Error {
     console.error("Error en controlador:", error);
     return error instanceof Error 

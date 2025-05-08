@@ -1,5 +1,5 @@
 import https from "https";
-import axios, { AxiosError, AxiosRequestConfig } from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 import dotenv from "dotenv";
 import {
   ApiResponse,
@@ -312,9 +312,9 @@ export class SigenuService {
   }
 
   // Validación de CI
-  private static validateCI(ci: string): boolean {
+/*   private static validateCI(ci: string): boolean {
     return /^\d{11}$/.test(ci);
-  }
+  } */
 
   // Manejo genérico de errores
   private static handleError<T = never>(

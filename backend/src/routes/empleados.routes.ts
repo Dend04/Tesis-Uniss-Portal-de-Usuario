@@ -5,7 +5,7 @@ import {
   buscarPorCCosto,
   obtenerBajas,
   buscarPorCiudad,
-} from '../controllers/empleados.controller';
+} from '../controllers/worker.controller';
 
 const router = Router();
 

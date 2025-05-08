@@ -32,9 +32,9 @@
   "devDependencies": {
     "@types/axios": "^0.14.4",
     "@types/bcrypt": "^5.0.2",
-    "@types/cors": "^2.8.17",
+    "@types/cors": "^2.8.18",
     "@types/events": "^3.0.3",
-    "@types/express": "^5.0.0",
+    "@types/express": "^5.0.1",
     "@types/helmet": "^4.0.0",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.3",

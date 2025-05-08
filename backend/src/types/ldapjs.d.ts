@@ -106,3 +106,4 @@
   }
 
   export function createClient(options: ClientOptions): Client;
+

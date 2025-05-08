@@ -49,37 +49,20 @@ export const createLDAPClient = (url: string): LDAPClient => {
   const clientOptions: ClientOptions = {
     url,
     tlsOptions: {
-      rejectUnauthorized: false, // Solo para desarrollo
+      rejectUnauthorized: false,
     },
-    connectTimeout: 10000, // 10 segundos
-    timeout: 30000, // 30 segundos
+    connectTimeout: 10000,
+    timeout: 30000,
   };
 
   const client = ldap.createClient(clientOptions);
 
-  // Manejador de reconexión manual
-  let reconnectAttempts = 0;
-  const maxReconnectAttempts = 3;
-
-  client.on("close", () => {
-    if (reconnectAttempts < maxReconnectAttempts) {
-      reconnectAttempts++;
-      console.log(
-        `Intento de reconexión ${reconnectAttempts}/${maxReconnectAttempts}`
-      );
-
-      const newClient = createLDAPClient(url);
-      replaceClient(client, newClient);
-    }
+  // Eliminar el manejador de evento 'close' para reconexión automática
+  client.on("error", (err) => {
+    console.error("⚠️ Error de conexión LDAP:", err.message);
   });
 
   return client;
-};
-
-// Seguridad: Reemplaza cliente desconectado por nueva instancia
-const replaceClient = (oldClient: LDAPClient, newClient: LDAPClient) => {
-  oldClient.unbind();
-  // Aquí deberías actualizar cualquier referencia al cliente antiguo
 };
 
 // Autenticación: Promisifica método bind para uso con async/await
@@ -332,6 +315,8 @@ export const getUserData = async (username: string): Promise<any> => {
   }
 };
 
+
+
 // Estructura: Genera árbol jerárquico de nodos LDAP (recursivo)
 // [!] Limitar profundidad máxima en producción
 export const getLdapStructure = async (
@@ -441,6 +426,14 @@ export const unifiedLDAPSearch = async (
   }
 };
 
+export const addAsync = (client: Client, dn: string, entry: object): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    client.add(dn, entry, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+};
 //***************************************************************************************************************************************
 //***************************************************************************************************************************************
 //***************************************************************************************************************************************
