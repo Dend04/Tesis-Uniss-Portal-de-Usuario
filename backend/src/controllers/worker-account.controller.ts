@@ -1,5 +1,5 @@
 // src/modules/ldap/ldap.controller.ts
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AssetStructureBuilder } from '../utils/asset.structure';
 import { UserEntriesBuilder } from '../services/assets-account.services';
@@ -8,20 +8,21 @@ const prisma = new PrismaClient();
 const assetBuilder = new AssetStructureBuilder();
 const userBuilder = new UserEntriesBuilder(assetBuilder);
 
-export class workerAccount {
-  static async createUserByCI(req: Request<{ ci: string }>, res: Response) {
+export class WorkerAccountController {
+  static async createUserByCI(
+    req: Request<{ ci: string }>,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { ci } = req.params;
       
-      // Validar formato del CI
+      // Validación mejorada del CI
       if (!/^\d{15}$/.test(ci)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Formato de CI inválido. Debe contener 15 dígitos'
-        });
+        this.sendErrorResponse(res, 400, 'Formato de CI inválido', 'INVALID_CI');
+        return;
       }
 
-      // 1. Buscar empleado en DB
       const employee = await prisma.empleados_Gral.findFirst({
         where: { 
           No_CI: ci,
@@ -30,31 +31,51 @@ export class workerAccount {
       });
 
       if (!employee) {
-        return res.status(404).json({
-          success: false,
-          message: 'Empleado no encontrado o dado de baja'
-        });
+        this.sendErrorResponse(res, 404, 'Empleado no encontrado', 'EMPLOYEE_NOT_FOUND');
+        return;
       }
 
-      // 2. Construir estructura de assets si no existe
       await assetBuilder.buildAssetStructure();
       
-      // 3. Crear usuario en LDAP
       const departmentDN = await (userBuilder as any).getDepartmentDN(employee.Id_Direccion);
       await (userBuilder as any).createUserEntry(departmentDN, employee);
 
-      res.json({
-        success: true,
-        message: 'Usuario creado exitosamente en LDAP',
-        dn: departmentDN
+      this.sendSuccessResponse(res, {
+        dn: departmentDN,
+        employeeId: employee.Id_Expediente
       });
+      
     } catch (error: any) {
-      console.error('Error en controlador:', error);
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Error al crear usuario',
-        errorCode: error.code || 'UNKNOWN_ERROR'
-      });
+      next(this.handleControllerError(error));
     }
+  }
+
+  private static sendSuccessResponse(
+    res: Response,
+    data: object,
+    code: number = 200
+  ): void {
+    res.status(code).json({
+      success: true,
+      ...data
+    });
+  }
+
+  private static sendErrorResponse(
+    res: Response,
+    code: number,
+    message: string,
+    errorCode: string
+  ): void {
+    res.status(code).json({
+      success: false,
+      error: message,
+      code: errorCode
+    });
+  }
+
+  private static handleControllerError(error: any): Error {
+    console.error('Controller Error:', error);
+    return error instanceof Error ? error : new Error('Error desconocido');
   }
 }
