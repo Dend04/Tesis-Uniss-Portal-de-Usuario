@@ -13,6 +13,8 @@ export class StudentAccountController {
   ): Promise<void> { // 1. Especificar retorno void
     try {
       const { ci } = req.params;
+
+
       
       // 1. Obtener datos del estudiante
       const studentResponse = await SigenuService.getMainStudentData(ci);
@@ -26,14 +28,20 @@ export class StudentAccountController {
         });
         return; // 3. Agregar return explícito
       }
+      
 
       // 3. Crear cuenta LDAP
       const ldapService = new LDAPAccountService();
-      const result = await ldapService.createStudentAccount(studentResponse.data);
+      const result = await ldapService.createStudentAccount({
+        ...studentResponse.data,
+      });
 
       // 4. Enviar respuesta unificada
-      handleServiceResponse(res, result);
-      
+      handleServiceResponse(res, {
+        ...result,
+        message: result.success ? "Cuenta creada con contraseña por defecto" : result.message
+      });
+
     } catch (error) {
       next(StudentAccountController.handleError(error));
     }

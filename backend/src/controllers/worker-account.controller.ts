@@ -1,12 +1,9 @@
-// src/modules/ldap/ldap.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { AssetStructureBuilder } from '../utils/asset.structure';
 import { UserEntriesBuilder } from '../services/assets-account.services';
 
 const prisma = new PrismaClient();
-const assetBuilder = new AssetStructureBuilder();
-const userBuilder = new UserEntriesBuilder(assetBuilder);
+const userBuilder = new UserEntriesBuilder();
 
 export class WorkerAccountController {
   static async createUserByCI(
@@ -16,37 +13,35 @@ export class WorkerAccountController {
   ): Promise<void> {
     try {
       const { ci } = req.params;
-      
+
       // Validación mejorada del CI
-      if (!/^\d{15}$/.test(ci)) {
-        this.sendErrorResponse(res, 400, 'Formato de CI inválido', 'INVALID_CI');
+      if (!/^\d{11}$/.test(ci)) {
+        WorkerAccountController.sendErrorResponse(res, 400, 'Formato de CI inválido', 'INVALID_CI');
         return;
       }
 
       const employee = await prisma.empleados_Gral.findFirst({
-        where: { 
+        where: {
           No_CI: ci,
           Baja: false
         }
       });
 
       if (!employee) {
-        this.sendErrorResponse(res, 404, 'Empleado no encontrado', 'EMPLOYEE_NOT_FOUND');
+        WorkerAccountController.sendErrorResponse(res, 404, 'Empleado no encontrado', 'EMPLOYEE_NOT_FOUND');
         return;
       }
 
-      await assetBuilder.buildAssetStructure();
-      
-      const departmentDN = await (userBuilder as any).getDepartmentDN(employee.Id_Direccion);
-      await (userBuilder as any).createUserEntry(departmentDN, employee);
+      // Crear entrada de usuario basada en el CI
+      await userBuilder.createUserEntryByCI(ci);
 
-      this.sendSuccessResponse(res, {
-        dn: departmentDN,
+      WorkerAccountController.sendSuccessResponse(res, {
+        message: 'Usuario creado exitosamente',
         employeeId: employee.Id_Expediente
       });
-      
+
     } catch (error: any) {
-      next(this.handleControllerError(error));
+      next(WorkerAccountController.handleControllerError(error));
     }
   }
 

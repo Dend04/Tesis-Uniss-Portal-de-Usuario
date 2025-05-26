@@ -396,7 +396,7 @@ export const unifiedLDAPSearch = async (
     const escapedTerm = escapeLDAPValue(searchTerm);
 
     // Construir filtro sin espacios entre condiciones
-    const filter =
+/*     const filter =
       `(|` +
       `(sAMAccountName=${escapedTerm})` +
       `(cn=*${escapedTerm}*)` +
@@ -406,7 +406,8 @@ export const unifiedLDAPSearch = async (
       `(userPrincipalName=*${escapedTerm}*)` +
       `(givenName=*${escapedTerm}*)` +
       `(sn=*${escapedTerm}*)` +
-      `(displayName=*${escapedTerm}*))`;
+      `(displayName=*${escapedTerm}*))`; */
+      const filter = `(|(sAMAccountName=${escapedTerm}))`;
 
     const searchOptions: ldap.SearchOptions = {
       scope: "sub",

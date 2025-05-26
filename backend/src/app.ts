@@ -19,6 +19,7 @@ import { SigenuService } from './services/sigenu.services'
 import { fetchStructureData } from './utils/ldap.data';
 import studentAccountRoutes from './routes/student-account.routes';
 import workerAccountRoutes from './routes/worker-account.routes';
+import accountRemoval from './routes/account-removal.routes';
 
 dotenv.config();
 
@@ -120,6 +121,7 @@ app.use('/api', ldap)
 app.use('/api', users)
 app.use('/api/students', studentAccountRoutes);
 app.use('/api/worker', workerAccountRoutes)
+app.use ('/api/removal', accountRemoval)
 
 // Health Check
 app.get('/health', (_: Request, res: Response) => {
