@@ -47,3 +47,9 @@
 2025-06-12 11:12:55 [error]: Error en SIGENU API: undefined - undefined
 2025-06-12 11:12:55 [error]: Error al consultar SIGENU para CI: 01110172948. Error: getaddrinfo ENOTFOUND sigenu.uniss.edu.cu
 2025-06-12 11:12:55 [error]: Error al verificar identidad: Error al consultar SIGENU: getaddrinfo ENOTFOUND sigenu.uniss.edu.cu
+2025-06-12 11:20:17 [error]: Error en SIGENU API: undefined - undefined
+2025-06-12 11:20:17 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
+2025-06-12 11:20:17 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
+2025-06-12 11:20:44 [error]: Error en SIGENU API: undefined - undefined
+2025-06-12 11:20:44 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
+2025-06-12 11:20:44 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
