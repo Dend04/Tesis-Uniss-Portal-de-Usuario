@@ -17,3 +17,33 @@
 2025-03-02 14:38:26 [error]: ❌ Fallo en conexión LDAP: name (string) required
 2025-03-03 09:30:48 [error]: ❌ Fallo en conexión LDAP: name (string) required
 2025-03-03 10:03:49 [error]: ❌ Fallo en conexión LDAP: name (string) required
+2025-05-29 09:36:31 [error]: Error al consultar SIGENU para CI: 01110172948. Error: certificate has expired
+2025-05-29 09:36:31 [error]: Error al verificar identidad: Error al consultar SIGENU: certificate has expired
+2025-05-29 09:40:43 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Request failed with status code 401
+2025-05-29 09:40:43 [error]: Error al verificar identidad: Error al consultar SIGENU: Request failed with status code 401
+2025-05-29 10:34:51 [error]: Error al consultar SIGENU para CI: 01110172948. Error: certificate has expired
+2025-05-29 10:34:51 [error]: Error al verificar identidad: Error al consultar SIGENU: certificate has expired
+2025-06-12 10:16:42 [error]: Error en SIGENU API: undefined - undefined
+2025-06-12 10:16:42 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
+2025-06-12 10:16:42 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
+2025-06-12 10:16:58 [error]: Error en SIGENU API: undefined - undefined
+2025-06-12 10:16:58 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
+2025-06-12 10:16:58 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
+2025-06-12 10:36:48 [error]: Error en SIGENU API: undefined - undefined
+2025-06-12 10:36:48 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
+2025-06-12 10:36:48 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
+2025-06-12 11:05:24 [error]: Error en SIGENU API: undefined - undefined
+2025-06-12 11:05:24 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
+2025-06-12 11:05:24 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
+2025-06-12 11:11:45 [error]: Error en SIGENU API: undefined - undefined
+2025-06-12 11:11:45 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
+2025-06-12 11:11:45 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
+2025-06-12 11:12:29 [error]: Error en SIGENU API: undefined - undefined
+2025-06-12 11:12:29 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
+2025-06-12 11:12:29 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
+2025-06-12 11:12:47 [error]: Error en SIGENU API: undefined - undefined
+2025-06-12 11:12:47 [error]: Error al consultar SIGENU para CI: 01110172948. Error: getaddrinfo ENOTFOUND sigenu.uniss.edu.cu
+2025-06-12 11:12:47 [error]: Error al verificar identidad: Error al consultar SIGENU: getaddrinfo ENOTFOUND sigenu.uniss.edu.cu
+2025-06-12 11:12:55 [error]: Error en SIGENU API: undefined - undefined
+2025-06-12 11:12:55 [error]: Error al consultar SIGENU para CI: 01110172948. Error: getaddrinfo ENOTFOUND sigenu.uniss.edu.cu
+2025-06-12 11:12:55 [error]: Error al verificar identidad: Error al consultar SIGENU: getaddrinfo ENOTFOUND sigenu.uniss.edu.cu

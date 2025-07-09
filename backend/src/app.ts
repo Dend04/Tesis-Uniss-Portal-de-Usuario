@@ -20,6 +20,7 @@ import { fetchStructureData } from './utils/ldap.data';
 import studentAccountRoutes from './routes/student-account.routes';
 import workerAccountRoutes from './routes/worker-account.routes';
 import accountRemoval from './routes/account-removal.routes';
+import identity from './routes/identity.routes';
 
 dotenv.config();
 
@@ -122,6 +123,8 @@ app.use('/api', users)
 app.use('/api/students', studentAccountRoutes);
 app.use('/api/worker', workerAccountRoutes)
 app.use ('/api/removal', accountRemoval)
+app.use ('/api/identity', identity)
+
 
 // Health Check
 app.get('/health', (_: Request, res: Response) => {

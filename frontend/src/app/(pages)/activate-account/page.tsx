@@ -1,4 +1,4 @@
-// app/activate-account/page.tsx
+// src/app/(pages)/activate-account/page.tsx
 "use client";
 
 import { useState, useRef } from "react";
@@ -10,14 +10,40 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+// Define interfaces for the expected data structure
+
+interface StudentData {
+  fullName: string;
+  career: string;
+  ci: string;
+  faculty: string;
+  academicYear: number;
+  status: 'active' | 'inactive';
+  type: 'student';
+}
+
+interface EmployeeData {
+  fullName: string;
+  department: string;
+  ci: string;
+  status: 'active' | 'inactive';
+  type: 'employee';
+}
+
+type IdentityVerificationResponse = StudentData | EmployeeData;
+
+
 const activationSchema = z.object({
-  carnet: z.string()
+  carnet: z
+    .string()
     .length(11, "El carnet debe tener 11 dígitos")
     .regex(/^\d+$/, "Solo se permiten números"),
-  tomo: z.string()
+  tomo: z
+    .string()
     .length(3, "El tomo debe tener 3 dígitos")
     .regex(/^\d+$/, "Solo se permiten números"),
-  folio: z.string()
+  folio: z
+    .string()
     .length(2, "El folio debe tener 2 dígitos")
     .regex(/^\d+$/, "Solo se permiten números"),
 });
@@ -27,22 +53,28 @@ type ActivationFormData = z.infer<typeof activationSchema>;
 export default function ActivationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [result, setResult] = useState<IdentityVerificationResponse | null>(
+    null
+  );
   const containerRef = useRef(null);
-  
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     setError,
     setValue,
-    watch
+    watch,
   } = useForm<ActivationFormData>({
     resolver: zodResolver(activationSchema),
   });
 
-  const handleNumericInput = (field: keyof ActivationFormData, maxLength: number) => 
+  const handleNumericInput =
+    (field: keyof ActivationFormData, maxLength: number) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const numericValue = e.target.value.replace(/\D/g, '').slice(0, maxLength);
+      const numericValue = e.target.value
+        .replace(/\D/g, "")
+        .slice(0, maxLength);
       setValue(field, numericValue, { shouldValidate: true });
     };
 
@@ -59,9 +91,27 @@ export default function ActivationPage() {
   };
 
   const onSubmit = async (data: ActivationFormData) => {
+    // En la función onSubmit (~línea 85)
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await fetch(
+        "http://localhost:5000/api/identity/verify",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ci: data.carnet }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Error al verificar la identidad");
+      }
+
+      const result = await response.json();
+      
+      setResult(result);
       setSuccess(true);
     } catch (error) {
       setError("root", {
@@ -71,13 +121,24 @@ export default function ActivationPage() {
     } finally {
       setIsSubmitting(false);
     }
+    /* const result = await response.json();
+// Inspeccionar estructura real
+setResult(result); */
+
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" ref={containerRef}>
+    <div
+      className="min-h-screen bg-gray-50 flex items-center justify-center p-4"
+      ref={containerRef}
+    >
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
         <AnimatePresence>
-          <motion.div key="logo" {...logoAnimation} className="flex justify-center mb-6">
+          <motion.div
+            key="logo"
+            {...logoAnimation}
+            className="flex justify-center mb-6"
+          >
             <Image
               src="/uniss-logo.png"
               alt="UNISS Logo"
@@ -87,13 +148,15 @@ export default function ActivationPage() {
             />
           </motion.div>
 
+          {/* Página 1: Formulario de Activación */}
           {!success ? (
             <motion.div key="content" {...contentAnimation}>
               <h1 className="text-2xl font-bold text-center text-uniss-black mb-4">
                 Activación de Cuenta Institucional
               </h1>
               <p className="text-center text-gray-600 mb-8">
-                Ingrese los datos de su carnet de identidad para verificar su identidad
+                Ingrese los datos de su carnet de identidad para verificar su
+                identidad
               </p>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -112,7 +175,9 @@ export default function ActivationPage() {
                     inputMode="numeric"
                   />
                   {errors.carnet && (
-                    <p className="text-red-500 text-sm mt-1">{errors.carnet.message}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.carnet.message}
+                    </p>
                   )}
                 </div>
 
@@ -132,7 +197,9 @@ export default function ActivationPage() {
                       inputMode="numeric"
                     />
                     {errors.tomo && (
-                      <p className="text-red-500 text-sm mt-1">{errors.tomo.message}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.tomo.message}
+                      </p>
                     )}
                   </div>
 
@@ -151,7 +218,9 @@ export default function ActivationPage() {
                       inputMode="numeric"
                     />
                     {errors.folio && (
-                      <p className="text-red-500 text-sm mt-1">{errors.folio.message}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.folio.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -179,13 +248,17 @@ export default function ActivationPage() {
 
                 <div className="text-center text-sm text-gray-600 mt-4">
                   ¿Ya tienes cuenta?{" "}
-                  <Link href="/login" className="text-uniss-blue hover:underline">
+                  <Link
+                    href="/login"
+                    className="text-uniss-blue hover:underline"
+                  >
                     Iniciar sesión
                   </Link>
                 </div>
               </form>
             </motion.div>
           ) : (
+            /* Página 2: Resultado de la Activación */
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -198,12 +271,53 @@ export default function ActivationPage() {
               <p className="text-gray-600 mb-6">
                 Su cuenta institucional ha sido activada exitosamente.
               </p>
-              <Link
-                href="/login"
-                className="bg-uniss-blue text-white py-2 px-6 rounded-lg hover:bg-opacity-90 transition-all"
-              >
-                Continuar al Login
-              </Link>
+              {result && (
+                <div className="space-y-2 mb-6">
+                  <p>
+                    <span className="font-semibold">Nombre:</span>{" "}
+                    {result.fullName}
+                  </p>
+                  <p>
+                    <span className="font-semibold">CI:</span> {result.ci}
+                  </p>
+
+                  {result.type === "student" ? (
+                    <>
+                      <p>
+                        <span className="font-semibold">Carrera:</span>{" "}
+                        {result.career}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Facultad:</span>{" "}
+                        {result.faculty}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Año Académico:</span>{" "}
+                        {result.academicYear}
+                      </p>
+                    </>
+                  ) : (
+                    <p>
+                      <span className="font-semibold">Departamento:</span>{" "}
+                      {result.department}
+                    </p>
+                  )}
+                </div>
+              )}
+              <div className="flex justify-center gap-4 mt-6">
+                <button
+                  onClick={() => setSuccess(false)}
+                  className="bg-gray-500 text-white py-2 px-6 rounded-lg hover:bg-opacity-90 transition-all"
+                >
+                  Volver al Paso Anterior
+                </button>
+                <Link
+                  href="/login"
+                  className="bg-uniss-blue text-white py-2 px-6 rounded-lg hover:bg-opacity-90 transition-all"
+                >
+                  Confirmar
+                </Link>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -211,3 +325,65 @@ export default function ActivationPage() {
     </div>
   );
 }
+
+
+
+/* const onSubmit = async (data: ActivationFormData) => {
+  setIsSubmitting(true);
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/identity/verify",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ci: data.carnet }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Error al verificar la identidad");
+    }
+
+    const resultData = await response.json();
+    console.log("Backend response:", resultData);
+
+    // Verifica si la respuesta fue exitosa
+    if (!resultData.success) {
+      throw new Error("La verificación de identidad falló");
+    }
+
+    // Extrae los datos reales de la propiedad 'data'
+    const userData = resultData.data;
+    
+    // Determina el tipo de usuario basado en las propiedades existentes
+    let userWithType: IdentityVerificationResponse;
+    
+    if (userData.career || userData.faculty) {
+      userWithType = {
+        ...userData,
+        type: "student"
+      };
+    } else if (userData.department) {
+      userWithType = {
+        ...userData,
+        type: "employee"
+      };
+    } else {
+      throw new Error("Tipo de usuario desconocido");
+    }
+
+    setResult(userWithType);
+    setSuccess(true);
+  } catch (error: any) {
+    setError("root", {
+      type: "manual",
+      message: error.message || "Error al validar los datos. Por favor intente nuevamente.",
+    });
+    console.error("Error en activación:", error);
+  } finally {
+    setIsSubmitting(false);
+  }
+}; */
+
