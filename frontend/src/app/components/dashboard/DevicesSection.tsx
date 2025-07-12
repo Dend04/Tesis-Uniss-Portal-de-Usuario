@@ -1,14 +1,91 @@
 'use client';
 
+import { memo } from 'react';
 import { Device } from "@/types";
 import IconLoader from "../IconLoader";
-
 
 interface DevicesSectionProps {
   isDarkMode: boolean;
   devices: Device[];
   onAddDeviceClick: () => void;
 }
+
+// Componente memoizado para dispositivos
+const DeviceItem = memo(({ device, isDarkMode }: { 
+  device: Device;
+  isDarkMode: boolean;
+}) => {
+  return (
+    <div
+      className={`p-4 border-2 rounded-xl flex items-center justify-between transition-colors
+        ${
+          isDarkMode
+            ? "border-gray-700 hover:bg-gray-700"
+            : "border-gray-200 hover:bg-gray-50"
+        }`}
+      role="listitem"
+      aria-label={`Dispositivo: ${device.model}, MAC: ${device.mac}`}
+    >
+      <div className="flex items-center gap-4">
+        {device.type === "phone" && (
+          <IconLoader 
+            name="DevicePhoneMobileIcon" 
+            className={`w-10 h-10 ${isDarkMode ? "text-white" : "text-uniss-black"}`} 
+          />
+        )}
+        {device.type === "laptop" && (
+          <IconLoader 
+            name="ComputerDesktopIcon" 
+            className={`w-10 h-10 ${isDarkMode ? "text-white" : "text-uniss-black"}`} 
+          />
+        )}
+        {device.type === "tablet" && (
+          <IconLoader 
+            name="DeviceTabletIcon" 
+            className={`w-10 h-10 ${isDarkMode ? "text-white" : "text-uniss-black"}`} 
+          />
+        )}
+        {device.type === "pc" && (
+          <IconLoader 
+            name="ComputerDesktopIcon" 
+            className={`w-10 h-10 ${isDarkMode ? "text-white" : "text-uniss-black"}`} 
+          />
+        )}
+        <div>
+          <p className={`text-xl font-medium ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
+            {device.model}
+          </p>
+          <p className={`text-base ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+            {device.mac}
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-3">
+        <button
+          className="text-uniss-blue hover:text-opacity-80"
+          title="Editar dispositivo"
+          aria-label={`Editar dispositivo ${device.model}`}
+        >
+          <IconLoader name="PencilSquareIcon" className="w-7 h-7" />
+        </button>
+        <button
+          className="text-red-500 hover:text-opacity-80"
+          title="Eliminar dispositivo"
+          aria-label={`Eliminar dispositivo ${device.model}`}
+        >
+          <IconLoader name="TrashIcon" className="w-7 h-7" />
+        </button>
+        <button
+          className="text-gray-600 hover:text-opacity-80 dark:text-gray-400"
+          title="Ver detalles"
+          aria-label={`Ver detalles de ${device.model}`}
+        >
+          <IconLoader name="EyeIcon" className="w-7 h-7" />
+        </button>
+      </div>
+    </div>
+  );
+});
 
 export default function DevicesSection({ 
   isDarkMode, 
@@ -75,92 +152,12 @@ export default function DevicesSection({
         </div>
       ) : (
         <div className="space-y-4" role="list" aria-label="Lista de dispositivos">
-          {devices.map((device, index) => (
-            <div
-              key={index}
-              className={`p-4 border-2 rounded-xl flex items-center justify-between transition-colors
-                ${
-                  isDarkMode
-                    ? "border-gray-700 hover:bg-gray-700"
-                    : "border-gray-200 hover:bg-gray-50"
-                }`}
-              role="listitem"
-              aria-label={`Dispositivo: ${device.model}, MAC: ${device.mac}`}
-            >
-              <div className="flex items-center gap-4">
-                {device.type === "phone" && (
-                  <IconLoader 
-                    name="DevicePhoneMobileIcon" 
-                    className={`w-10 h-10 ${
-                      isDarkMode ? "text-white" : "text-uniss-black"
-                    }`} 
-                  />
-                )}
-                {device.type === "laptop" && (
-                  <IconLoader 
-                    name="ComputerDesktopIcon" 
-                    className={`w-10 h-10 ${
-                      isDarkMode ? "text-white" : "text-uniss-black"
-                    }`} 
-                  />
-                )}
-                {device.type === "tablet" && (
-                  <IconLoader 
-                    name="DeviceTabletIcon" 
-                    className={`w-10 h-10 ${
-                      isDarkMode ? "text-white" : "text-uniss-black"
-                    }`} 
-                  />
-                )}
-                {device.type === "pc" && (
-                  <IconLoader 
-                    name="ComputerDesktopIcon" 
-                    className={`w-10 h-10 ${
-                      isDarkMode ? "text-white" : "text-uniss-black"
-                    }`} 
-                  />
-                )}
-                <div>
-                  <p
-                    className={`text-xl font-medium ${
-                      isDarkMode ? "text-gray-100" : "text-gray-800"
-                    }`}
-                  >
-                    {device.model}
-                  </p>
-                  <p
-                    className={`text-base ${
-                      isDarkMode ? "text-gray-400" : "text-gray-500"
-                    }`}
-                  >
-                    {device.mac}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  className="text-uniss-blue hover:text-opacity-80"
-                  title="Editar dispositivo"
-                  aria-label={`Editar dispositivo ${device.model}`}
-                >
-                  <IconLoader name="PencilSquareIcon" className="w-7 h-7" />
-                </button>
-                <button
-                  className="text-red-500 hover:text-opacity-80"
-                  title="Eliminar dispositivo"
-                  aria-label={`Eliminar dispositivo ${device.model}`}
-                >
-                  <IconLoader name="TrashIcon" className="w-7 h-7" />
-                </button>
-                <button
-                  className="text-gray-600 hover:text-opacity-80 dark:text-gray-400"
-                  title="Ver detalles"
-                  aria-label={`Ver detalles de ${device.model}`}
-                >
-                  <IconLoader name="EyeIcon" className="w-7 h-7" />
-                </button>
-              </div>
-            </div>
+          {devices.map(device => (
+            <DeviceItem 
+              key={device.mac} 
+              device={device} 
+              isDarkMode={isDarkMode} 
+            />
           ))}
         </div>
       )}

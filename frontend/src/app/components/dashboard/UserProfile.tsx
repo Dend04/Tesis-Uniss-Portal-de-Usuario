@@ -1,12 +1,10 @@
-// src/components/dashboard/UserProfile.tsx
 'use client';
 
-import { memo } from 'react';
-
+import { memo, useMemo } from 'react';
 import { UserInfo } from '@/types';
 import IconLoader from '../IconLoader';
 
-// Componente memoizado para evitar rerenders innecesarios
+// Componente memoizado con memo profundo
 const InfoItem = memo(({ icon, label, value, darkMode }: { 
   icon?: string; 
   label: string; 
@@ -41,9 +39,10 @@ interface UserProfileProps {
   isDarkMode: boolean;
 }
 
-// Componente memoizado
+// Componente memoizado con memo profundo
 const UserProfile = memo(({ userInfo, isDarkMode }: UserProfileProps) => {
-  return (
+  // Memoizar todo el contenido
+  const content = useMemo(() => (
     <section
       className={`lg:w-2/5 rounded-xl shadow-lg p-6 transition-colors ${
         isDarkMode ? "bg-gray-800" : "bg-white"
@@ -67,6 +66,7 @@ const UserProfile = memo(({ userInfo, isDarkMode }: UserProfileProps) => {
           className={`text-2xl font-bold mb-2 text-center ${
             isDarkMode ? "text-white" : "text-gray-900"
           }`}
+          aria-label={`Usuario: ${userInfo.name}`}
         >
           {userInfo.name}
         </h1>
@@ -76,7 +76,7 @@ const UserProfile = memo(({ userInfo, isDarkMode }: UserProfileProps) => {
               ? "bg-gray-700 text-green-400"
               : "bg-green-100 text-green-800"
           }`}
-          aria-label="Estado de la cuenta"
+          aria-label={`Estado: ${userInfo.status}`}
         >
           {userInfo.status}
         </span>
@@ -131,7 +131,9 @@ const UserProfile = memo(({ userInfo, isDarkMode }: UserProfileProps) => {
         />
       </div>
     </section>
-  );
+  ), [userInfo, isDarkMode]);
+
+  return content;
 });
 
 export default UserProfile;
