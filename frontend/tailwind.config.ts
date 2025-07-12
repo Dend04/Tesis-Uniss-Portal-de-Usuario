@@ -16,8 +16,10 @@ export default {
         'uniss-green': '#2E7D32',
       },
       fontFamily: {
-        title: ['Poppins', 'sans-serif'],
-        body: ['Roboto', 'sans-serif']
+        sans: ['var(--font-geist-sans)'],
+        mono: ['var(--font-geist-mono)'],
+        roboto: ['var(--font-roboto)'],
+        poppins: ['var(--font-poppins)'],
       },
       keyframes: {
         typing: {

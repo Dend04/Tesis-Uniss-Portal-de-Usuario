@@ -1,46 +1,76 @@
-// components/Layout.tsx
-import { ReactNode } from 'react';
-import Header from './Header'; // Asegúrate de importar tu componente Header
+'use client';
 
-interface LayoutProps {
-  children: ReactNode;
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
-}
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import "./globals.css";
+import "./fonts.css"; // Importa el archivo de fuentes
 
-// Versión extendida con más características
-export default function Layout({ children, isDarkMode, onToggleDarkMode }: LayoutProps) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const [isMounted, setIsMounted] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+    
+    // Verificar autenticación solo en cliente
+    /* const token = localStorage.getItem('authToken'); */
+    const currentPath = window.location.pathname;
+
+    /* if (!token && currentPath !== '/') {
+      router.push('/');
+    } */
+
+    /* if (token && currentPath === '/') {
+      router.push('/perfil');
+    } */
+  }, []);
+
+  // Evitar renderizado inicial del servidor
+  if (!isMounted) {
     return (
-      <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
-        isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'
-      }`}>
-        <Header 
-          isDarkMode={isDarkMode} 
-          onToggleDarkMode={onToggleDarkMode} 
-        />
-        
-        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-7xl mx-auto">
-            {children}
+      <html lang="es" suppressHydrationWarning>
+        <body>
+          <div className="flex justify-center items-center min-h-screen">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
           </div>
-        </main>
-  
-        <footer className={`border-t transition-colors duration-300 ${
-          isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'
-        }`}>
-          <div className="container mx-auto px-4 py-6">
-            <div className="text-center md:flex md:items-center md:justify-between">
-              <p className="text-sm">
-                Universidad de Sancti Spíritus "José Martí Pérez"
-              </p>
-              <div className="mt-4 md:mt-0 md:order-2">
-                <p className="text-xs">
-                  Desarrollado por el Departamento de Informática
-                </p>
-              </div>
-            </div>
-          </div>
-        </footer>
-      </div>
+        </body>
+      </html>
     );
   }
+
+  return (
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        {/* Preload de fuentes críticas */}
+        <link
+          rel="preload"
+          href="/fonts/geist/GeistVariableVF.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/roboto/roboto-regular.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/poppins/poppins-regular.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      </head>
+      <body className="antialiased">
+        {children}
+      </body>
+    </html>
+  );
+}
