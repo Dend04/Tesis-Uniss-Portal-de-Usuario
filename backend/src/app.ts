@@ -21,6 +21,7 @@ import studentAccountRoutes from './routes/student-account.routes';
 import workerAccountRoutes from './routes/worker-account.routes';
 import accountRemoval from './routes/account-removal.routes';
 import identity from './routes/identity.routes';
+import email from './routes/email.routes'
 
 dotenv.config();
 
@@ -124,6 +125,7 @@ app.use('/api/students', studentAccountRoutes);
 app.use('/api/worker', workerAccountRoutes)
 app.use ('/api/removal', accountRemoval)
 app.use ('/api/identity', identity)
+app.use('/api/email', email)
 
 
 // Health Check

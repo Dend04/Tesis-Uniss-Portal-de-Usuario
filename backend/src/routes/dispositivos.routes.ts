@@ -1,6 +1,6 @@
 // src/routes/dispositivosRoutes.ts
 import { Router } from 'express';
-import { getDeviceManufacturer } from '../controllers/dispositivoController';
+import { getDeviceManufacturer } from '../controllers/dispositivo.controller';
 
 const router = Router();
 
