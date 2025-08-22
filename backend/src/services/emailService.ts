@@ -6,6 +6,7 @@ import { emailCounter } from "./emailCounter";
 import { getWelcomeEmailHTML } from "../templates/welcome.email";
 import { getVerificationCodeHTML } from "../templates/verificationCode";
 import { getPasswordExpiryAlertHTML } from "../templates/passwordExpiryAlert";
+import { getNewEmailHTML } from "../templates/newEmail";
 
 const validateEmail = (email: string): void => {
   if (!email || typeof email !== 'string' || !email.includes('@')) {
@@ -152,4 +153,24 @@ export const sendVerificationCode = async (
   } catch (error) {
     throw new Error(`Error al enviar código de verificación: ${(error as Error).message}`);
   }
+};
+
+export const sendEmailNew = async (email: string, userName: string, verificationCode: string) => {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+  const emailUser = process.env.EMAIL_USER;
+
+  const opcionesCorreo = {
+    from:   `"Seguridad UNISS" <${emailUser}>`,
+    to: email,
+    subject: 'Código de Verificación - UNISS',
+    html: getNewEmailHTML(verificationCode, userName),
+  };
+
+  return transporter.sendMail(opcionesCorreo);
 };

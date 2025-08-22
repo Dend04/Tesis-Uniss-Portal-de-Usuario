@@ -1,7 +1,9 @@
+// app/components/AccountStatus.tsx
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 
 const ProgressBar = dynamic(() => import("@/app/components/ProgressBar"), {
   ssr: false,
@@ -74,6 +76,12 @@ export default function AccountStatus({
   expirationDate
 }: AccountStatusProps) {
   const { daysRemaining, progressPercentage } = useDaysRemaining(expirationDate);
+  const router = useRouter();
+  
+  const handlePasswordChange = () => {
+    // Navegar a la página de configuración con parámetro para activar el formulario de contraseña
+    router.push('/config?action=change-password');
+  };
   
   // Memoizar todo el contenido para evitar re-renders innecesarios
   const content = useMemo(() => {
@@ -97,6 +105,7 @@ export default function AccountStatus({
             Estado de tu cuenta
           </h2>
           <button
+            onClick={handlePasswordChange}
             className={`px-4 py-2 rounded-lg text-base transition-opacity ${
               isDarkMode
                 ? "bg-uniss-gold text-gray-900"
@@ -146,7 +155,7 @@ export default function AccountStatus({
         </div>
       </section>
     );
-  }, [isDarkMode, creationDate, expirationDate, daysRemaining, progressPercentage]);
+  }, [isDarkMode, creationDate, expirationDate, daysRemaining, progressPercentage, handlePasswordChange]);
 
   return content;
 }
