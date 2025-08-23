@@ -133,7 +133,16 @@ export const sendVerificationCodeChangeEmail = async (
   res: Response
 ): Promise<void> => {
   try {
-    const email = "enamoradodairon@yahoo.com";
+    const { email } = req.body; // Obtener el email del cuerpo de la solicitud
+    
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "El correo electrónico es requerido",
+      });
+      return;
+    }
+
     const userName = "Usuario";
     const verificationCode = generateVerificationCode();
     
@@ -166,7 +175,6 @@ export const sendVerificationCodeChangeEmail = async (
     });
   }
 };
-
 export const verifyCode = async (
   req: Request,
   res: Response
@@ -224,35 +232,6 @@ export const verifyCode = async (
     res.status(500).json({
       success: false,
       message: "Error al verificar el código",
-      error: error.message,
-    });
-  }
-};
-
-export const resendVerificationCode = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { email } = req.body;
-    
-    if (!email) {
-      res.status(400).json({
-        success: false,
-        message: "El correo electrónico es requerido",
-      });
-      return;
-    }
-
-    // Eliminar cualquier código existente para este email
-    verificationCodes.delete(email);
-    
-    // Llamar al controlador para enviar un nuevo código
-    await sendVerificationCodeChangeEmail(req, res);
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error al reenviar el código de verificación",
       error: error.message,
     });
   }

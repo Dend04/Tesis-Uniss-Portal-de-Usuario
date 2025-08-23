@@ -142,16 +142,6 @@ export default function ConfigPage() {
     }
   };
 
-  const handleTwoFASetupComplete = () => {
-    setTwoFAEnabled(true);
-    setShowTwoFASetup(false);
-  };
-
-  const handleTwoFACancel = () => {
-    setShowTwoFASetup(false);
-    setTwoFAEnabled(false);
-  };
-
   return (
     <div
       className={`min-h-screen transition-colors duration-300 ${
