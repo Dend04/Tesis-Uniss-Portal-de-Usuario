@@ -1,7 +1,7 @@
 // app/components/config/EmailForm.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { 
   ExclamationTriangleIcon, 
   EnvelopeIcon,
@@ -9,6 +9,18 @@ import {
   QuestionMarkCircleIcon,
   XMarkIcon
 } from "@heroicons/react/24/outline";
+import Modal from "../Modal";
+
+// Carga perezosa del componente de ayuda
+const EmailHelpModal = lazy(() => import("../modals/EmailHelpModal"));
+
+// Componente de carga para el modal
+const ModalLoading = () => (
+  <div className="flex justify-center items-center py-8">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+  </div>
+);
+
 
 interface EmailFormProps {
   isDarkMode: boolean;
@@ -17,226 +29,190 @@ interface EmailFormProps {
   onSuccess: (newEmail: string) => void;
 }
 
-// Modal de ayuda
-const HelpModal = ({ isOpen, onClose, email, isDarkMode }: { 
-  isOpen: boolean; 
-  onClose: () => void;
-  email: string;
-  isDarkMode: boolean;
-}) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`relative max-w-md w-full rounded-lg p-6 ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
-        <button
-          onClick={onClose}
-          className={`absolute top-4 right-4 p-1 rounded-full ${
-            isDarkMode ? "text-gray-400 hover:bg-gray-700" : "text-gray-500 hover:bg-gray-200"
-          }`}
-        >
-          <XMarkIcon className="w-6 h-6" />
-        </button>
-        
-        <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? "text-white" : "text-gray-800"}`}>
-          ¿No recibiste el código?
-        </h3>
-        
-        <div className={`text-sm mb-6 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
-          <p className="mb-4">
-            Por favor, verifica que el correo suministrado sea correcto:
-          </p>
-          <p className="font-semibold mb-4">{email}</p>
-          <p className="mb-4">
-            Si no es correcto, haz clic en el enlace "No es mi correo" para volver a ingresarlo.
-          </p>
-          <p className="mb-4">
-            Si el correo es correcto, espera un momento ya que a veces los correos pueden tardar en llegar. 
-            También revisa la carpeta de spam o correo no deseado de tu buzón, ya que a veces es filtrado allí.
-          </p>
-          <p>
-            Si continúas sin recibir el código, por favor dirígete a las oficinas de soporte para recibir asistencia.
-          </p>
-        </div>
-        
-        <button
-          onClick={onClose}
-          className={`w-full py-2 px-4 rounded-lg ${
-            isDarkMode 
-              ? "bg-blue-600 text-white hover:bg-blue-700" 
-              : "bg-blue-600 text-white hover:bg-blue-700"
-          }`}
-        >
-          Entendido
-        </button>
-      </div>
-    </div>
-  );
-};
-
 export default function EmailForm({ isDarkMode, currentEmail, onCancel, onSuccess }: EmailFormProps) {
   const [newEmail, setNewEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [step, setStep] = useState<"email" | "verification">("email");
-  const [isCodeSent, setIsCodeSent] = useState(false);
   const [countdown, setCountdown] = useState(0); // en segundos
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
-  // Efecto para el contador
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
+    // Usar useRef para los intervalos y timeouts
+    const countdownRef = useRef<NodeJS.Timeout | null>(null);
+    const animationRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Efecto para animar el botón de información
-  useEffect(() => {
-    // Iniciar animación después de un breve retraso
-    const timer = setTimeout(() => {
-      setIsShaking(true);
-      
-      // Detener animación después de 2 segundos
-      const stopTimer = setTimeout(() => {
-        setIsShaking(false);
-      }, 2000);
-      
-      return () => clearTimeout(stopTimer);
+    useEffect(() => {
+      return () => {
+        if (countdownRef.current) clearInterval(countdownRef.current);
+        if (animationRef.current) clearTimeout(animationRef.current);
+      };
+    }, []);
+
+// Efecto optimizado para el contador
+useEffect(() => {
+  if (countdown > 0) {
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => prev - 1);
     }, 1000);
+  } else if (countdownRef.current) {
+    clearInterval(countdownRef.current);
+  }
+
+  return () => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+  };
+}, [countdown]);
+
+// Efecto optimizado para la animación
+useEffect(() => {
+  animationRef.current = setTimeout(() => {
+    setIsShaking(true);
     
-    return () => clearTimeout(timer);
+    animationRef.current = setTimeout(() => {
+      setIsShaking(false);
+    }, 2000);
+  }, 1000);
+  
+  return () => {
+    if (animationRef.current) {
+      clearTimeout(animationRef.current);
+      animationRef.current = null;
+    }
+  };
+}, []);
+
+  // Función para validar email
+  const validateEmail = useCallback((email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }, []);
 
-  const handleSendVerification = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setErrorMessage("");
+// Función para manejar el envío de verificación
+const handleSendVerification = useCallback(async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true);
+  setErrorMessage("");
 
-    try {
-      // Validar formato de email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(newEmail)) {
-        throw new Error("Por favor ingresa un correo electrónico válido");
-      }
-
-      if (newEmail === currentEmail) {
-        throw new Error("El nuevo correo no puede ser igual al actual");
-      }
-
-      // Enviar solicitud al backend para enviar el código de verificación
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/cambioCorreo`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: newEmail }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Error al enviar el código de verificación");
-      }
-
-      setIsCodeSent(true);
-      setStep("verification");
-      setCountdown(600); // 10 minutos en segundos
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Error al enviar el código de verificación"
-      );
-    } finally {
-      setIsLoading(false);
+  try {
+    if (!validateEmail(newEmail)) {
+      throw new Error("Por favor ingresa un correo electrónico válido");
     }
-  };
 
-  const handleVerifyAndChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setErrorMessage("");
-
-    try {
-      // Validar código de verificación
-      if (verificationCode.length !== 6 || !/^\d+$/.test(verificationCode)) {
-        throw new Error("Por favor ingresa un código de verificación válido de 6 dígitos");
-      }
-
-      // Verificar código y cambiar email
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/verify-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: newEmail, 
-          code: verificationCode 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Error al verificar el código");
-      }
-
-      // Éxito - llamar a la función onSuccess con el nuevo email
-      onSuccess(newEmail);
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Error al verificar el código"
-      );
-    } finally {
-      setIsLoading(false);
+    if (newEmail === currentEmail) {
+      throw new Error("El nuevo correo no puede ser igual al actual");
     }
-  };
 
-  const handleResendCode = async () => {
-    if (countdown > 0) return; // No hacer nada si el contador está activo
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/cambioCorreo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: newEmail }),
+    });
 
-    setIsLoading(true);
-    setErrorMessage("");
+    const data = await response.json();
 
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/cambioCorreo`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: newEmail }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Error al reenviar el código");
-      }
-
-      // Reiniciar el contador
-      setCountdown(600);
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Error al reenviar el código"
-      );
-    } finally {
-      setIsLoading(false);
+    if (!response.ok) {
+      throw new Error(data.message || "Error al enviar el código de verificación");
     }
-  };
 
-  const handleBackToEmail = () => {
-    setStep("email");
-    setVerificationCode("");
-    setErrorMessage("");
-    setCountdown(0);
-  };
+    setStep("verification");
+    setCountdown(600);
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error ? error.message : "Error al enviar el código de verificación"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+}, [newEmail, currentEmail, validateEmail]);
 
-  const formatTime = (seconds: number) => {
+// Función para verificar y cambiar el email
+const handleVerifyAndChange = useCallback(async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true);
+  setErrorMessage("");
+
+  try {
+    if (verificationCode.length !== 6 || !/^\d+$/.test(verificationCode)) {
+      throw new Error("Por favor ingresa un código de verificación válido de 6 dígitos");
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/verify-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: newEmail, code: verificationCode }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Error al verificar el código");
+    }
+
+    onSuccess(newEmail);
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error ? error.message : "Error al verificar el código"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+}, [verificationCode, newEmail, onSuccess]);
+
+
+ // Función para reenviar el código
+ const handleResendCode = useCallback(async () => {
+  if (countdown > 0) return;
+
+  setIsLoading(true);
+  setErrorMessage("");
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/cambioCorreo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: newEmail }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Error al reenviar el código");
+    }
+
+    setCountdown(600);
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error ? error.message : "Error al reenviar el código"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+}, [countdown, newEmail]);
+
+
+ // Función para volver al formulario de email
+ const handleBackToEmail = useCallback(() => {
+  setStep("email");
+  setVerificationCode("");
+  setErrorMessage("");
+  setCountdown(0);
+}, []);
+
+  // Función para formatear el tiempo
+  const formatTime = useCallback((seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-  };
+  }, []);
+
+  const preloadModal = useCallback(() => {
+    import("../modals/EmailHelpModal");
+  }, []);
 
   return (
     <div className="mt-4">
@@ -372,16 +348,17 @@ export default function EmailForm({ isDarkMode, currentEmail, onCancel, onSucces
                 Reenviar código {countdown > 0 && `(${formatTime(countdown)})`}
               </button>
               <button
-                type="button"
-                onClick={() => setShowHelpModal(true)}
-                className={`p-1 rounded-full ${
-                  isDarkMode 
-                    ? "text-gray-400 hover:bg-gray-600" 
-                    : "text-blue-500 hover:bg-blue-200"
-                } ${isShaking ? "animate-bounce" : ""}`}
-              >
-                <QuestionMarkCircleIcon className="w-5 h-5" />
-              </button>
+            onMouseEnter={preloadModal} // Precargar al hacer hover
+            onClick={() => setShowHelpModal(true)}    // Manejar clic para mostrar modal
+            className={`p-1 rounded-full ${
+              isDarkMode 
+                ? "text-gray-200 hover:text-white hover:bg-gray-600" 
+                : "text-blue-600 hover:text-blue-800 hover:bg-blue-200"
+            } ${isShaking ? "animate-bounce" : ""}`}
+            title="¿Qué es la autenticación en dos pasos?"
+          >
+            <QuestionMarkCircleIcon className="w-5 h-5" />
+          </button>
             </div>
           </div>
 
@@ -397,12 +374,23 @@ export default function EmailForm({ isDarkMode, currentEmail, onCancel, onSucces
         </form>
       )}
 
-      <HelpModal 
-        isOpen={showHelpModal} 
-        onClose={() => setShowHelpModal(false)} 
-        email={newEmail}
+       {/* Modal de ayuda con lazy loading */}
+       <Modal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        title="¿No recibiste el código?"
         isDarkMode={isDarkMode}
-      />
+        maxWidth="md"
+        showCloseButton={true}
+      >
+        <Suspense fallback={<ModalLoading />}>
+          <EmailHelpModal 
+            email={newEmail} 
+            isDarkMode={isDarkMode} 
+            onClose={() => setShowHelpModal(false)}
+          />
+        </Suspense>
+      </Modal>
     </div>
   );
 }

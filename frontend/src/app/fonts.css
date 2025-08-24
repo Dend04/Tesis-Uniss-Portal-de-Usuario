@@ -2,97 +2,103 @@
 
 /* Geist Sans */
 @font-face {
-  font-family: 'Geist Sans';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: 
-    url('/fonts/geist/GeistVariableVF.ttf') format('truetype');
-}
-
-/* Geist Mono */
-@font-face {
-  font-family: 'Geist Mono';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: 
-    url('/fonts/geist/GeistMonoVariableVF.ttf') format('truetype');
-}
-
-/* Roboto - Regular */
-@font-face {
-  font-family: 'Roboto';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: 
-    url('/fonts/roboto/Roboto-Regular.ttf') format('truetype');
-}
-
-/* Roboto - Medium */
-@font-face {
-  font-family: 'Roboto';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: 
-    url('/fonts/roboto/Roboto-Medium.ttf') format('truetype');
-}
-
-/* Roboto - Bold */
-@font-face {
-  font-family: 'Roboto';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: 
-    url('/fonts/roboto/Roboto-Bold.ttf') format('truetype');
-}
-
-/* Poppins - Regular */
-@font-face {
-  font-family: 'Poppins';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: 
-    url('/fonts/poppins/Poppins-Regular.ttf') format('truetype');
-}
-
-/* Poppins - Medium */
-@font-face {
-  font-family: 'Poppins';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: 
-    url('/fonts/poppins/Poppins-Medium.ttf') format('truetype');
-}
-
-/* Poppins - Bold */
-@font-face {
-  font-family: 'Poppins';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: 
-    url('/fonts/poppins/Poppins-Bold.ttf') format('truetype');
-}
-
-/* Poppins - SemiBold */
-@font-face {
-  font-family: 'Poppins';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: 
-    url('/fonts/poppins/Poppins-SemiBold.ttf') format('truetype');
-}
-
-:root {
-  --font-geist-sans: 'Geist Sans', system-ui, sans-serif;
-  --font-geist-mono: 'Geist Mono', monospace;
-  --font-roboto: 'Roboto', sans-serif;
-  --font-poppins: 'Poppins', sans-serif;
-}
+    font-family: 'Geist Sans';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: 
+      url('/fonts/geist/GeistVariableVF.woff2') format('woff2'),
+      url('/fonts/geist/GeistVariableVF.woff') format('woff'),
+      url('/fonts/geist/GeistVariableVF.ttf') format('truetype');
+  }
+  
+  /* Geist Mono */
+  @font-face {
+    font-family: 'Geist Mono';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: 
+      url('/fonts/geist/GeistMono-Light.woff2') format('woff2'),
+  }
+  
+  /* Roboto - Regular */
+  @font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: 
+      /* url('/fonts/roboto/roboto-regular.woff2') format('woff2'), */
+      url('/fonts/roboto/Roboto-Regular.ttf') format('truetype');
+  }
+  
+  /* Roboto - Medium */
+  @font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: 
+      url('/fonts/roboto/roboto-medium.woff2') format('woff2'),
+     
+  }
+  
+  /* Roboto - Bold */
+  @font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: 
+      url('/fonts/roboto/roboto-bold.woff2') format('woff2'),
+  }
+  
+  /* Poppins - Regular */
+  @font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: 
+      /* url('/fonts/poppins/poppins-regular.woff2') format('woff2'), */
+      url('/fonts/poppins/Poppins-Regular.ttf') format('truetype');
+  }
+  
+  /* Poppins - Medium */
+  @font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: 
+      /* url('/fonts/poppins/poppins-medium.woff2') format('woff2'), */
+      url('/fonts/poppins/Poppins-Medium.ttf') format('truetype');
+  }
+  
+  /* Poppins - Bold */
+  @font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: 
+      url('/fonts/poppins/poppins-bold.woff2') format('woff2'),
+  }
+  
+  /* Poppins - SemiBold */
+  @font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: 
+      url('/fonts/poppins/poppins-semibold.woff2') format('woff2'),
+  }
+  
+  :root {
+    --font-geist-sans: 'Geist Sans', system-ui, sans-serif;
+    --font-geist-mono: 'Geist Mono', monospace;
+    --font-roboto: 'Roboto', sans-serif;
+    --font-poppins: 'Poppins', sans-serif;
+  }
