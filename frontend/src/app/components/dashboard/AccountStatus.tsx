@@ -1,13 +1,12 @@
-// app/components/AccountStatus.tsx
 'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import dynamic from "next/dynamic";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 
 const ProgressBar = dynamic(() => import("@/app/components/ProgressBar"), {
   ssr: false,
-  loading: () => <div className="h-3 bg-gray-200 rounded-full" />
+  loading: () => <div className="h-3 bg-gray-200 rounded-full dark:bg-gray-600" />
 });
 
 interface AccountStatusProps {
@@ -16,58 +15,73 @@ interface AccountStatusProps {
   expirationDate: string;
 }
 
-// Hook personalizado para cálculos de tiempo eficientes
+// Hook optimizado para cálculos de tiempo
 const useDaysRemaining = (expirationDate: string) => {
   const [daysRemaining, setDaysRemaining] = useState(0);
   const [progressPercentage, setProgressPercentage] = useState(0);
 
-  // Calcular valores iniciales
   useEffect(() => {
-    const calculate = () => {
+    let dailyTimer: NodeJS.Timeout | null = null;
+    
+    const calculateValues = () => {
       const expirationTime = new Date(expirationDate).getTime();
-      const totalDays = 6 * 30;
-      const remainingDays = Math.ceil((expirationTime - Date.now()) / (1000 * 60 * 60 * 24));
+      const currentTime = Date.now();
+      
+      // Evitar cálculos si la fecha ya expiró
+      if (expirationTime <= currentTime) {
+        setDaysRemaining(0);
+        setProgressPercentage(0);
+        return;
+      }
+      
+      const totalDays = 6 * 30; // 6 meses
+      const remainingDays = Math.ceil((expirationTime - currentTime) / (1000 * 60 * 60 * 24));
       const percentage = Math.max(0, Math.min(100, (remainingDays / totalDays) * 100));
       
       setDaysRemaining(Math.floor(remainingDays));
-      setProgressPercentage(percentage);
+      setProgressPercentage(Math.round(percentage));
     };
 
-    calculate();
-  }, [expirationDate]);
+    // Calcular valores iniciales
+    calculateValues();
 
-  // Actualizar solo cuando cambie el día
-  useEffect(() => {
-    const now = new Date();
-    const nextMidnight = new Date(now);
-    nextMidnight.setHours(24, 0, 0, 0);
-    const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+    // Programar actualización diaria a la medianoche
+    const scheduleDailyUpdate = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 0);
+      const msUntilMidnight = nextMidnight.getTime() - now.getTime();
 
-    const timerId = setTimeout(() => {
-      const expirationTime = new Date(expirationDate).getTime();
-      const totalDays = 6 * 30;
-      const remainingDays = Math.ceil((expirationTime - Date.now()) / (1000 * 60 * 60 * 24));
-      const percentage = Math.max(0, Math.min(100, (remainingDays / totalDays) * 100));
-      
-      setDaysRemaining(Math.floor(remainingDays));
-      setProgressPercentage(percentage);
-      
-      // Programar siguiente actualización diaria
-      const dailyTimer = setInterval(() => {
-        setDaysRemaining(prev => {
-          const newValue = prev - 1;
-          setProgressPercentage(Math.max(0, Math.min(100, (newValue / (6 * 30)) * 100)));
-          return newValue;
-        });
-      }, 24 * 60 * 60 * 1000);
+      const timerId = setTimeout(() => {
+        calculateValues();
+        
+        // Establecer intervalo diario después de la primera ejecución a medianoche
+        dailyTimer = setInterval(calculateValues, 24 * 60 * 60 * 1000);
+      }, msUntilMidnight);
 
-      return () => clearInterval(dailyTimer);
-    }, msUntilMidnight);
+      return timerId;
+    };
 
-    return () => clearTimeout(timerId);
+    const initialTimer = scheduleDailyUpdate();
+
+    // Cleanup
+    return () => {
+      clearTimeout(initialTimer);
+      if (dailyTimer) clearInterval(dailyTimer);
+    };
   }, [expirationDate]);
 
   return { daysRemaining, progressPercentage };
+};
+
+// Formateador de fecha memoizado
+const useFormattedDates = (creationDate: string, expirationDate: string) => {
+  return useMemo(() => {
+    return {
+      formattedCreated: new Date(creationDate).toLocaleDateString("es-ES"),
+      formattedExpires: new Date(expirationDate).toLocaleDateString("es-ES")
+    };
+  }, [creationDate, expirationDate]);
 };
 
 export default function AccountStatus({ 
@@ -76,18 +90,15 @@ export default function AccountStatus({
   expirationDate
 }: AccountStatusProps) {
   const { daysRemaining, progressPercentage } = useDaysRemaining(expirationDate);
+  const { formattedCreated, formattedExpires } = useFormattedDates(creationDate, expirationDate);
   const router = useRouter();
   
-  const handlePasswordChange = () => {
-    // Navegar a la página de configuración con parámetro para activar el formulario de contraseña
+  const handlePasswordChange = useCallback(() => {
     router.push('/config?action=change-password');
-  };
+  }, [router]);
   
   // Memoizar todo el contenido para evitar re-renders innecesarios
   const content = useMemo(() => {
-    const formattedCreated = new Date(creationDate).toLocaleDateString("es-ES");
-    const formattedExpires = new Date(expirationDate).toLocaleDateString("es-ES");
-    
     return (
       <section
         className={`rounded-xl shadow-lg p-6 transition-colors ${
@@ -108,9 +119,9 @@ export default function AccountStatus({
             onClick={handlePasswordChange}
             className={`px-4 py-2 rounded-lg text-base transition-opacity ${
               isDarkMode
-                ? "bg-uniss-gold text-gray-900"
-                : "bg-uniss-blue text-white"
-            } hover:opacity-90 w-full md:w-auto`}
+                ? "bg-uniss-gold text-gray-900 hover:bg-yellow-600"
+                : "bg-uniss-blue text-white hover:bg-blue-700"
+            } w-full md:w-auto`}
             aria-label="Cambiar contraseña"
           >
             Cambiar contraseña
@@ -155,7 +166,14 @@ export default function AccountStatus({
         </div>
       </section>
     );
-  }, [isDarkMode, creationDate, expirationDate, daysRemaining, progressPercentage, handlePasswordChange]);
+  }, [
+    isDarkMode, 
+    daysRemaining, 
+    progressPercentage, 
+    formattedCreated, 
+    formattedExpires, 
+    handlePasswordChange
+  ]);
 
   return content;
 }
