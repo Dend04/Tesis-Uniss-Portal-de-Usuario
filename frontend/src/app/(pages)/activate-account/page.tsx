@@ -249,7 +249,7 @@ setResult(result); */
                 <div className="text-center text-sm text-gray-600 mt-4">
                   ¿Ya tienes cuenta?{" "}
                   <Link
-                    href="/login"
+                    href="/"
                     className="text-uniss-blue hover:underline"
                   >
                     Iniciar sesión

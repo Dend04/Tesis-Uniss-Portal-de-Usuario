@@ -40,7 +40,7 @@
     font-weight: 500;
     font-display: swap;
     src: 
-      url('/fonts/roboto/roboto-medium.woff2') format('woff2'),
+      url('/fonts/roboto/Roboto-Medium.woff2') format('woff2'),
      
   }
   
@@ -51,7 +51,7 @@
     font-weight: 700;
     font-display: swap;
     src: 
-      url('/fonts/roboto/roboto-bold.woff2') format('woff2'),
+      url('/fonts/roboto/Roboto-Bold.woff2') format('woff2'),
   }
   
   /* Poppins - Regular */

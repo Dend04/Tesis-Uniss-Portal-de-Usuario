@@ -1,4 +1,3 @@
-// app/components/PasswordForm.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -14,6 +13,8 @@ interface PasswordFormProps {
   isDarkMode: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
+  mode?: "change" | "reset";
+  username?: string;
 }
 
 const PasswordStrength = ({ password }: { password: string }) => {
@@ -46,7 +47,13 @@ const PasswordStrength = ({ password }: { password: string }) => {
   );
 };
 
-export default function PasswordForm({ isDarkMode, onSuccess, onCancel }: PasswordFormProps) {
+export default function PasswordForm({ 
+  isDarkMode, 
+  onSuccess, 
+  onCancel, 
+  mode = "change",
+  username 
+}: PasswordFormProps) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -80,21 +87,40 @@ export default function PasswordForm({ isDarkMode, onSuccess, onCancel }: Passwo
     }
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (mode === "change") {
+        // Lógica para cambio normal (con contraseña actual)
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Simulación de verificación de contraseña actual (debería venir de una API)
-      if (currentPassword !== "password123") { // Esto es solo para demostración
-        throw new Error("La contraseña actual es incorrecta");
+        // Simulación de verificación de contraseña actual (debería venir de una API)
+        if (currentPassword !== "password123") { // Esto es solo para demostración
+          throw new Error("La contraseña actual es incorrecta");
+        }
+
+        // Simulación de cambio de contraseña
+        setIsSuccess(true);
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+        }, 2000);
+      } else {
+        // Lógica para reset: llamar a la API de reset-password
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, newPassword }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Error al cambiar la contraseña");
+        }
+
+        setIsSuccess(true);
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+        }, 2000);
       }
-
-      if (newPassword !== confirmPassword) {
-        throw new Error("Las contraseñas no coinciden");
-      }
-
-      setIsSuccess(true);
-      setTimeout(() => {
-        if (onSuccess) onSuccess();
-      }, 2000);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Error al cambiar la contraseña"
@@ -120,39 +146,41 @@ export default function PasswordForm({ isDarkMode, onSuccess, onCancel }: Passwo
         </div>
       )}
 
-      <div>
-        <label
-          className={`block mb-2 ${
-            isDarkMode ? "text-gray-300" : "text-gray-600"
-          }`}
-        >
-          Contraseña actual
-        </label>
-        <div className="relative">
-          <input
-            type={showCurrentPassword ? "text" : "password"}
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            className={`w-full p-3 rounded-lg border ${
-              isDarkMode
-                ? "bg-gray-700 border-gray-600 text-gray-200"
-                : "bg-white border-gray-300 text-gray-800"
+      {mode === "change" && (
+        <div>
+          <label
+            className={`block mb-2 ${
+              isDarkMode ? "text-gray-300" : "text-gray-600"
             }`}
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-            className="absolute right-3 top-3.5"
           >
-            {showCurrentPassword ? (
-              <EyeSlashIcon className="w-5 h-5 text-gray-400" />
-            ) : (
-              <EyeIcon className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
+            Contraseña actual
+          </label>
+          <div className="relative">
+            <input
+              type={showCurrentPassword ? "text" : "password"}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className={`w-full p-3 rounded-lg border ${
+                isDarkMode
+                  ? "bg-gray-700 border-gray-600 text-gray-200"
+                  : "bg-white border-gray-300 text-gray-800"
+              }`}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              className="absolute right-3 top-3.5"
+            >
+              {showCurrentPassword ? (
+                <EyeSlashIcon className="w-5 h-5 text-gray-400" />
+              ) : (
+                <EyeIcon className="w-5 h-5 text-gray-400" />
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <label

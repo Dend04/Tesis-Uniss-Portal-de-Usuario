@@ -1,91 +1,71 @@
 // app/forgot-password/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   EnvelopeIcon,
   DevicePhoneMobileIcon,
   LockClosedIcon,
   QuestionMarkCircleIcon,
-  ArrowPathIcon,
-  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+interface RecoveryMethod {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  path: string;
+}
 
 export default function ForgotPasswordPage() {
-  const [selectedMethod, setSelectedMethod] = useState<"email" | "sms" | "2fa" | "security">();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [step, setStep] = useState<"select" | "verify" | "reset">("select");
-  const [code, setCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [error, setError] = useState("");
+  const [selectedMethod, setSelectedMethod] = useState<string>("");
+  const router = useRouter();
 
-  const methods = [
+  const methods = useMemo((): RecoveryMethod[] => [
     {
       id: "email",
       title: "Correo electrónico",
       description: "Enviar código de verificación al correo asociado",
       icon: EnvelopeIcon,
+      path: "/forgot-password/email",
     },
     {
       id: "sms",
       title: "SMS",
       description: "Enviar código al número de teléfono registrado",
       icon: DevicePhoneMobileIcon,
+      path: "/forgot-password/sms",
     },
     {
       id: "2fa",
       title: "Autenticación 2FA",
       description: "Usar código de tu aplicación autenticadora",
       icon: LockClosedIcon,
+      path: "/forgot-password/2fa",
     },
     {
       id: "security",
       title: "Preguntas de seguridad",
       description: "Responder tus preguntas de seguridad",
       icon: QuestionMarkCircleIcon,
+      path: "/forgot-password/security-questions",
     },
-  ];
+  ], []);
 
-  const handleSendCode = async () => {
-    setIsSubmitting(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setStep("verify");
-      setError("");
-    } catch (err) {
-      setError("Error al enviar el código. Intente nuevamente.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    setIsSubmitting(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setStep("reset");
-      setError("");
-    } catch (err) {
-      setError("Código inválido. Verifique e intente nuevamente.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    setIsSubmitting(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setError("");
-      // Lógica para cambiar contraseña
-    } catch (err) {
-      setError("Error al actualizar la contraseña.");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleMethodSelect = (methodId: string) => {
+    setSelectedMethod(methodId);
+    
+    // Navegar a la página específica del método después de una breve pausa visual
+    setTimeout(() => {
+      const method = methods.find(m => m.id === methodId);
+      if (method) {
+        router.push(method.path);
+      }
+    }, 300);
   };
 
   return (
@@ -102,138 +82,40 @@ export default function ForgotPasswordPage() {
             width={100}
             height={100}
             className="mx-auto mb-6"
+            priority
           />
           
-          {step === "select" ? (
-            <>
-              <h1 className="text-2xl font-bold text-uniss-black mb-2">Recuperar Contraseña</h1>
-              <p className="text-gray-600 mb-6">Seleccione el método de recuperación</p>
-              
-              <div className="space-y-4">
-                {methods.map((method) => (
-                  <button
-                    key={method.id}
-                    onClick={() => setSelectedMethod(method.id as any)}
-                    className={`w-full p-4 text-left rounded-lg border transition-all ${
-                      selectedMethod === method.id
-                        ? "border-uniss-blue bg-blue-50"
-                        : "border-gray-200 hover:border-uniss-blue"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <method.icon className="w-6 h-6 text-uniss-blue" />
-                      <div>
-                        <h3 className="font-medium text-gray-900">{method.title}</h3>
-                        <p className="text-sm text-gray-500">{method.description}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              {selectedMethod && (
-                <div className="mt-6">
-                  <button
-                    onClick={handleSendCode}
-                    disabled={isSubmitting}
-                    className="w-full bg-uniss-blue text-white py-3 rounded-lg hover:bg-opacity-90 transition-all font-medium flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                        Enviando código...
-                      </>
-                    ) : (
-                      "Continuar"
-                    )}
-                  </button>
+          <h1 className="text-2xl font-bold text-uniss-black mb-2">Recuperar Contraseña</h1>
+          <p className="text-gray-600 mb-6">Seleccione el método de recuperación</p>
+          
+          <div className="space-y-4">
+            {methods.map((method) => (
+              <button
+                key={method.id}
+                onClick={() => handleMethodSelect(method.id)}
+                className={`w-full p-4 text-left rounded-lg border transition-all ${
+                  selectedMethod === method.id
+                    ? "border-uniss-blue bg-blue-50"
+                    : "border-gray-200 hover:border-uniss-blue"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <method.icon className="w-6 h-6 text-uniss-blue" />
+                  <div>
+                    <h3 className="font-medium text-gray-900">{method.title}</h3>
+                    <p className="text-sm text-gray-500">{method.description}</p>
+                  </div>
                 </div>
-              )}
+              </button>
+            ))}
+          </div>
 
-              <div className="mt-4 text-sm text-gray-600">
-                ¿Recordó su contraseña?{" "}
-                <Link href="/login" className="text-uniss-blue hover:underline">
-                  Iniciar sesión
-                </Link>
-              </div>
-            </>
-          ) : step === "verify" ? (
-            <>
-              <h1 className="text-2xl font-bold text-uniss-black mb-2">Verificar Identidad</h1>
-              <p className="text-gray-600 mb-6">
-                Ingrese el código enviado a su {selectedMethod === "email" ? "correo" : "teléfono"}
-              </p>
-
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  placeholder="Código de 6 dígitos"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uniss-blue focus:border-transparent"
-                  maxLength={6}
-                />
-
-                <button
-                  onClick={handleVerifyCode}
-                  disabled={isSubmitting || code.length < 6}
-                  className="w-full bg-uniss-blue text-white py-3 rounded-lg hover:bg-opacity-90 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                      Verificando...
-                    </>
-                  ) : (
-                    "Verificar Código"
-                  )}
-                </button>
-
-                <button
-                  onClick={handleSendCode}
-                  className="text-uniss-blue text-sm hover:underline"
-                >
-                  Reenviar código
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold text-uniss-black mb-2">Nueva Contraseña</h1>
-              <p className="text-gray-600 mb-6">Cree una nueva contraseña segura</p>
-
-              <div className="space-y-4">
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Nueva contraseña"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uniss-blue focus:border-transparent"
-                />
-
-                <button
-                  onClick={handleResetPassword}
-                  disabled={isSubmitting || newPassword.length < 8}
-                  className="w-full bg-uniss-blue text-white py-3 rounded-lg hover:bg-opacity-90 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                      Actualizando...
-                    </>
-                  ) : (
-                    "Cambiar Contraseña"
-                  )}
-                </button>
-              </div>
-            </>
-          )}
-
-          {error && (
-            <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+          <div className="mt-4 text-sm text-gray-600">
+            ¿Recordó su contraseña?{" "}
+            <Link href="/" className="text-uniss-blue hover:underline" prefetch={false}>
+              Iniciar sesión
+            </Link>
+          </div>
         </motion.div>
       </div>
     </div>
