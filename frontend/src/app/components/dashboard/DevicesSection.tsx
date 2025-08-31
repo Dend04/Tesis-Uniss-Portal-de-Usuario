@@ -8,6 +8,7 @@ interface DevicesSectionProps {
   isDarkMode: boolean;
   devices: Device[];
   onAddDeviceClick: () => void;
+  className: string;
 }
 
 // Mapa de iconos por tipo de dispositivo

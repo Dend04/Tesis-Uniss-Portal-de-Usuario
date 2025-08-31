@@ -9,19 +9,17 @@ import studentRoutes from './routes/student.routes';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger/swagger';
 import logger from './utils/logger';
-import { createLDAPClient } from './utils/ldap.utils';
 /* import connectDB from './config/db'; */
 /* import setupSyncSchedule from './sincronizacion/sync.schedule'; */
 import deviceRoutes from './routes/dispositivos.routes';
 import ldap from './routes/ldap.routes';
 import users from './routes/user.routes';
-import { SigenuService } from './services/sigenu.services'
 import { fetchStructureData } from './utils/ldap.data';
 import studentAccountRoutes from './routes/student-account.routes';
 import workerAccountRoutes from './routes/worker-account.routes';
 import accountRemoval from './routes/account-removal.routes';
 import identity from './routes/identity.routes';
-import email from './routes/email.routes'
+import email from './routes/email.routes';
 
 dotenv.config();
 
@@ -119,13 +117,13 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRoutes);
 app.use('/api', studentRoutes);
 app.use('/api/devices', deviceRoutes);
-app.use('/api', ldap)
-app.use('/api', users)
+app.use('/api', ldap);
+app.use('/api', users);
 app.use('/api/students', studentAccountRoutes);
-app.use('/api/worker', workerAccountRoutes)
-app.use ('/api/removal', accountRemoval)
-app.use ('/api/identity', identity)
-app.use('/api/email', email)
+app.use('/api/worker', workerAccountRoutes);
+app.use ('/api/removal', accountRemoval);
+app.use ('/api/identity', identity);
+app.use('/api/email', email);
 
 
 // Health Check

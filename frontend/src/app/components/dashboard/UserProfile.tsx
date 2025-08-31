@@ -61,6 +61,7 @@ InfoItem.displayName = 'InfoItem';
 interface UserProfileProps {
   userInfo: UserInfo;
   isDarkMode: boolean;
+  className: string;
 }
 
 // Componente principal memoizado

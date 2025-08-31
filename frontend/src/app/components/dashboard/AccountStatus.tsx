@@ -13,6 +13,7 @@ interface AccountStatusProps {
   isDarkMode: boolean;
   creationDate: string;
   expirationDate: string;
+  className: string;
 }
 
 // Hook optimizado para cálculos de tiempo
