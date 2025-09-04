@@ -2,11 +2,17 @@ import { Request, Response } from "express";
 import { unifiedLDAPSearch } from "../utils/ldap.utils";
 import ldap from "ldapjs";
 
+// Definir una interfaz para los atributos LDAP
+interface LdapAttribute {
+  type: string;
+  values: string[];
+}
+
 // Función para formatear timestamps de LDAP
 const formatLdapTimestamp = (timestamp: string): string => {
   const ldapTimestamp = parseInt(timestamp, 10);
   const date = new Date(ldapTimestamp / 10000 - 11644473600000);
-  return date.toISOString(); // Puedes cambiar el formato según tus necesidades
+  return date.toISOString();
 };
 
 // Mapeo de grupos a descripciones
@@ -24,6 +30,7 @@ const mapGroupToDescription = (group: string): string => {
       return "Grupo desconocido";
   }
 };
+
 export const searchUsers = async (
   req: Request<{}, {}, { searchTerm: string }>,
   res: Response
@@ -45,7 +52,7 @@ export const searchUsers = async (
 
     // Convertir atributos a objeto con tipos correctos
     const userData = entries[0].attributes.reduce(
-      (acc: Record<string, any>, attr: ldap.Attribute) => {
+      (acc: Record<string, any>, attr: LdapAttribute) => {
         acc[attr.type] =
           attr.values?.length === 1 ? attr.values[0] : attr.values;
         return acc;
@@ -84,31 +91,45 @@ export const getUserDetails = async (
       return;
     }
 
-    const accountExpiresValue =
-      entries[0].attributes.find((attr) => attr.type === "accountExpires")
-        ?.values[0] || "0";
+    // Encontrar atributos con tipos explícitos
+    const accountExpiresAttr = entries[0].attributes.find(
+      (attr: LdapAttribute) => attr.type === "accountExpires"
+    );
+    const accountExpiresValue = accountExpiresAttr?.values[0] || "0";
+
+    const samAccountNameAttr = entries[0].attributes.find(
+      (attr: LdapAttribute) => attr.type === "sAMAccountName"
+    );
+    const mailAttr = entries[0].attributes.find(
+      (attr: LdapAttribute) => attr.type === "mail"
+    );
+    const displayNameAttr = entries[0].attributes.find(
+      (attr: LdapAttribute) => attr.type === "displayName"
+    );
+    const userAccountControlAttr = entries[0].attributes.find(
+      (attr: LdapAttribute) => attr.type === "userAccountControl"
+    );
+    const pwdLastSetAttr = entries[0].attributes.find(
+      (attr: LdapAttribute) => attr.type === "pwdLastSet"
+    );
+    const lockoutTimeAttr = entries[0].attributes.find(
+      (attr: LdapAttribute) => attr.type === "lockoutTime"
+    );
+    const studeninfoAttr = entries[0].attributes.find(
+      (attr: LdapAttribute) => attr.type === "studeninfo"
+    );
+    const logonCountAttr = entries[0].attributes.find(
+      (attr: LdapAttribute) => attr.type === "logonCount"
+    );
 
     // Extraer y formatear los datos importantes
     const userData = {
-      username:
-        entries[0].attributes.find((attr) => attr.type === "sAMAccountName")
-          ?.values[0] || "",
-      email:
-        entries[0].attributes.find((attr) => attr.type === "mail")?.values[0] ||
-        "",
-      displayName:
-        entries[0].attributes.find((attr) => attr.type === "displayName")
-          ?.values[0] || "",
-      accountEnabled:
-        entries[0].attributes.find((attr) => attr.type === "userAccountControl")
-          ?.values[0] === "512", // 512 indica que la cuenta está habilitada
-      lastPasswordChange: formatLdapTimestamp(
-        entries[0].attributes.find((attr) => attr.type === "pwdLastSet")
-          ?.values[0] || "0"
-      ),
-      accountLocked:
-        entries[0].attributes.find((attr) => attr.type === "lockoutTime")
-          ?.values[0] !== "0", // 0 indica que no está bloqueada
+      username: samAccountNameAttr?.values[0] || "",
+      email: mailAttr?.values[0] || "",
+      displayName: displayNameAttr?.values[0] || "",
+      accountEnabled: userAccountControlAttr?.values[0] === "512", // 512 indica que la cuenta está habilitada
+      lastPasswordChange: formatLdapTimestamp(pwdLastSetAttr?.values[0] || "0"),
+      accountLocked: lockoutTimeAttr?.values[0] !== "0", // 0 indica que no está bloqueada
       accountExpires:
         accountExpiresValue === "0" ||
         accountExpiresValue === "9223372036854775807"
@@ -116,16 +137,11 @@ export const getUserDetails = async (
           : formatLdapTimestamp(accountExpiresValue),
       groups:
         entries[0].attributes
-          .filter((attr) => attr.type === "memberOf")
-          .flatMap((attr) => attr.values)
+          .filter((attr: LdapAttribute) => attr.type === "memberOf")
+          .flatMap((attr: LdapAttribute) => attr.values)
           .map(mapGroupToDescription) || [],
-      lastLogon: formatLdapTimestamp(
-        entries[0].attributes.find((attr) => attr.type === "studeninfo")
-          ?.values[0] || "0"
-      ),
-      logonCount:
-        entries[0].attributes.find((attr) => attr.type === "logonCount")
-          ?.values[0] || 0,
+      lastLogon: formatLdapTimestamp(studeninfoAttr?.values[0] || "0"),
+      logonCount: logonCountAttr?.values[0] || 0,
     };
 
     res.json(userData);

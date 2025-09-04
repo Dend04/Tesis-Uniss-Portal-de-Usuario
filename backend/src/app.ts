@@ -20,6 +20,7 @@ import workerAccountRoutes from './routes/worker-account.routes';
 import accountRemoval from './routes/account-removal.routes';
 import identity from './routes/identity.routes';
 import email from './routes/email.routes';
+import usernameOptions from './routes/username-options.routes'
 
 dotenv.config();
 
@@ -124,7 +125,7 @@ app.use('/api/worker', workerAccountRoutes);
 app.use ('/api/removal', accountRemoval);
 app.use ('/api/identity', identity);
 app.use('/api/email', email);
-
+app.use('/api/usernameOptions',usernameOptions);
 
 // Health Check
 app.get('/health', (_: Request, res: Response) => {

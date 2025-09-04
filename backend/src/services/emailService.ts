@@ -1,5 +1,4 @@
 import nodemailer, { Transporter } from "nodemailer";
-import { HttpsProxyAgent } from "https-proxy-agent";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 
 import { emailCounter } from "./emailCounter";
@@ -7,7 +6,6 @@ import { getWelcomeEmailHTML } from "../templates/welcome.email";
 import { getVerificationCodeHTML } from "../templates/verificationCode";
 import { getPasswordExpiryAlertHTML } from "../templates/passwordExpiryAlert";
 import { getNewEmailHTML } from "../templates/newEmail";
-import transporter from "../config/mailers";
 
 const validateEmail = (email: string): void => {
   if (!email || typeof email !== 'string' || !email.includes('@')) {
@@ -15,35 +13,29 @@ const validateEmail = (email: string): void => {
   }
 };
 
-// Configuración del servidor SMTP local
-const SMTP_CONFIG = {
-  host: "10.16.1.5",       // Servidor SMTP local
-  port: 25,                // Puerto SMTP sin SSL
-  secure: false,           // Conexión no segura (sin SSL/TLS)
-  requireTLS: true,        // Forzar uso de STARTTLS
-  tls: {
-    rejectUnauthorized: false // Permitir certificados autofirmados
-  }
-};
-
-const createEmailTransport = (
-  emailUser: string,
-  emailPass: string
-): Transporter => {
-  const smtpOptions: SMTPTransport.Options = {
-    ...SMTP_CONFIG,
+// Configuración del transporte SMTP local
+const createEmailTransport = (): Transporter => {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "10.16.1.5",
+    port: parseInt(process.env.SMTP_PORT || "25"),
+    secure: false,
     auth: {
-      user: emailUser,
-      pass: emailPass,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
-  };
-
-  return nodemailer.createTransport(smtpOptions);
+    tls: {
+      rejectUnauthorized: false,
+      ciphers: 'SSLv3',
+    },
+    ignoreTLS: false,
+    requireTLS: false
+  } as SMTPTransport.Options);
 };
 
 export const sendWelcomeEmail = async (email: string, userName: string, userType: string) => {
+  const transporter = createEmailTransport();
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: process.env.SMTP_FROM,
     to: email,
     subject: "Bienvenido/a al Portal de Usuario de la UNISS",
     html: getWelcomeEmailHTML(userName, userType),
@@ -59,18 +51,16 @@ export const sendPasswordExpiryAlert = async (
 ): Promise<SMTPTransport.SentMessageInfo> => {
   try {
     validateEmail(to);
-    const emailUser = process.env.EMAIL_USER;
-    const emailPass = process.env.EMAIL_PASS;
     
-    if (!emailUser || !emailPass) {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
       throw new Error('Configuración de email incompleta');
     }
 
-    const transportador = createEmailTransport(emailUser, emailPass);
+    const transportador = createEmailTransport();
     const contenidoHtml = getPasswordExpiryAlertHTML(userName, daysLeft);
 
     const opcionesCorreo = {
-      from: `"Seguridad UNISS" <${emailUser}>`,
+      from: process.env.SMTP_FROM,
       to,
       subject: `URGENTE: Cambio de contraseña requerido - ${daysLeft} días restantes`,
       html: contenidoHtml,
@@ -91,18 +81,16 @@ export const sendVerificationCode = async (
 ): Promise<SMTPTransport.SentMessageInfo> => {
   try {
     validateEmail(to);
-    const emailUser = process.env.EMAIL_USER;
-    const emailPass = process.env.EMAIL_PASS;
     
-    if (!emailUser || !emailPass) {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
       throw new Error('Configuración de email incompleta');
     }
 
-    const transportador = createEmailTransport(emailUser, emailPass);
+    const transportador = createEmailTransport();
     const contenidoHtml = getVerificationCodeHTML(userName, verificationCode);
 
     const opcionesCorreo = {
-      from: `"Seguridad UNISS" <${emailUser}>`,
+      from: process.env.SMTP_FROM,
       to,
       subject: 'Código de verificación para restablecer contraseña',
       html: contenidoHtml,
@@ -123,18 +111,16 @@ export const sendEmailNew = async (
 ): Promise<SMTPTransport.SentMessageInfo> => {
   try {
     validateEmail(email);
-    const emailUser = process.env.EMAIL_USER;
-    const emailPass = process.env.EMAIL_PASS;
     
-    if (!emailUser || !emailPass) {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
       throw new Error('Configuración de email incompleta');
     }
 
-    const transportador = createEmailTransport(emailUser, emailPass);
+    const transportador = createEmailTransport();
     const contenidoHtml = getNewEmailHTML(verificationCode, userName);
 
     const opcionesCorreo = {
-      from: `"Seguridad UNISS" <${emailUser}>`,
+      from: process.env.SMTP_FROM,
       to: email,
       subject: 'Código de Verificación - UNISS',
       html: contenidoHtml,
@@ -147,7 +133,6 @@ export const sendEmailNew = async (
     throw new Error(`Error al enviar correo de verificación: ${(error as Error).message}`);
   }
 };
-
  
 
  /* import nodemailer, { Transporter } from "nodemailer";

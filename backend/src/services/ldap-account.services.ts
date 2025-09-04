@@ -10,6 +10,11 @@ interface PostalCodeEntry {
     ou: string;
 }
 
+interface LdapAttribute {
+  type: string;
+  values: string[];
+}
+
 export class LDAPAccountService {
   private client: Client;
   private structureBuilder: LDAPStructureBuilder;
@@ -20,34 +25,35 @@ export class LDAPAccountService {
     this.structureBuilder = new LDAPStructureBuilder();
   }
 
-  async createStudentAccount(studentData: any) {
+  async createStudentAccount(studentData: any, selectedUsername?: string) {
     try {
-        await this.authenticate();
-
-        // 1. Obtener DN base de la estructura académica
-        const yearDN = await this.getYearOUPath(studentData);
-
-        // 2. Crear entrada del estudiante
-        const userCN = `Estudiante ${this.escapeLDAPValue(studentData.personalData.fullName)}`;
-        const userDN = `CN=${userCN},${yearDN}`;
-
-        await this.createUserEntry(userDN, studentData);
-
-        return {
-            success: true,
-            dn: userDN,
-            message: "Cuenta creada exitosamente"
-        };
+      await this.authenticate();
+      const yearDN = await this.getYearOUPath(studentData);
+      const userCN = `Estudiante ${this.escapeLDAPValue(studentData.personalData.fullName)}`;
+      const userDN = `CN=${userCN},${yearDN}`;
+  
+      // Usar el username seleccionado o generar uno
+      const username = selectedUsername || await this.generateUniqueUsername(
+        this.generateBaseUsername(studentData)
+      );
+  
+      await this.createUserEntry(userDN, studentData, username);
+  
+      return {
+        success: true,
+        dn: userDN,
+        username,
+        message: "Cuenta creada exitosamente"
+      };
     } catch (error: any) {
-        console.error('Error al crear cuenta:', error);
-        return {
-            success: false,
-            error: error.message,
-            code: "LDAP_ACCOUNT_CREATION_FAILED",
-            stack: error.stack // Para ver la traza completa
-        };
+      console.error('Error al crear cuenta:', error);
+      return {
+        success: false,
+        error: error.message,
+        code: "LDAP_ACCOUNT_CREATION_FAILED"
+      };
     } finally {
-        this.safeUnbind();
+      this.safeUnbind();
     }
   }
 
@@ -172,42 +178,6 @@ export class LDAPAccountService {
     });
   }
 
-  private async buildAcademicStructure(studentData: any): Promise<string> {
-    const baseDN = process.env.LDAP_BASE_DN!;
-    const { faculty, career, year } = this.normalizeAcademicData(studentData);
-
-    // Crear estructura usando el builder existente
-    await this.structureBuilder.createOU(`OU=SIGENU,${baseDN}`, faculty, {
-      description: `Facultad: ${faculty}`,
-      postalCode: "FAC-001"
-    });
-
-    const facultyDN = `OU=${faculty},OU=SIGENU,${baseDN}`;
-
-    await this.structureBuilder.createOU(facultyDN, career, {
-      description: `Carrera: ${career}`,
-      postalCode: "CAR-001"
-    });
-
-    const careerDN = `OU=${career},${facultyDN}`;
-    const courseType = this.sanitizeOUName(studentData.rawData.docentData.courseType);
-
-    await this.structureBuilder.createOU(careerDN, courseType, {
-      description: `Tipo de curso: ${courseType}`,
-      postalCode: "CUR-001"
-    });
-
-    const courseTypeDN = `OU=${courseType},${careerDN}`;
-    const academicYear = year.replace(/\D/g, ''); // Solo números
-
-    await this.structureBuilder.createOU(courseTypeDN, academicYear, {
-      description: `Estudiantes de ${academicYear} año`,
-      postalCode: `YEAR-${academicYear}`
-    });
-
-    return `OU=${academicYear},${courseTypeDN}`;
-  }
-
   private normalizeAcademicData(studentData: any) {
     if (!studentData?.academicData?.faculty ||
         !studentData?.academicData?.career) {
@@ -230,7 +200,7 @@ export class LDAPAccountService {
     };
   }
 
-  private async createUserEntry(dn: string, studentData: any) {
+  private async createUserEntry(dn: string, studentData: any, username: string) {
     console.log('📝 Creando entrada para el estudiante:', {
         name: studentData.rawData.personalData.name,
         middleName: studentData.rawData.personalData.middleName,
@@ -255,7 +225,7 @@ export class LDAPAccountService {
 
     // Generación de username único
     const baseUsername = this.generateBaseUsername(studentData);
-    const uniqueUsername = await this.generateUniqueUsername(baseUsername);
+    const uniqueUsername = username;
 
     const encodedPassword = this.encodePassword(password);
 
@@ -532,23 +502,75 @@ export class LDAPAccountService {
         .substring(0, 64);
   }
 
-  private async usernameExists(username: string): Promise<boolean> {
-    try {
-        const filter = `(&(|(sAMAccountName=${username})(uid=${username})))`;
-        const entries = await unifiedLDAPSearch(filter);
-
-        // Verificar coincidencias exactas
+  public async usernameExists(username: string): Promise<boolean> {
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.authenticate();
+        
+        const baseDN = 'ou=UNISS_Users,dc=uniss,dc=edu,dc=cu';
+        const filter = `(&(|(sAMAccountName=${this.escapeLDAPValue(username)})(uid=${this.escapeLDAPValue(username)})))`;
+        
+        const entries = await this.searchLDAP(baseDN, filter, ['sAMAccountName', 'uid']);
+        
         return entries.some(entry =>
-            entry.attributes.some(attr =>
-                ['sAMAccountName', 'uid'].includes(attr.type) &&
-                attr.values.includes(username)
-            )
+          entry.attributes.some((attr: LdapAttribute) =>
+            ['sAMAccountName', 'uid'].includes(attr.type) &&
+            attr.values.includes(username)
+          )
         );
-    } catch (error) {
-        console.error("Error en búsqueda LDAP:", error);
-        return false; // No asumir que existe si hay un error
+      } catch (error: unknown) {
+        // Conversión segura del error unknown a Error
+        if (error instanceof Error) {
+          lastError = error;
+        } else {
+          // Si no es una instancia de Error, crear uno nuevo
+          lastError = new Error(String(error));
+        }
+        
+        console.warn(`Intento ${attempt} fallido:`, lastError);
+        
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
     }
+    
+    console.error("Todos los intentos fallaron:", lastError);
+    return false;
   }
+
+
+  // Método auxiliar para realizar búsquedas LDAP con base DN específica
+private async searchLDAP(baseDN: string, filter: string, attributes: string[] = []): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const entries: any[] = [];
+    
+    this.client.search(baseDN, {
+      scope: 'sub',
+      filter,
+      attributes
+    }, (err, res) => {
+      if (err) {
+        return reject(err);
+      }
+      
+      res.on('searchEntry', (entry) => {
+        entries.push(entry);
+      });
+      
+      res.on('error', (error) => {
+        reject(error);
+      });
+      
+      res.on('end', () => {
+        resolve(entries);
+      });
+    });
+  });
+}
 
   private escapeLDAPValue(value: string): string {
     return value
@@ -585,10 +607,5 @@ export class LDAPAccountService {
 
     // Formatear el número
     return `${countryCode}${cleanNumber}`;
-  }
-
-  private formatLDAPDate(dateString: string): string {
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0].replace(/-/g, '');
   }
 }

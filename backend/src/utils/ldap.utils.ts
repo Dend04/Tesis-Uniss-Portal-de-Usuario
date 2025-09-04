@@ -3,6 +3,7 @@ import ldap, {
   Client,
   SearchEntry as LdapSearchEntry,
   Attribute,
+  createClient,
 } from "ldapjs";
 import { Request, Response } from "express";
 import { LdapTreeNode } from "../interface/ldap-tree.interface";
@@ -45,25 +46,20 @@ export interface SearchEntry extends LdapSearchEntry {
 export type LDAPClient = ldap.Client;
 
 // Conexión LDAP: Crea y configura cliente con manejo de reconexión
-export const createLDAPClient = (url: string): LDAPClient => {
-  const clientOptions: ClientOptions = {
-    url,
+export function createLDAPClient(url: string): Client {
+  // Asegurar que la URL use ldaps:// si no está especificado
+  const secureUrl = url.startsWith('ldap://') ? url.replace('ldap://', 'ldaps://') : url;
+  
+  return createClient({
+    url: secureUrl,
     tlsOptions: {
-      rejectUnauthorized: false,
+      rejectUnauthorized: false // Solo para entornos de desarrollo
     },
-    connectTimeout: 10000,
     timeout: 30000,
-  };
-
-  const client = ldap.createClient(clientOptions);
-
-  // Eliminar el manejador de evento 'close' para reconexión automática
-  client.on("error", (err) => {
-    console.error("⚠️ Error de conexión LDAP:", err.message);
+    connectTimeout: 10000
   });
+}
 
-  return client;
-};
 
 // Autenticación: Promisifica método bind para uso con async/await
 export const bindAsync = (
@@ -377,55 +373,46 @@ export const getLdapStructure = async (
   return result;
 };
 
-export const unifiedLDAPSearch = async (
-  searchTerm: string
-): Promise<ldap.SearchEntry[]> => {
-  // Verificar si el resultado está en caché
-  if (cache[searchTerm]) {
-    return cache[searchTerm]; // Retornar el resultado de la caché
+export async function unifiedLDAPSearch(filter: string, baseDN: string = process.env.LDAP_BASE_DN!): Promise<any[]> {
+  // Verificar que las variables de entorno estén definidas
+  if (!process.env.LDAP_URL || !process.env.LDAP_ADMIN_DN || !process.env.LDAP_ADMIN_PASSWORD) {
+    throw new Error("Configuración LDAP incompleta");
   }
 
-  let client: ldap.Client | null = null;
-
+  const client = createLDAPClient(process.env.LDAP_URL);
+  
   try {
-    const config = getLDAPConfig();
-    client = createConnection(config);
-    await bindAsync(client, config.bindDN, config.password);
-
-    // Escapar caracteres especiales
-    const escapedTerm = escapeLDAPValue(searchTerm);
-
-    // Construir filtro sin espacios entre condiciones
-/*     const filter =
-      `(|` +
-      `(sAMAccountName=${escapedTerm})` +
-      `(cn=*${escapedTerm}*)` +
-      `(uid=${escapedTerm})` +
-      `(employeeID=${escapedTerm})` +
-      `(mail=${escapedTerm})` +
-      `(userPrincipalName=*${escapedTerm}*)` +
-      `(givenName=*${escapedTerm}*)` +
-      `(sn=*${escapedTerm}*)` +
-      `(displayName=*${escapedTerm}*))`; */
-      const filter = `(|(sAMAccountName=${escapedTerm}))`;
-
-    const searchOptions: ldap.SearchOptions = {
-      scope: "sub",
-      attributes: ["*"],
-      filter: filter,
-      paged: true,
-    };
-
-    const entries = await searchAsync(client, config.baseDN, searchOptions);
-
-    // Almacenar el resultado en caché
-    cache[searchTerm] = entries;
-
-    return entries;
+    await bindAsync(client, process.env.LDAP_ADMIN_DN, process.env.LDAP_ADMIN_PASSWORD);
+    
+    return new Promise((resolve, reject) => {
+      const entries: any[] = [];
+      
+      client.search(baseDN, {
+        scope: 'sub',
+        filter,
+        attributes: ['sAMAccountName', 'uid']
+      }, (err, res) => {
+        if (err) {
+          return reject(err);
+        }
+        
+        res.on('searchEntry', (entry) => {
+          entries.push(entry);
+        });
+        
+        res.on('error', (error) => {
+          reject(error);
+        });
+        
+        res.on('end', () => {
+          resolve(entries);
+        });
+      });
+    });
   } finally {
-    if (client) client.unbind();
+    client.unbind();
   }
-};
+}
 
 export const addAsync = (client: Client, dn: string, entry: object): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -476,10 +463,17 @@ export const getLDAPConfig = (): LDAPConfig => ({
 });
 
 export const createConnection = (config: LDAPConfig): LDAPClient => {
-  const client = ldap.createClient({
-    url: config.url,
-    tlsOptions: { rejectUnauthorized: false },
-    connectTimeout: config.timeout,
+  // Asegurarse de que la URL es una cadena válida
+  const url = config.url || process.env.LDAP_URL;
+  
+  if (!url) {
+    throw new Error("LDAP URL no está configurada");
+  }
+
+  const client = createClient({
+    url: url, // Ahora es siempre string
+    reconnect: true,
+    tlsOptions: { rejectUnauthorized: false }
   });
 
   client.on("error", (err) => {

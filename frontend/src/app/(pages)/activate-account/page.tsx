@@ -15,6 +15,7 @@ import ActivationForm from "@/app/components/active-account/ActivationForm";
 import VerificationSuccess from "@/app/components/active-account/VerificationSuccess";
 import BackupEmailForm from "@/app/components/active-account/BackupEmailForm";
 import UserConfirmation from "@/app/components/active-account/UserConfirmation";
+import UsernameSelection from "@/app/components/active-account/UsernameSelection";
 
 // Define interfaces for the expected data structure
 export interface StudentData {
@@ -55,13 +56,21 @@ const emailSchema = z.object({
 });
 export type ActivationFormData = z.infer<typeof activationSchema>;
 export type EmailFormData = z.infer<typeof emailSchema>;
-type StepType = "activation" | "success" | "email" | "confirmation";
+type StepType =
+  | "activation"
+  | "success"
+  | "username"
+  | "email"
+  | "confirmation";
 
 export default function ActivationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState<StepType>("activation");
-  const [result, setResult] = useState<IdentityVerificationResponse | null>(null);
-  const [verifiedEmail, setVerifiedEmail] = useState('');
+  const [result, setResult] = useState<IdentityVerificationResponse | null>(
+    null
+  );
+  const [verifiedEmail, setVerifiedEmail] = useState("");
+  const [selectedUsername, setSelectedUsername] = useState("");
   const containerRef = useRef(null);
   const activationForm = useForm<ActivationFormData>({
     resolver: zodResolver(activationSchema),
@@ -77,7 +86,7 @@ export default function ActivationPage() {
       title: "Verificación",
       status: (currentStep === "activation"
         ? "current"
-        : ["success", "email", "confirmation"].includes(currentStep)
+        : ["success", "username", "email", "confirmation"].includes(currentStep)
         ? "complete"
         : "upcoming") as StepStatus,
     },
@@ -85,6 +94,15 @@ export default function ActivationPage() {
       id: "success",
       title: "Confirmación",
       status: (currentStep === "success"
+        ? "current"
+        : ["username", "email", "confirmation"].includes(currentStep)
+        ? "complete"
+        : "upcoming") as StepStatus,
+    },
+    {
+      id: "username",
+      title: "Usuario",
+      status: (currentStep === "username"
         ? "current"
         : ["email", "confirmation"].includes(currentStep)
         ? "complete"
@@ -102,7 +120,9 @@ export default function ActivationPage() {
     {
       id: "confirmation",
       title: "Finalizado",
-      status: (currentStep === "confirmation" ? "current" : "upcoming") as StepStatus,
+      status: (currentStep === "confirmation"
+        ? "current"
+        : "upcoming") as StepStatus,
     },
   ];
 
@@ -139,7 +159,7 @@ export default function ActivationPage() {
 
       if (userData.type === "student") {
         userWithType = {
-        id: userData.data.ci,
+          id: userData.data.ci,
           ...userData.data,
           type: "student",
         };
@@ -195,37 +215,42 @@ export default function ActivationPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4"
+      className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-2 sm:p-4"
       ref={containerRef}
     >
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white rounded-xl md:rounded-2xl shadow-lg md:shadow-xl overflow-hidden mx-2">
         <AnimatePresence>
           <motion.div
             key="logo"
-            className="flex justify-center pt-8 px-8"
+            className="flex justify-center pt-6 md:pt-8 px-4 md:px-8"
             {...logoAnimationProps}
           >
             <div className="relative">
               <Image
                 src="/uniss-logo.png"
                 alt="UNISS Logo"
-                width={120}
-                height={120}
-                className="object-contain"
+                width={80}
+                height={80}
+                className="object-contain w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24"
+                priority
               />
               {currentStep !== "activation" && (
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                  className="absolute -top-2 -right-2 bg-white rounded-full"
+                  className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-white rounded-full"
                 >
-                  <CheckCircleIcon className="h-8 w-8 text-green-500" />
+                  <CheckCircleIcon className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-green-500" />
                 </motion.div>
               )}
             </div>
           </motion.div>
-          <StepsIndicator steps={steps} />
+          
+          <div className="px-2 sm:px-4">
+            <StepsIndicator steps={steps} />
+          </div>
+          
           {/* Paso 1: Formulario de Activación */}
           {currentStep === "activation" && (
             <ActivationForm
@@ -239,16 +264,30 @@ export default function ActivationPage() {
               isSubmitting={isSubmitting}
             />
           )}
+          
           {/* Paso 2: Resultado de la Activación */}
           {currentStep === "success" && result && (
             <VerificationSuccess
               key="success-step"
               result={result}
               onBack={() => setCurrentStep("activation")}
-              onContinue={() => setCurrentStep("email")}
+              onContinue={() => setCurrentStep("username")}
             />
           )}
-          {/* Paso 3: Formulario de correo de respaldo */}
+
+          {/* Paso 3: Selección de username */}
+          {currentStep === "username" && result && (
+            <UsernameSelection
+              key="username-step"
+              userData={result}
+              userType={result.type}
+              onSelect={setSelectedUsername}
+              onBack={() => setCurrentStep("success")}
+              onNext={() => setCurrentStep("email")}
+            />
+          )}
+          
+          {/* Paso 4: Formulario de correo de respaldo */}
           {currentStep === "email" && (
             <BackupEmailForm
               key="email-step"
@@ -259,7 +298,8 @@ export default function ActivationPage() {
               onBack={() => setCurrentStep("success")}
             />
           )}
-          {/* Paso 4: Confirmación final del usuario */}
+          
+          {/* Paso 5: Confirmación final del usuario */}
           {currentStep === "confirmation" && result && (
             <UserConfirmation
               key="confirmation-step"
