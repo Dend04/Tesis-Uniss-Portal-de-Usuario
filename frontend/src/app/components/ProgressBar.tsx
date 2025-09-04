@@ -42,7 +42,7 @@ const ProgressBar = ({
             percentage >= 90
               ? "bg-green-500"
               : percentage >= 50
-              ? "bg-blue-500"
+              ? "bg-uniss-blue"
               : percentage >= 25
               ? "bg-yellow-500"
               : "bg-red-500"

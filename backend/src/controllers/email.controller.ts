@@ -1,34 +1,49 @@
 import { Request, Response } from "express";
 import { emailCounter } from "../services/emailCounter";
 import {
-
   sendPasswordExpiryAlert,
   sendWelcomeEmail,
   sendVerificationCode,
   sendVerificationCode as sendVerificationCodeService,
-  sendEmailNew
+  sendEmailNew,
 } from "../services/emailService";
 
 // Almacenamiento temporal de códigos de verificación
-const verificationCodes = new Map<string, { code: string, expiresAt: number }>();
+const verificationCodes = new Map<
+  string,
+  { code: string; expiresAt: number }
+>();
 
 // Generar código de verificación de 6 dígitos
 const generateVerificationCode = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-export const sendTestEmail = async (
+// En el controlador email.controller.ts, modificar sendWelcomeEmailToUser
+export const sendWelcomeEmailToUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const testEmail = "enamoradodairon@yahoo.com";
-    const info = await sendWelcomeEmail(testEmail);
+    const { email, userName, userType } = req.body;
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "El correo electrónico es requerido",
+      });
+      return;
+    }
+
+    // Usar la plantilla actualizada con nombre y tipo de usuario
+    const info = await sendWelcomeEmail(email, userName, userType);
 
     res.status(200).json({
       success: true,
       message: "Correo de bienvenida enviado exitosamente",
-      email: testEmail,
+      email: email,
+      userName,
+      userType,
       response: info.response,
       emailStats: {
         count: emailCounter.getCount(),
@@ -71,7 +86,11 @@ export const sendVerificationCodeEmailPassword = async (
     // Generar un código de verificación aleatorio de 6 dígitos
     const verificationCode = generateVerificationCode();
 
-    const info = await sendVerificationCode(testEmail, userName, verificationCode);
+    const info = await sendVerificationCode(
+      testEmail,
+      userName,
+      verificationCode
+    );
 
     res.status(200).json({
       success: true,
@@ -134,7 +153,7 @@ export const sendVerificationCodeChangeEmail = async (
 ): Promise<void> => {
   try {
     const { email } = req.body; // Obtener el email del cuerpo de la solicitud
-    
+
     if (!email) {
       res.status(400).json({
         success: false,
@@ -145,11 +164,11 @@ export const sendVerificationCodeChangeEmail = async (
 
     const userName = "Usuario";
     const verificationCode = generateVerificationCode();
-    
+
     // Guardar el código con fecha de expiración (10 minutos)
     verificationCodes.set(email, {
       code: verificationCode,
-      expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutos
+      expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutos
     });
 
     // Enviar el código por correo usando el servicio
@@ -181,7 +200,7 @@ export const verifyCode = async (
 ): Promise<void> => {
   try {
     const { email, code } = req.body;
-    
+
     if (!email || !code) {
       res.status(400).json({
         success: false,
@@ -192,7 +211,7 @@ export const verifyCode = async (
 
     // Buscar el código de verificación
     const storedCode = verificationCodes.get(email);
-    
+
     if (!storedCode) {
       res.status(400).json({
         success: false,
@@ -222,7 +241,7 @@ export const verifyCode = async (
 
     // Código verificado correctamente
     verificationCodes.delete(email);
-    
+
     // Aquí iría la lógica para actualizar el email en la base de datos
     res.status(200).json({
       success: true,

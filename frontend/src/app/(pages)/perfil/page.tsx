@@ -94,7 +94,7 @@ export default function ProfilePage() {
         <div className="text-red-500 mb-4">Error: {error}</div>
         <button
           onClick={() => window.location.reload()}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          className="bg-uniss-blue text-white px-4 py-2 rounded hover:bg-uniss-blue transition"
         >
           Reintentar
         </button>
@@ -113,7 +113,7 @@ export default function ProfilePage() {
       ) : (
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Encabezado con foto */}
-          <div className="bg-blue-600 p-8 flex items-center gap-6">
+          <div className="bg-uniss-blue p-8 flex items-center gap-6">
             <div className="bg-white/10 p-4 rounded-full">
               <UserCircleIcon className="h-20 w-20 text-white/80" />
             </div>

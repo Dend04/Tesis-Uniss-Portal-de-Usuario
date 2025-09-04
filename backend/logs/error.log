@@ -53,3 +53,47 @@
 2025-06-12 11:20:44 [error]: Error en SIGENU API: undefined - undefined
 2025-06-12 11:20:44 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
 2025-06-12 11:20:44 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
+2025-09-02 11:21:27 [error]: Error en SIGENU API: 404 - [object Object]
+2025-09-02 11:21:29 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-09-02 16:22:55 [error]: Error en SIGENU API: undefined - undefined
+2025-09-02 16:22:55 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
+2025-09-02 16:22:55 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
+2025-09-02 17:50:02 [error]: Error en SIGENU API: undefined - undefined
+2025-09-02 17:50:02 [error]: Error al consultar SIGENU para CI: 01110172948. Error: timeout of 10000ms exceeded
+2025-09-02 17:50:02 [error]: Error al verificar identidad: Error al consultar SIGENU: timeout of 10000ms exceeded
+2025-09-03 17:16:08 [error]: Error al consultar datos de empleado para CI: 86082715841. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:126:57
+
+  123 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  124   try {
+  125     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 126     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-09-03 17:16:08 [error]: Error al verificar identidad: Error al consultar datos de empleado: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:126:57
+
+  123 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  124   try {
+  125     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 126     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-09-03 17:16:31 [error]: Error al consultar datos de empleado para CI: 86082715841. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:126:57
+
+  123 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  124   try {
+  125     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 126     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-09-03 17:16:31 [error]: Error al verificar identidad: Error al consultar datos de empleado: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:126:57
+
+  123 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  124   try {
+  125     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 126     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)

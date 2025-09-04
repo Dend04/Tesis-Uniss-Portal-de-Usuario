@@ -27,8 +27,8 @@ interface EmailHelpModalProps {
           onClick={onClose}
           className={`w-full py-2 px-4 rounded-lg ${
             isDarkMode 
-              ? "bg-blue-600 text-white hover:bg-blue-700" 
-              : "bg-blue-600 text-white hover:bg-blue-700"
+              ? "bg-uniss-blue text-white hover:bg-blue-700" 
+              : "bg-uniss-blue text-white hover:bg-blue-700"
           }`}
         >
           Entendido

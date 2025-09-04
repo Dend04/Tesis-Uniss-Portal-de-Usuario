@@ -11,7 +11,7 @@ export default {
     extend: {
       colors: {
         'uniss-black': '#1A1A1A',
-        'uniss-blue': '#1D4ED8',
+        'uniss-blue': '#0098BC',
         'uniss-gold': '#D4AF37',
         'uniss-green': '#2E7D32',
       },

@@ -109,7 +109,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row">
         {/* Columna Izquierda - Información */}
-        <div className="bg-blue-700 p-8 md:p-12 md:w-1/2 flex flex-col justify-center items-center text-center">
+        <div className="bg-uniss-blue p-8 md:p-12 md:w-1/2 flex flex-col justify-center items-center text-center">
           <div className="mb-8">
             <Image
               src="/uniss-logo.png"
@@ -221,7 +221,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-blue-700 text-white py-4 rounded-lg hover:bg-blue-800 transition-all font-semibold text-lg flex items-center justify-center gap-2 shadow-md"
+              className="w-full bg-uniss-blue text-white py-4 rounded-lg hover:bg-uniss-green transition-all font-semibold text-lg flex items-center justify-center gap-2 shadow-md"
               aria-busy={isSubmitting}
             >
               {isSubmitting ? (

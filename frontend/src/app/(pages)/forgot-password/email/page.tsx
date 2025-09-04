@@ -262,7 +262,7 @@ export default function EmailRecoveryPage() {
               <h1 className="text-2xl font-bold text-uniss-black mb-2">Verificar Identidad</h1>
               
               {userInfo && (
-                <div className="bg-blue-50 p-3 rounded-lg mb-4 text-left">
+                <div className="bg-uniss-blue p-3 rounded-lg mb-4 text-left">
                   <p className="text-sm text-blue-800">
                     <strong>Usuario encontrado:</strong> {userInfo.nombreCompleto}
                     <br />

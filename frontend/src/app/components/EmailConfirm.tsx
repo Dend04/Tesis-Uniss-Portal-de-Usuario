@@ -60,7 +60,7 @@ export default function OperationSuccess() {
               
               <button
                 onClick={handleGoHome}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-uniss-blue text-white rounded-lg hover:bg-uniss-blue transition-colors duration-300"
               >
                 <HomeIcon className="w-5 h-5" />
                 Ir al inicio

@@ -255,7 +255,7 @@ export default function TutorialModal({ isOpen, onClose, isDarkMode }: TutorialM
                 key={index}
                 className={`w-4 h-4 rounded-full ${
                   index === currentStep
-                    ? "bg-blue-500"
+                    ? "bg-uniss-blue"
                     : isDarkMode
                     ? "bg-gray-600"
                     : "bg-gray-300"
@@ -301,7 +301,7 @@ export default function TutorialModal({ isOpen, onClose, isDarkMode }: TutorialM
           <div className="flex justify-end">
             <button
               onClick={handleNext}
-              className="px-5 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-lg font-semibold"
+              className="px-5 py-3 bg-uniss-blue text-white rounded-lg hover:bg-uniss-blue-600 text-lg font-semibold"
             >
               {currentStep === tutorialSteps.length - 1 ? "Finalizar →" : "Siguiente →"}
             </button>

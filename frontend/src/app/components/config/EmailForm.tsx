@@ -270,7 +270,7 @@ const handleVerifyAndChange = useCallback(async (e: React.FormEvent) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-uniss-blue text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {isLoading ? "Enviando código..." : "Continuar"}
             </button>
@@ -328,7 +328,7 @@ const handleVerifyAndChange = useCallback(async (e: React.FormEvent) => {
             <button
               type="submit"
               disabled={isLoading || verificationCode.length !== 6}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-uniss-blue text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {isLoading ? "Verificando..." : "Confirmar cambio"}
             </button>
@@ -353,7 +353,7 @@ const handleVerifyAndChange = useCallback(async (e: React.FormEvent) => {
             className={`p-1 rounded-full ${
               isDarkMode 
                 ? "text-gray-200 hover:text-white hover:bg-gray-600" 
-                : "text-blue-600 hover:text-blue-800 hover:bg-blue-200"
+                : "text-blue-600 hover:text-blue-800 hover:bg-uniss-blue"
             } ${isShaking ? "animate-bounce" : ""}`}
             title="¿Qué es la autenticación en dos pasos?"
           >

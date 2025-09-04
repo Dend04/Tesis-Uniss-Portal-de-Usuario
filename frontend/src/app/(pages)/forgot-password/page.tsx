@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
                 onClick={() => handleMethodSelect(method.id)}
                 className={`w-full p-4 text-left rounded-lg border transition-all ${
                   selectedMethod === method.id
-                    ? "border-uniss-blue bg-blue-50"
+                    ? "border-uniss-blue -50"
                     : "border-gray-200 hover:border-uniss-blue"
                 }`}
               >

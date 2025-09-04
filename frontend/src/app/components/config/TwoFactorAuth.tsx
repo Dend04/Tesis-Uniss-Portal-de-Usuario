@@ -350,7 +350,7 @@ export default function TwoFactorAuth({
     <div className="mt-4">
       <div
         className={`p-6 rounded-lg ${
-          isDarkMode ? "bg-gray-700" : "bg-blue-50"
+          isDarkMode ? "bg-gray-700" : "bg-uniss-blue"
         } space-y-6`}
       >
         <div className="flex items-center justify-between">
@@ -368,7 +368,7 @@ export default function TwoFactorAuth({
             className={`p-1 rounded-full ${
               isDarkMode
                 ? "text-gray-200 hover:text-white hover:bg-gray-600"
-                : "text-blue-600 hover:text-blue-800 hover:bg-blue-200"
+                : "text-blue-600 hover:text-blue-800 hover:bg-uniss-blue"
             } ${isShaking ? "animate-bounce" : ""}`}
             title="¿Qué es la autenticación en dos pasos?"
           >
@@ -381,7 +381,7 @@ export default function TwoFactorAuth({
           <div className="flex flex-col items-center gap-4">
             <div
               className={`p-2 rounded ${
-                isDarkMode ? "bg-gray-600" : "bg-blue-100"
+                isDarkMode ? "bg-gray-600" : "bg-uniss-blue"
               }`}
             >
               <QrCodeIcon className="w-8 h-8 text-blue-500" />
@@ -421,7 +421,7 @@ export default function TwoFactorAuth({
                 <div className="flex items-center justify-center gap-2 mt-1">
                   <code
                     className={`px-2 py-1 rounded ${
-                      isDarkMode ? "bg-gray-600" : "bg-blue-100"
+                      isDarkMode ? "bg-gray-600" : "bg-uniss-blue"
                     }`}
                   >
                     {secret}
@@ -429,7 +429,7 @@ export default function TwoFactorAuth({
                   <button
                     onClick={() => copyToClipboard(secret)}
                     className={`p-1 rounded ${
-                      isDarkMode ? "hover:bg-gray-600" : "hover:bg-blue-200"
+                      isDarkMode ? "hover:bg-gray-600" : "hover:bg-uniss-blue"
                     }`}
                     title="Copiar clave secreta"
                   >
@@ -444,7 +444,7 @@ export default function TwoFactorAuth({
           <div className="flex items-start gap-4 mt-6">
             <div
               className={`p-2 rounded ${
-                isDarkMode ? "bg-gray-600" : "bg-blue-100"
+                isDarkMode ? "bg-gray-600" : "bg-uniss-blue"
               }`}
             >
               <KeyIcon className="w-8 h-8 text-blue-500" />

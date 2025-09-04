@@ -1,4 +1,5 @@
-export const getWelcomeEmailHTML = () => `
+// En el servicio emailService, modificar la función getWelcomeEmailHTML
+export const getWelcomeEmailHTML = (userName: string, userType: string) => `
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -48,6 +49,12 @@ export const getWelcomeEmailHTML = () => `
             border-left: 4px solid #ffc107;
             margin: 15px 0;
         }
+        .user-info {
+            background-color: #f0f7ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
     </style>
 </head>
 <body>
@@ -56,11 +63,19 @@ export const getWelcomeEmailHTML = () => `
     </div>
     
     <div class="content">
-        <h1>¡Bienvenido al Portal de Usuario de la UNISS!</h1>
+        <h1>¡Bienvenido/a ${userName} al Portal de Usuario de la UNISS!</h1>
         
-        <p>Estimado usuario,</p>
+        <p>Estimado/a ${userName},</p>
         
         <p>Le damos la más cordial bienvenida al Portal de Usuario de la Universidad de Sancti Spíritus "José Martí Pérez".</p>
+        
+        <div class="user-info">
+            <p><strong>Información de su cuenta:</strong></p>
+            <ul>
+                <li><strong>Tipo de usuario:</strong> ${userType === 'student' ? 'Estudiante' : 'Trabajador'}</li>
+                <li><strong>Correo electrónico registrado:</strong> [EMAIL]</li>
+            </ul>
+        </div>
         
         <div class="highlight">
             <p><strong>Su correo electrónico ha sido registrado</strong> y será utilizado para:</p>

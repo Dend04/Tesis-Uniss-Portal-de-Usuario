@@ -203,7 +203,7 @@ export default function SMSRecoveryPage() {
             <>
               <h1 className="text-2xl font-bold text-uniss-black mb-2">Verificar Código</h1>
               
-              <div className="bg-blue-50 p-3 rounded-lg mb-4 text-left">
+              <div className="bg-uniss-blue p-3 rounded-lg mb-4 text-left">
                 <p className="text-sm text-blue-800">
                   Se ha enviado un código de verificación al número: 
                   <strong> {phoneNumber}</strong>

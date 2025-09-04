@@ -13,6 +13,7 @@ export type StudentData = {
   faculty: string;
   academicYear: number;
   status: 'active' | 'inactive';
+  ci: string;
 };
 
 export type EmployeeWithDepartment = {
@@ -61,8 +62,7 @@ class IdentityVerificationService {
   private async checkStudent(ci: string): Promise<StudentData | null> {
     try {
       logger.info(`Consultando datos de estudiante para CI: ${ci}`);
-      
-      // Obtener y validar credenciales
+  
       const username = process.env.SIGENU_API_USER;
       const password = process.env.SIGENU_API_PASSWORD;
   
@@ -73,36 +73,38 @@ class IdentityVerificationService {
         );
       }
   
-      // Configurar autenticación básica
       const authHeader = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
   
       const response = await axios.get(
-        `https://sigenu.uniss.edu.cu/sigenu-rest/student/fileStudent/getStudentAllData/${ci}`,
+        `http://localhost:5000/api/students/${ci}`,
         {
           headers: {
-            Authorization: authHeader // Solo autenticación básica
+            Authorization: authHeader
           },
           httpsAgent: new https.Agent({
-            rejectUnauthorized: false // Solo para desarrollo
+            rejectUnauthorized: false
           }),
-          timeout: 10000 // Timeout de 10 segundos
+          timeout: 10000
         }
       );
   
-      if (response.data?.estudianteActivo) {
+      // Solo considera estudiante activo si studentStatus es "Activo"
+      if (response.data?.success && response.data?.data?.rawData?.docentData?.studentStatus === "Activo") {
         return {
-          fullName: response.data.nombreCompleto,
-          career: response.data.nombreCarrera,
-          faculty: response.data.nombreFacultad,
-          academicYear: response.data.annoAcademico,
-          status: 'active'
+          fullName: response.data.data.personalData.fullName,
+          career: response.data.data.academicData.career,
+          faculty: response.data.data.academicData.faculty,
+          academicYear: parseInt(response.data.data.academicData.year),
+          status: 'active',
+          ci: response.data.data.personalData.identification
         };
       }
+  
       return null;
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
         logger.error(`Error en SIGENU API: ${error.response?.status} - ${error.response?.data}`);
-        
+  
         if (error.response?.status === 401) {
           throw new Error('Credenciales SIGENU inválidas');
         }
@@ -110,11 +112,13 @@ class IdentityVerificationService {
           return null;
         }
       }
-      
+  
       logger.error(`Error al consultar SIGENU para CI: ${ci}. Error: ${error.message}`);
       throw new Error(`Error al consultar SIGENU: ${error.message}`);
     }
   }
+  
+  
 
   private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
     try {

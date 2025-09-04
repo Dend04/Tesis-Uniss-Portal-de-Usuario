@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev -p 3330 --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -15,12 +15,12 @@
     "deep-chat-react": "^2.1.1",
     "framer-motion": "^12.4.7",
     "heroicons": "^2.2.0",
-    "next": "^15.2.4",
+    "next": "15.5.2",
     "otpauth": "^9.4.1",
     "plaiceholder": "^3.0.0",
     "qrcode": "^1.5.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "react-hook-form": "^7.54.2",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
@@ -32,14 +32,18 @@
     "@types/axios": "^0.14.4",
     "@types/node": "^22.13.5",
     "@types/qrcode": "^1.5.5",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
+    "@types/react": "19.1.12",
+    "@types/react-dom": "19.1.9",
     "@types/webpack": "^5.28.5",
     "eslint": "^9",
-    "eslint-config-next": "15.1.7",
+    "eslint-config-next": "15.5.2",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "webpack": "^5.99.6"
+  },
+  "overrides": {
+    "@types/react": "19.1.12",
+    "@types/react-dom": "19.1.9"
   }
 }
