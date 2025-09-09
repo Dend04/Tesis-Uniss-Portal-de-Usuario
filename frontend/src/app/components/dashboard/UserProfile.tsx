@@ -21,6 +21,12 @@ interface InfoItemConfig {
   value: string;
 }
 
+interface UserProfileProps {
+  userInfo: UserInfo;
+  isDarkMode: boolean;
+  className: string;
+}
+
 // Componente memoizado optimizado
 const InfoItem = memo(({ icon, label, value, darkMode }: { 
   icon?: keyof typeof iconMap; 
@@ -80,6 +86,7 @@ const UserProfile = memo(({ userInfo, isDarkMode }: UserProfileProps) => {
     { icon: 'phone', label: 'Teléfono', value: userInfo.phone },
     { icon: 'user', label: 'Correo Personal', value: userInfo.backupEmail },
     { icon: 'email', label: 'Correo Institucional', value: userInfo.universityEmail },
+    { icon: 'user', label: 'Nombre de Usuario', value: userInfo.username },
     { icon: 'clock', label: 'Último acceso', value: userInfo.lastLogin }
   ], [userInfo]);
 

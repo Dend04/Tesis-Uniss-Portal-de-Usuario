@@ -1,5 +1,5 @@
 import express from 'express';
-import { getEmailStats, sendPasswordAlert, sendVerificationCodeChangeEmail, sendVerificationCodeEmailPassword, sendWelcomeEmailToUser, verifyCode } from '../controllers/email.controller';
+import { debugVerificationCodes, getEmailStats, sendPasswordAlert, sendVerificationCodeChangeEmail, sendVerificationCodeEmailPassword, sendWelcomeEmailToUser, verifyCode } from '../controllers/email.controller';
 import { sendWelcomeEmail } from '../services/emailService';
 
 
@@ -12,4 +12,5 @@ router.post('/verificacion', sendVerificationCodeEmailPassword);
 router.get('/email-stats', getEmailStats);
 router.post('/cambioCorreo', sendVerificationCodeChangeEmail);
 router.post('/verify-code', verifyCode);
+router.get('/debug/verification-codes', debugVerificationCodes);
 export default router;

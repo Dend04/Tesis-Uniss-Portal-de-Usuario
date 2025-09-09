@@ -3,10 +3,10 @@ import { emailCounter } from "../services/emailCounter";
 import {
   sendPasswordExpiryAlert,
   sendWelcomeEmail,
-  sendVerificationCode,
   sendVerificationCode as sendVerificationCodeService,
   sendEmailNew,
 } from "../services/emailService";
+import { verificationStorage } from "../services/verificationStorage";
 
 // Almacenamiento temporal de códigos de verificación
 const verificationCodes = new Map<
@@ -19,7 +19,6 @@ const generateVerificationCode = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// En el controlador email.controller.ts, modificar sendWelcomeEmailToUser
 export const sendWelcomeEmailToUser = async (
   req: Request,
   res: Response
@@ -81,23 +80,30 @@ export const sendVerificationCodeEmailPassword = async (
   res: Response
 ): Promise<void> => {
   try {
-    const testEmail = "enamoradodairon@yahoo.com";
-    const userName = "Usuario de Prueba UNISS";
+    const { email, userName } = req.body;
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "El correo electrónico es requerido",
+      });
+      return;
+    }
     // Generar un código de verificación aleatorio de 6 dígitos
     const verificationCode = generateVerificationCode();
-
-    const info = await sendVerificationCode(
-      testEmail,
-      userName,
+    // Guardar el código con fecha de expiración (10 minutos)
+    verificationStorage.setCode(email, verificationCode, 10 * 60 * 1000);
+    // Enviar el código por correo usando el servicio
+    const info = await sendVerificationCodeService(
+      email,
+      userName || "Usuario",
       verificationCode
     );
-
     res.status(200).json({
       success: true,
       message: "Código de verificación enviado",
-      email: testEmail,
-      userName,
-      code: verificationCode,
+      email: email,
+      userName: userName || "Usuario",
+      code: verificationCode, // Solo para depuración, no en producción
       emailStats: {
         count: emailCounter.getCount(),
         remaining: emailCounter.getRemaining(),
@@ -119,18 +125,28 @@ export const sendPasswordAlert = async (
   res: Response
 ): Promise<void> => {
   try {
-    const testEmail = "enamoradodairon@yahoo.com";
-    const userName = "Usuario de Prueba UNISS";
-    const daysLeft = 5;
+    const { email, userName, daysLeft } = req.body;
 
-    const info = await sendPasswordExpiryAlert(testEmail, userName, daysLeft);
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "El correo electrónico es requerido",
+      });
+      return;
+    }
+
+    const info = await sendPasswordExpiryAlert(
+      email,
+      userName || "Usuario",
+      daysLeft || 5
+    );
 
     res.status(200).json({
       success: true,
       message: "Alerta de contraseña enviada",
-      email: testEmail,
-      userName,
-      daysLeft,
+      email: email,
+      userName: userName || "Usuario",
+      daysLeft: daysLeft || 5,
       emailStats: {
         count: emailCounter.getCount(),
         remaining: emailCounter.getRemaining(),
@@ -152,7 +168,7 @@ export const sendVerificationCodeChangeEmail = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { email } = req.body; // Obtener el email del cuerpo de la solicitud
+    const { email, userName } = req.body;
 
     if (!email) {
       res.status(400).json({
@@ -162,23 +178,19 @@ export const sendVerificationCodeChangeEmail = async (
       return;
     }
 
-    const userName = "Usuario";
     const verificationCode = generateVerificationCode();
 
     // Guardar el código con fecha de expiración (10 minutos)
-    verificationCodes.set(email, {
-      code: verificationCode,
-      expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutos
-    });
+    verificationStorage.setCode(email, verificationCode, 10 * 60 * 1000);
 
     // Enviar el código por correo usando el servicio
-    const info = await sendEmailNew(email, userName, verificationCode);
+    const info = await sendEmailNew(email, userName || "Usuario", verificationCode);
 
     res.status(200).json({
       success: true,
       message: "Código de verificación enviado",
       email: email,
-      userName,
+      userName: userName || "Usuario",
       emailStats: {
         count: emailCounter.getCount(),
         remaining: emailCounter.getRemaining(),
@@ -194,6 +206,7 @@ export const sendVerificationCodeChangeEmail = async (
     });
   }
 };
+
 export const verifyCode = async (
   req: Request,
   res: Response
@@ -210,28 +223,18 @@ export const verifyCode = async (
     }
 
     // Buscar el código de verificación
-    const storedCode = verificationCodes.get(email);
+    const storedData = verificationStorage.getCode(email);
 
-    if (!storedCode) {
+    if (!storedData) {
       res.status(400).json({
         success: false,
-        message: "No se encontró un código de verificación para este correo",
-      });
-      return;
-    }
-
-    // Verificar si el código ha expirado
-    if (Date.now() > storedCode.expiresAt) {
-      verificationCodes.delete(email);
-      res.status(400).json({
-        success: false,
-        message: "El código de verificación ha expirado",
+        message: "No se encontró un código de verificación para este correo o ha expirado",
       });
       return;
     }
 
     // Verificar si el código coincide
-    if (storedCode.code !== code) {
+    if (storedData.code !== code) {
       res.status(400).json({
         success: false,
         message: "El código de verificación es incorrecto",
@@ -240,9 +243,8 @@ export const verifyCode = async (
     }
 
     // Código verificado correctamente
-    verificationCodes.delete(email);
+    verificationStorage.deleteCode(email);
 
-    // Aquí iría la lógica para actualizar el email en la base de datos
     res.status(200).json({
       success: true,
       message: "Código verificado correctamente",
@@ -251,6 +253,30 @@ export const verifyCode = async (
     res.status(500).json({
       success: false,
       message: "Error al verificar el código",
+      error: error.message,
+    });
+  }
+};
+
+// En tu archivo de controlador (email.controller.ts)
+export const debugVerificationCodes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const allCodes = verificationStorage.getAllCodes();
+    
+    res.status(200).json({
+      success: true,
+      message: "Estado del almacenamiento de códigos",
+      count: allCodes.length,
+      codes: allCodes,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener códigos de verificación",
       error: error.message,
     });
   }

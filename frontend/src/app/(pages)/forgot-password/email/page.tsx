@@ -7,7 +7,6 @@ import {
   UserIcon, 
   ArrowLeftIcon, 
   ArrowPathIcon,
-  CheckCircleIcon
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import Link from "next/link";
@@ -252,7 +251,7 @@ export default function EmailRecoveryPage() {
 
               <div className="mt-4 text-sm text-gray-600">
                 ¿Recordó su contraseña?{" "}
-                <Link href="/login" className="text-uniss-blue hover:underline" prefetch={false}>
+                <Link href="/" className="text-uniss-blue hover:underline" prefetch={false}>
                   Iniciar sesión
                 </Link>
               </div>

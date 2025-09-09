@@ -1,6 +1,5 @@
 // src/controllers/student-account.controller.ts
-import { Request, Response, NextFunction } from "express";
-
+import { Request, Response } from "express";
 import { handleServiceResponse } from "../utils/handler.util";
 import { SigenuService } from "../services/sigenu.services";
 import { LDAPAccountService } from "../services/ldap-account.services";
@@ -8,27 +7,23 @@ import { LDAPAccountService } from "../services/ldap-account.services";
 export class StudentAccountController {
   static async createAccount(
     req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> { // 1. Especificar retorno void
+    res: Response
+  ): Promise<void> {
     try {
       const { ci } = req.params;
 
-
-      
       // 1. Obtener datos del estudiante
       const studentResponse = await SigenuService.getMainStudentData(ci);
       
       // 2. Validar respuesta
       if (!studentResponse.success) {
-        handleServiceResponse(res, { // 2. Eliminar return
+        res.status(404).json({
           success: false,
           error: "Estudiante no encontrado",
           code: "STUDENT_NOT_FOUND"
         });
-        return; // 3. Agregar return explícito
+        return;
       }
-      
 
       // 3. Crear cuenta LDAP
       const ldapService = new LDAPAccountService();
@@ -43,14 +38,14 @@ export class StudentAccountController {
       });
 
     } catch (error) {
-      next(StudentAccountController.handleError(error));
+      console.error("Error en creación de cuenta:", error);
+      
+      // Manejo de errores directamente en el controlador
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor",
+        code: "INTERNAL_SERVER_ERROR"
+      });
     }
-  }
-
-  private static handleError(error: unknown): Error {
-    console.error("Error en creación de cuenta:", error);
-    return error instanceof Error 
-      ? error 
-      : new Error("Error desconocido al crear cuenta");
   }
 }

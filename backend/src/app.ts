@@ -1,10 +1,9 @@
 // src/app.ts
+import express, { Request, Response, NextFunction } from 'express'; // Importa todo desde un solo lugar
 import dotenv from 'dotenv';
-import express, { NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import authRoutes from './routes/auth.routes';
-import { Request, Response } from 'express';
 import studentRoutes from './routes/student.routes';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger/swagger';

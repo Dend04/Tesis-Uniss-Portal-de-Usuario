@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   
   // Redirigir /login a la raíz
-  if (path === '/login') {
+  if (path === '/') {
     return NextResponse.redirect(new URL('/', request.url));
   }
   

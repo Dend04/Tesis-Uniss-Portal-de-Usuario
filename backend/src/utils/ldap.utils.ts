@@ -47,13 +47,17 @@ export type LDAPClient = ldap.Client;
 
 // Conexión LDAP: Crea y configura cliente con manejo de reconexión
 export function createLDAPClient(url: string): Client {
-  // Asegurar que la URL use ldaps:// si no está especificado
-  const secureUrl = url.startsWith('ldap://') ? url.replace('ldap://', 'ldaps://') : url;
+  // Forzar conexión LDAPS
+  const secureUrl = url.startsWith('ldap://') 
+    ? url.replace('ldap://', 'ldaps://') 
+    : url.startsWith('ldaps://') 
+      ? url 
+      : `ldaps://${url}`;
   
   return createClient({
     url: secureUrl,
     tlsOptions: {
-      rejectUnauthorized: false // Solo para entornos de desarrollo
+      rejectUnauthorized: false // Solo para desarrollo
     },
     timeout: 30000,
     connectTimeout: 10000

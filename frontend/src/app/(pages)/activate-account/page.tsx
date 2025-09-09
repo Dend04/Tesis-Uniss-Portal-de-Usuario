@@ -16,6 +16,8 @@ import VerificationSuccess from "@/app/components/active-account/VerificationSuc
 import BackupEmailForm from "@/app/components/active-account/BackupEmailForm";
 import UserConfirmation from "@/app/components/active-account/UserConfirmation";
 import UsernameSelection from "@/app/components/active-account/UsernameSelection";
+import PasswordForm from "@/app/components/active-account/PasswordForm";
+
 
 // Define interfaces for the expected data structure
 export interface StudentData {
@@ -61,6 +63,7 @@ type StepType =
   | "success"
   | "username"
   | "email"
+  | "password"
   | "confirmation";
 
 export default function ActivationPage() {
@@ -71,6 +74,8 @@ export default function ActivationPage() {
   );
   const [verifiedEmail, setVerifiedEmail] = useState("");
   const [selectedUsername, setSelectedUsername] = useState("");
+  const [userPrincipalName, setUserPrincipalName] = useState("");
+  const [password, setPassword] = useState("");
   const containerRef = useRef(null);
   const activationForm = useForm<ActivationFormData>({
     resolver: zodResolver(activationSchema),
@@ -86,7 +91,7 @@ export default function ActivationPage() {
       title: "Verificación",
       status: (currentStep === "activation"
         ? "current"
-        : ["success", "username", "email", "confirmation"].includes(currentStep)
+        : ["success", "username", "email", "password", "confirmation"].includes(currentStep)
         ? "complete"
         : "upcoming") as StepStatus,
     },
@@ -95,7 +100,7 @@ export default function ActivationPage() {
       title: "Confirmación",
       status: (currentStep === "success"
         ? "current"
-        : ["username", "email", "confirmation"].includes(currentStep)
+        : ["username", "email", "password", "confirmation"].includes(currentStep)
         ? "complete"
         : "upcoming") as StepStatus,
     },
@@ -104,7 +109,7 @@ export default function ActivationPage() {
       title: "Usuario",
       status: (currentStep === "username"
         ? "current"
-        : ["email", "confirmation"].includes(currentStep)
+        : ["email", "password", "confirmation"].includes(currentStep)
         ? "complete"
         : "upcoming") as StepStatus,
     },
@@ -112,6 +117,15 @@ export default function ActivationPage() {
       id: "email",
       title: "Correo",
       status: (currentStep === "email"
+        ? "current"
+        : ["password", "confirmation"].includes(currentStep)
+        ? "complete"
+        : "upcoming") as StepStatus,
+    },
+    {
+      id: "password",
+      title: "Contraseña",
+      status: (currentStep === "password"
         ? "current"
         : currentStep === "confirmation"
         ? "complete"
@@ -130,7 +144,7 @@ export default function ActivationPage() {
     setIsSubmitting(true);
     try {
       const response = await fetch(
-        "http://localhost:5000/api/identity/verify",
+        `${process.env.NEXT_PUBLIC_API_URL}/identity/verify`,
         {
           method: "POST",
           headers: {
@@ -191,7 +205,7 @@ export default function ActivationPage() {
   const onSubmitEmail = async (data: { email: string; verified: boolean }) => {
     if (data.verified) {
       setVerifiedEmail(data.email);
-      setCurrentStep("confirmation");
+      setCurrentStep("password");
     } else {
       // Lógica anterior para cuando no hay verificación
       console.log("Correo de respaldo:", data.email);
@@ -201,8 +215,28 @@ export default function ActivationPage() {
     }
   };
 
+  const onSubmitPassword = (newPassword: string) => {
+    setPassword(newPassword);
+  };
+
+  const onAccountCreated = (principalName: string) => {
+    setUserPrincipalName(principalName);
+    setCurrentStep("confirmation");
+  };
+
+  
+
   // Función para cuando se completa el proceso
   const onCompleteActivation = () => {
+    // Aquí puedes enviar todos los datos al backend para crear la cuenta
+    console.log("Datos completos:", {
+      userData: result,
+      username: selectedUsername,
+      email: verifiedEmail,
+      password: password
+    });
+    
+    // Redirigir al dashboard
     window.location.href = "/dashboard";
   };
 
@@ -295,16 +329,31 @@ export default function ActivationPage() {
               handleSubmit={emailForm.handleSubmit}
               errors={emailForm.formState.errors}
               onSubmit={onSubmitEmail}
-              onBack={() => setCurrentStep("success")}
+              onBack={() => setCurrentStep("username")}
             />
           )}
           
-          {/* Paso 5: Confirmación final del usuario */}
+          {/* Paso 5: Formulario de contraseña */}
+          {currentStep === "password" && result && (
+            <PasswordForm
+              key="password-step"
+              userData={result}
+              username={selectedUsername}
+              email={verifiedEmail}
+              userType={result.type}
+              onAccountCreated={onAccountCreated}
+              onBack={() => setCurrentStep("email")}
+            />
+          )}
+          
+          {/* Paso 6: Confirmación final del usuario */}
           {currentStep === "confirmation" && result && (
             <UserConfirmation
               key="confirmation-step"
               userData={result}
               email={verifiedEmail}
+              username={selectedUsername}
+              userPrincipalName={userPrincipalName}
               onComplete={onCompleteActivation}
             />
           )}

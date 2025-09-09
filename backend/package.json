@@ -65,7 +65,8 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "npm test -- --watch",
     "build-ldap": "ts-node src/utils/ldap.structure.ts",
-    "ldap-schedule": "ts-node src/utils/ldap.structure.ts --schedule"
+    "ldap-schedule": "ts-node src/utils/ldap.structure.ts --schedule",
+    "check-policy": "ts-node src/scripts/check-password-policy.ts"
   },
   "types": "modules"
 }

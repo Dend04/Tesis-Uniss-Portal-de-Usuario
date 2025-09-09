@@ -76,7 +76,7 @@ class IdentityVerificationService {
       const authHeader = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
   
       const response = await axios.get(
-        `http://localhost:5000/api/students/${ci}`,
+        `http://localhost:5550/api/students/${ci}`,
         {
           headers: {
             Authorization: authHeader

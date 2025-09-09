@@ -97,3 +97,15 @@ D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.
   125     logger.info(`Consultando datos de empleado para CI: ${ci}`);
 → 126     const employee = await this.prisma.empleados_Gral.findFirst(
 Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-09-08 09:05:45 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Invalid URL
+2025-09-08 09:05:45 [error]: Error al verificar identidad: Error al consultar SIGENU: Invalid URL
+2025-09-08 09:06:03 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Invalid URL
+2025-09-08 09:06:03 [error]: Error al verificar identidad: Error al consultar SIGENU: Invalid URL
+2025-09-08 09:09:39 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Invalid URL
+2025-09-08 09:09:39 [error]: Error al verificar identidad: Error al consultar SIGENU: Invalid URL
+2025-09-08 09:10:18 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Invalid URL
+2025-09-08 09:10:18 [error]: Error al verificar identidad: Error al consultar SIGENU: Invalid URL
+2025-09-08 09:22:20 [error]: Error al consultar SIGENU para CI: 12345678. Error: Invalid URL
+2025-09-08 09:22:20 [error]: Error al verificar identidad: Error al consultar SIGENU: Invalid URL
+2025-09-08 09:22:34 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Invalid URL
+2025-09-08 09:22:34 [error]: Error al verificar identidad: Error al consultar SIGENU: Invalid URL
