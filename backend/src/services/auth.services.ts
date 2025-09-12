@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
-import { createLDAPClient, bindAsync, searchAsync, LDAPClient } from "../utils/ldap.utils";
+import { createLDAPClient, bindAsync, searchAsync, LDAPClient, getLDAPPool } from "../utils/ldap.utils";
 import ldap, {
     Attribute,
   } from "ldapjs";
 import { userDnCache } from "../utils/cache.utils";
+import { comparePassword } from "../utils/password.utils";
 
 
 // Autenticación: Valida credenciales contra servidor LDAP
@@ -15,17 +16,105 @@ export const authenticateUser = async (req: Request, res: Response) => {
       throw new Error("Configuración LDAP no disponible");
     }
   
-    const client = createLDAPClient(process.env.LDAP_URL);
+    const pool = getLDAPPool();
+    let client: any = null;
   
     try {
+      client = await pool.getConnection();
       const userPrincipalName = username.includes("@")
         ? username
         : `${username}@uniss.edu.cu`;
   
-      await bindAsync(client, userPrincipalName, password);
+      // Primero intentamos autenticar directamente
+      try {
+        await bindAsync(client, userPrincipalName, password);
+        return; // Autenticación exitosa
+      } catch (authError) {
+        // Si falla, puede ser porque la contraseña está hasheada en LDAP
+        console.log("Autenticación directa fallida, intentando con contraseña hasheada...");
+        
+        // Buscamos el usuario para obtener su contraseña hasheada
+        const userData = await getUserDataInternal(username, client);
+        
+        if (userData && userData.unicodePwd) {
+          // Comparamos la contraseña proporcionada con la hasheada
+          const isPasswordValid = await comparePassword(password, userData.unicodePwd);
+          
+          if (isPasswordValid) {
+            return; // Autenticación exitosa con contraseña hasheada
+          }
+        }
+        
+        // Si llegamos aquí, ambas autenticaciones fallaron
+        throw new Error("Credenciales inválidas");
+      }
     } finally {
-      client.unbind();
+      if (client) {
+        pool.releaseConnection(client);
+      }
     }
+  };
+
+  // Función interna para obtener datos del usuario incluyendo contraseña hasheada
+const getUserDataInternal = async (username: string, client: any): Promise<any> => {
+    const searchOptions: ldap.SearchOptions = {
+      filter: `(|(sAMAccountName=${username})(userPrincipalName=${username}))`,
+      scope: "sub",
+      attributes: [
+        "cn",
+        "sAMAccountName",
+        "uid",
+        "mail",
+        "givenName",
+        "sn",
+        "displayName",
+        "userPrincipalName",
+        "employeeID",
+        "unicodePwd", // Incluimos la contraseña hasheada
+        "dn"
+      ],
+    };
+  
+    const entries = await searchAsync(
+      client,
+      "ou=UNISS_Users,dc=uniss,dc=edu,dc=cu",
+      searchOptions
+    );
+  
+    if (entries.length === 0) {
+      throw new Error("Usuario no encontrado");
+    }
+  
+    const getLdapAttribute = (
+      entry: ldap.SearchEntry,
+      name: string
+    ): any => {
+      const attributes = entry.attributes as unknown as any[];
+      const attr = attributes.find((a) => a.type === name);
+  
+      if (!attr || !attr.values || attr.values.length === 0) {
+        return null;
+      }
+  
+      return attr.values[0];
+    };
+  
+    const userDn = entries[0].dn;
+    const sAMAccountName = getLdapAttribute(entries[0], "sAMAccountName");
+    const unicodePwd = getLdapAttribute(entries[0], "unicodePwd");
+  
+    return {
+      sAMAccountName,
+      dn: userDn,
+      username: getLdapAttribute(entries[0], "uid"),
+      nombreCompleto: getLdapAttribute(entries[0], "cn"),
+      email: getLdapAttribute(entries[0], "mail"),
+      nombre: getLdapAttribute(entries[0], "givenName"),
+      apellido: getLdapAttribute(entries[0], "sn"),
+      displayName: getLdapAttribute(entries[0], "displayName"),
+      employeeID: getLdapAttribute(entries[0], "employeeID"),
+      unicodePwd // Contraseña hasheada
+    };
   };
 
   // Perfil: Obtiene datos básicos usuario por UID

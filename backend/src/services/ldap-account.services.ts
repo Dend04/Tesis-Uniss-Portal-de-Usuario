@@ -198,6 +198,7 @@ export class LDAPAccountService {
     const middleName = studentData.rawData.personalData.middleName.toString();
     const lastName = studentData.rawData.personalData.lastName.toString();
     const fullName = studentData.personalData.fullName.toString();
+    
   
     // Atributos INCLUYENDO contraseña y userAccountControl
     const attributes = {

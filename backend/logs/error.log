@@ -109,3 +109,6 @@ Timed out fetching a new connection from the connection pool. More info: http://
 2025-09-08 09:22:20 [error]: Error al verificar identidad: Error al consultar SIGENU: Invalid URL
 2025-09-08 09:22:34 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Invalid URL
 2025-09-08 09:22:34 [error]: Error al verificar identidad: Error al consultar SIGENU: Invalid URL
+2025-09-09 18:15:56 [error]: Error global: Error: Error al eliminar cuenta: LDAP bind operation timed out
+    at LDAPAccountRemovalService.removeAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\ldap-account-removal.services.ts:43:15)
+    at async deleteAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\controllers\account-removal.controller.ts:25:22)

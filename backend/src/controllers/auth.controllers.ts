@@ -1,19 +1,7 @@
 // src/controllers/auth.controller.ts
-import { Request, RequestHandler, Response } from "express";
-import {
-  
-  createLDAPClient,
-  bindAsync,
-  
-  
-  searchAsync,
-  LDAPClient,
-  
-  unifiedLDAPSearch,
-} from "../utils/ldap.utils"; // Agregar las importaciones faltantes
+import { Request, Response } from "express";
+import {unifiedLDAPSearch,} from "../utils/ldap.utils";
 import { generateTokens, TokenPayload, verifyToken } from "../utils/jwt.utils";
-import * as ldap from "ldapjs";
-import { Attribute } from "ldapts";
 import { CustomSearchEntry } from "../interface/ildapInterface";
 import NodeCache from "node-cache";
 import { addLogEntry, authenticateUser, getUserData, ldapChangePassword } from "../services/auth.services";
@@ -29,19 +17,27 @@ const userDnCache = new NodeCache({
 // 3. Acceder al employeeID
 /* const employeeID = ldapUser.employeeID; */
 
-export const loginController = async (req: Request, res: Response) => {
+export const loginController = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;
 
-    await authenticateUser(req, res);
+    // Validar que se proporcionen credenciales
+    if (!username || !password) {
+      res.status(400).json({ 
+        success: false, 
+        message: "Usuario y contraseña son requeridos" 
+      });
+      return;
+    }
+
+    await authenticateUser(username, password);
     const ldapUser = await getUserData(username);
 
     // Asegurar que username siempre tenga valor
-    const effectiveUsername =
-      username.trim() !== "" ? username : ldapUser.sAMAccountName;
+    const effectiveUsername = username.trim() !== "" ? username : ldapUser.sAMAccountName;
 
     const tokens = generateTokens({
-      sAMAccountName: ldapUser.sAMAccountName, // Campo clave para el token
+      sAMAccountName: ldapUser.sAMAccountName,
       username: effectiveUsername,
     });
 
@@ -51,12 +47,34 @@ export const loginController = async (req: Request, res: Response) => {
       refreshToken: tokens.refreshToken,
       user: {
         ...ldapUser,
-        username: effectiveUsername, // Forzar campo en respuesta
+        username: effectiveUsername,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error en loginController:", error);
-    res.status(500).json({ success: false, message: "Error interno" });
+    
+    // Manejar diferentes tipos de errores de autenticación
+    if (error.message.includes("Invalid Credentials") || 
+        error.message.includes("Credenciales inválidas")) {
+      res.status(401).json({ 
+        success: false, 
+        message: "Credenciales inválidas" 
+      });
+      return;
+    }
+    
+    if (error.message.includes("Usuario no encontrado")) {
+      res.status(404).json({ 
+        success: false, 
+        message: "Usuario no encontrado" 
+      });
+      return;
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: "Error interno del servidor" 
+    });
   }
 };
 
