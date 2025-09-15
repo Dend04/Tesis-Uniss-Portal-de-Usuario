@@ -1,189 +1,138 @@
 import { Request, Response } from "express";
-import { createLDAPClient, bindAsync, searchAsync, LDAPClient, getLDAPPool } from "../utils/ldap.utils";
+import { createLDAPClient, bindAsync, searchAsync, LDAPClient, getLDAPPool, unifiedLDAPSearch } from "../utils/ldap.utils";
 import ldap, {
     Attribute,
   } from "ldapjs";
 import { userDnCache } from "../utils/cache.utils";
 import { comparePassword } from "../utils/password.utils";
+import * as bcrypt from "bcryptjs";
 
 
 // Autenticación: Valida credenciales contra servidor LDAP
 // [!] Considerar migrar a estrategia passport-ldap
-export const authenticateUser = async (req: Request, res: Response) => {
-    const { username, password } = req.body;
-  
-    if (!process.env.LDAP_URL) {
-      throw new Error("Configuración LDAP no disponible");
-    }
-  
-    const pool = getLDAPPool();
-    let client: any = null;
-  
-    try {
-      client = await pool.getConnection();
-      const userPrincipalName = username.includes("@")
-        ? username
-        : `${username}@uniss.edu.cu`;
-  
-      // Primero intentamos autenticar directamente
-      try {
-        await bindAsync(client, userPrincipalName, password);
-        return; // Autenticación exitosa
-      } catch (authError) {
-        // Si falla, puede ser porque la contraseña está hasheada en LDAP
-        console.log("Autenticación directa fallida, intentando con contraseña hasheada...");
-        
-        // Buscamos el usuario para obtener su contraseña hasheada
-        const userData = await getUserDataInternal(username, client);
-        
-        if (userData && userData.unicodePwd) {
-          // Comparamos la contraseña proporcionada con la hasheada
-          const isPasswordValid = await comparePassword(password, userData.unicodePwd);
-          
-          if (isPasswordValid) {
-            return; // Autenticación exitosa con contraseña hasheada
-          }
-        }
-        
-        // Si llegamos aquí, ambas autenticaciones fallaron
-        throw new Error("Credenciales inválidas");
-      }
-    } finally {
-      if (client) {
-        pool.releaseConnection(client);
-      }
-    }
-  };
+export const authenticateUser = async (username: string, password: string): Promise<void> => {
+  const pool = getLDAPPool();
+  let client: LDAPClient | null = null;
 
-  // Función interna para obtener datos del usuario incluyendo contraseña hasheada
-const getUserDataInternal = async (username: string, client: any): Promise<any> => {
-    const searchOptions: ldap.SearchOptions = {
-      filter: `(|(sAMAccountName=${username})(userPrincipalName=${username}))`,
-      scope: "sub",
-      attributes: [
-        "cn",
-        "sAMAccountName",
-        "uid",
-        "mail",
-        "givenName",
-        "sn",
-        "displayName",
-        "userPrincipalName",
-        "employeeID",
-        "unicodePwd", // Incluimos la contraseña hasheada
-        "dn"
-      ],
-    };
-  
-    const entries = await searchAsync(
-      client,
-      "ou=UNISS_Users,dc=uniss,dc=edu,dc=cu",
-      searchOptions
-    );
-  
-    if (entries.length === 0) {
+  try {
+    client = await pool.getConnection();
+    
+    // Intentar diferentes formatos de nombre de usuario
+    const authAttempts = [
+      username, // sAMAccountName
+      `${username}@uniss.edu.cu`, // UPN
+      `UNISS\\${username}` // formato NT (DOMAIN\username)
+    ];
+
+    for (const authName of authAttempts) {
+      try {
+        console.log(`Intentando autenticar como: ${authName}`);
+        await bindAsync(client, authName, password);
+        console.log(`Autenticación exitosa como: ${authName}`);
+        return;
+      } catch (attemptError) {
+        // Verificar el tipo de error antes de acceder a .message
+        const errorMessage = attemptError instanceof Error 
+          ? attemptError.message 
+          : String(attemptError);
+        console.log(`Falló autenticación como ${authName}:`, errorMessage);
+        // Continuar con el siguiente intento
+      }
+    }
+
+    // Si todos los intentos fallan
+    throw new Error("Todos los métodos de autenticación fallaron");
+    
+  } catch (authError: any) {
+    console.log("Autenticación fallida:", authError.message);
+    
+    // Verificar si el usuario existe
+    const userExists = await checkUserExists(username);
+    if (!userExists) {
       throw new Error("Usuario no encontrado");
     }
-  
-    const getLdapAttribute = (
-      entry: ldap.SearchEntry,
-      name: string
-    ): any => {
-      const attributes = entry.attributes as unknown as any[];
-      const attr = attributes.find((a) => a.type === name);
-  
-      if (!attr || !attr.values || attr.values.length === 0) {
-        return null;
-      }
-  
-      return attr.values[0];
-    };
-  
-    const userDn = entries[0].dn;
-    const sAMAccountName = getLdapAttribute(entries[0], "sAMAccountName");
-    const unicodePwd = getLdapAttribute(entries[0], "unicodePwd");
-  
-    return {
-      sAMAccountName,
-      dn: userDn,
-      username: getLdapAttribute(entries[0], "uid"),
-      nombreCompleto: getLdapAttribute(entries[0], "cn"),
-      email: getLdapAttribute(entries[0], "mail"),
-      nombre: getLdapAttribute(entries[0], "givenName"),
-      apellido: getLdapAttribute(entries[0], "sn"),
-      displayName: getLdapAttribute(entries[0], "displayName"),
-      employeeID: getLdapAttribute(entries[0], "employeeID"),
-      unicodePwd // Contraseña hasheada
-    };
-  };
+    
+    // Obtener detalles del usuario para diagnóstico
+    try {
+      const userData = await getUserData(username);
+      console.log("Datos del usuario para diagnóstico:", {
+        dn: userData.dn,
+        sAMAccountName: userData.sAMAccountName,
+        userPrincipalName: userData.userPrincipalName,
+        employeeID: userData.employeeID
+      });
+    } catch (diagError) {
+      // Verificar el tipo de error antes de acceder a .message
+      const errorMessage = diagError instanceof Error 
+        ? diagError.message 
+        : String(diagError);
+      console.log("Error obteniendo datos para diagnóstico:", errorMessage);
+    }
+    
+    throw new Error(`Credenciales inválidas: ${authError.message}`);
+  } finally {
+    if (client) {
+      pool.releaseConnection(client);
+    }
+  }
+};
+
 
   // Perfil: Obtiene datos básicos usuario por UID
   // [!] Validar existencia de atributos requeridos
   export const getUserData = async (username: string): Promise<any> => {
     const cacheKey = `userDn-${username}`;
     const cachedDn = userDnCache.get(cacheKey);
+    
     if (cachedDn) {
       return {
         ...cachedDn,
-        fromCache: true, // Para debug
+        fromCache: true,
       };
     }
+  
     let client: LDAPClient | null = null;
     try {
-      if (
-        !process.env.LDAP_URL ||
-        !process.env.LDAP_ADMIN_DN ||
-        !process.env.LDAP_ADMIN_PASSWORD
-      ) {
+      if (!process.env.LDAP_URL || !process.env.LDAP_ADMIN_DN || !process.env.LDAP_ADMIN_PASSWORD) {
         throw new Error("Configuración LDAP incompleta");
       }
   
       client = createLDAPClient(process.env.LDAP_URL);
-      await bindAsync(
-        client,
-        process.env.LDAP_ADMIN_DN,
-        process.env.LDAP_ADMIN_PASSWORD
-      );
+      await bindAsync(client, process.env.LDAP_ADMIN_DN, process.env.LDAP_ADMIN_PASSWORD);
+  
+      // Determinar el formato de búsqueda basado en el username
+      let searchFilter: string;
+      if (username.includes('@')) {
+        // Si ya es un UPN, buscar por userPrincipalName
+        searchFilter = `(userPrincipalName=${username})`;
+      } else {
+        // Si no, buscar por sAMAccountName y también por UPN con el dominio agregado
+        searchFilter = `(|(sAMAccountName=${username})(userPrincipalName=${username}@uniss.edu.cu))`;
+      }
   
       const searchOptions: ldap.SearchOptions = {
-        filter: `(|(sAMAccountName=${username})(userPrincipalName=${username}))`,
+        filter: searchFilter,
         scope: "sub",
         attributes: [
-          "cn",
-          "sAMAccountName",
-          "uid",
-          "mail",
-          "givenName",
-          "sn",
-          "displayName",
-          "userPrincipalName",
-          "employeedID",
+          "cn", "sAMAccountName", "uid", "mail", "givenName", 
+          "sn", "displayName", "userPrincipalName", "employeeID"
         ],
       };
   
-      const entries = await searchAsync(
-        client,
-        "ou=UNISS_Users,dc=uniss,dc=edu,dc=cu",
-        searchOptions
-      );
+      // Buscar en la base DN correcta (ajusta según tu estructura)
+      const baseDN = "dc=uniss,dc=edu,dc=cu"; // O la OU específica donde están tus usuarios
+      const entries = await searchAsync(client, baseDN, searchOptions);
   
       if (entries.length === 0) {
         throw new Error("Usuario no encontrado");
       }
   
-      const getLdapAttribute = (
-        entry: ldap.SearchEntry,
-        name: string
-      ): string => {
+      const getLdapAttribute = (entry: ldap.SearchEntry, name: string): string => {
         const attributes = entry.attributes as unknown as Attribute[];
         const attr = attributes.find((a) => a.type === name);
-  
-        if (!attr || !attr.values || attr.values.length === 0) {
-          return "";
-        }
-  
-        return String(attr.values[0]);
+        return attr && attr.values && attr.values.length > 0 ? String(attr.values[0]) : "";
       };
+  
       const userDn = entries[0].dn;
       const sAMAccountName = getLdapAttribute(entries[0], "sAMAccountName");
       const userData = {
@@ -195,12 +144,12 @@ const getUserDataInternal = async (username: string, client: any): Promise<any> 
         nombre: getLdapAttribute(entries[0], "givenName"),
         apellido: getLdapAttribute(entries[0], "sn"),
         displayName: getLdapAttribute(entries[0], "displayName"),
-        employeeID: getLdapAttribute(entries[0], "employeeID"), // Corregir typo
+        employeeID: getLdapAttribute(entries[0], "employeeID"),
       };
   
-      // Guardar en caché usando sAMAccountName como clave principal
+      // Guardar en caché
       userDnCache.set(`userDn-${sAMAccountName}`, userData);
-      userDnCache.set(cacheKey, userData); // Guardar también con username original
+      userDnCache.set(cacheKey, userData);
   
       return userData;
     } finally {
@@ -255,6 +204,23 @@ export const ldapChangePassword = async (
       client.unbind();
     }
   };
+
+  /**
+ * Verifica si un usuario existe en LDAP usando sAMAccountName
+ * @param username Nombre de usuario (sAMAccountName)
+ * @returns Promesa que resuelve a true si el usuario existe, false si no
+ */
+export const checkUserExists = async (username: string): Promise<boolean> => {
+  try {
+    const filter = `(sAMAccountName=${username})`;
+    const entries = await unifiedLDAPSearch(filter);
+    return entries.length > 0;
+  } catch (error) {
+    console.error("Error al buscar usuario en LDAP:", error);
+    throw new Error("Error al verificar existencia del usuario en LDAP");
+  }
+};
+
 
   // Auditoría: Registra acción en estructura LDAP específica para logs
   export const addLogEntry = async (

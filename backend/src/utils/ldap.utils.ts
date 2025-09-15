@@ -39,23 +39,36 @@ class SimpleLDAPPool implements LDAPConnectionPool {
   async getConnection(): Promise<LDAPClient> {
     // Si hay conexiones disponibles en el pool, devuélvelas
     if (this.pool.length > 0) {
-      return this.pool.pop() as LDAPClient;
+      const client = this.pool.pop() as LDAPClient;
+      try {
+        // Verificar que la conexión esté activa
+        const isActive = await checkConnection(client);
+        if (isActive) {
+          return client;
+        } else {
+          // Si no está activa, cerrarla y crear una nueva
+          client.unbind();
+          this.currentSize--;
+        }
+      } catch (error) {
+        // Si hay error al verificar, cerrar la conexión
+        client.unbind();
+        this.currentSize--;
+      }
     }
-
     // Si no hay conexiones pero podemos crear más, crea una nueva
     if (this.currentSize < this.maxPoolSize) {
       this.currentSize++;
       const client = createLDAPClient(this.config.url);
-      
       try {
         await bindAsync(client, this.config.bindDN, this.config.password);
         return client;
       } catch (error) {
         this.currentSize--;
+        client.unbind();
         throw error;
       }
     }
-
     // Si el pool está lleno, espera un momento y reintenta
     await new Promise(resolve => setTimeout(resolve, 100));
     return this.getConnection();
@@ -173,7 +186,6 @@ export const bindAsync = (
   password: string
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
-    // Timeout para la operación bind
     const timeout = setTimeout(() => {
       reject(new Error('LDAP bind operation timed out'));
     }, 10000);
@@ -184,6 +196,7 @@ export const bindAsync = (
         // Si hay error de conexión, intenta reconectar
         if (err.name === 'ConnectionError') {
           console.error('LDAP Connection Error during bind:', err);
+          client.unbind();
         }
         reject(err);
       } else {
@@ -192,6 +205,7 @@ export const bindAsync = (
     });
   });
 };
+
 
 /**
  * Promisifica la búsqueda LDAP con manejo de resultados/errores
@@ -361,20 +375,15 @@ export const getLdapStructure = async (
  * @returns Promesa con los resultados de la búsqueda
  */
 export async function unifiedLDAPSearch(filter: string, baseDN: string = process.env.LDAP_BASE_DN!): Promise<any[]> {
-  // Verificar que las variables de entorno estén definidas
   if (!process.env.LDAP_URL || !process.env.LDAP_ADMIN_DN || !process.env.LDAP_ADMIN_PASSWORD) {
     throw new Error("Configuración LDAP incompleta");
   }
-
   const pool = getLDAPPool();
   let client: LDAPClient | null = null;
-
   try {
     client = await pool.getConnection();
-    
     return new Promise((resolve, reject) => {
       const entries: any[] = [];
-      
       client!.search(baseDN, {
         scope: 'sub',
         filter,
@@ -383,15 +392,12 @@ export async function unifiedLDAPSearch(filter: string, baseDN: string = process
         if (err) {
           return reject(err);
         }
-        
         res.on('searchEntry', (entry: ldap.SearchEntry) => {
           entries.push(entry);
         });
-        
         res.on('error', (error: Error) => {
           reject(error);
         });
-        
         res.on('end', () => {
           resolve(entries);
         });
@@ -399,7 +405,11 @@ export async function unifiedLDAPSearch(filter: string, baseDN: string = process
     });
   } finally {
     if (client) {
-      pool.releaseConnection(client);
+      try {
+        pool.releaseConnection(client);
+      } catch (e) {
+        console.error("Error al liberar conexión LDAP:", e);
+      }
     }
   }
 }
@@ -464,9 +474,15 @@ export const createConnection = (config: LDAPConfig): LDAPClient => {
 export const checkConnection = async (client: Client): Promise<boolean> => {
   try {
     // Intenta una operación simple para verificar la conexión
-    await searchAsync(client, "", { scope: 'base', filter: '(objectClass=*)', attributes: [] });
+    await new Promise<void>((resolve, reject) => {
+      client.search("", { scope: 'base', filter: '(objectClass=*)', attributes: [] }, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
     return true;
   } catch (error) {
     return false;
   }
 };
+

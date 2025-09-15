@@ -11,6 +11,17 @@ export class StudentAccountController {
   ): Promise<void> {
     try {
       const { ci } = req.params;
+      const { password } = req.body; // Obtener la contraseña del cuerpo de la solicitud
+
+      // Validar que se proporcionó una contraseña
+      if (!password) {
+        res.status(400).json({
+          success: false,
+          error: "La contraseña es requerida",
+          code: "PASSWORD_REQUIRED"
+        });
+        return;
+      }
 
       // 1. Obtener datos del estudiante
       const studentResponse = await SigenuService.getMainStudentData(ci);
@@ -25,16 +36,16 @@ export class StudentAccountController {
         return;
       }
 
-      // 3. Crear cuenta LDAP
+      // 3. Crear cuenta LDAP con la contraseña proporcionada por el usuario
       const ldapService = new LDAPAccountService();
       const result = await ldapService.createStudentAccount({
         ...studentResponse.data,
-      });
+      }, password); // Pasar la contraseña al servicio
 
       // 4. Enviar respuesta unificada
       handleServiceResponse(res, {
         ...result,
-        message: result.success ? "Cuenta creada con contraseña por defecto" : result.message
+        message: result.success ? "Cuenta creada exitosamente" : result.message
       });
 
     } catch (error) {

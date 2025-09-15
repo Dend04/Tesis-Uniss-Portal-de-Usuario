@@ -17,66 +17,46 @@ const userDnCache = new NodeCache({
 // 3. Acceder al employeeID
 /* const employeeID = ldapUser.employeeID; */
 
+// src/controllers/auth.controller.ts
 export const loginController = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;
-
-    // Validar que se proporcionen credenciales
+    
     if (!username || !password) {
-      res.status(400).json({ 
-        success: false, 
-        message: "Usuario y contraseña son requeridos" 
+      res.status(400).json({
+        success: false,
+        message: "Usuario y contraseña son requeridos"
       });
       return;
     }
 
     await authenticateUser(username, password);
     const ldapUser = await getUserData(username);
-
-    // Asegurar que username siempre tenga valor
-    const effectiveUsername = username.trim() !== "" ? username : ldapUser.sAMAccountName;
-
+    
     const tokens = generateTokens({
       sAMAccountName: ldapUser.sAMAccountName,
-      username: effectiveUsername,
+      username: username.trim() || ldapUser.sAMAccountName,
     });
 
     res.json({
       success: true,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      user: {
-        ...ldapUser,
-        username: effectiveUsername,
-      },
+      user: { ...ldapUser, username: username.trim() || ldapUser.sAMAccountName },
     });
   } catch (error: any) {
-    console.error("Error en loginController:", error);
+    console.error("Error en loginController:", error.message);
     
-    // Manejar diferentes tipos de errores de autenticación
-    if (error.message.includes("Invalid Credentials") || 
-        error.message.includes("Credenciales inválidas")) {
-      res.status(401).json({ 
-        success: false, 
-        message: "Credenciales inválidas" 
-      });
-      return;
+    if (error.message.includes("no encontrado") || error.message.includes("no existe")) {
+      res.status(404).json({ success: false, message: "Usuario no encontrado" });
+    } else if (error.message.includes("Credenciales inválidas")) {
+      res.status(401).json({ success: false, message: "Credenciales inválidas" });
+    } else {
+      res.status(500).json({ success: false, message: "Error interno del servidor" });
     }
-    
-    if (error.message.includes("Usuario no encontrado")) {
-      res.status(404).json({ 
-        success: false, 
-        message: "Usuario no encontrado" 
-      });
-      return;
-    }
-    
-    res.status(500).json({ 
-      success: false, 
-      message: "Error interno del servidor" 
-    });
   }
 };
+
 
 // Función para agregar EmployedID a LDAP
 export const checkAndUpdateEmployeeID = async (req: Request, res: Response) => {

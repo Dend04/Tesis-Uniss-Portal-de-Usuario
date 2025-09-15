@@ -35,7 +35,7 @@ export class LDAPAccountService {
     this.structureBuilder = new LDAPStructureBuilder();
   }
 
-  async createStudentAccount(studentData: any) {
+  async createStudentAccount(studentData: any, password: string) { // Añadir parámetro password
     try {
       await this.authenticate();
       const yearDN = await this.getYearOUPath(studentData);
@@ -44,9 +44,9 @@ export class LDAPAccountService {
       const username = await this.generateUniqueUsername(
         this.generateBaseUsername(studentData)
       );
-      const userPassword = "DEBSmile2001*7027ab"; // Contraseña por defecto
 
-      await this.createUserEntry(userDN, studentData, username, userPassword);
+      // Usar la contraseña proporcionada por el usuario
+      await this.createUserEntry(userDN, studentData, username, password);
 
       return {
         success: true,
@@ -71,6 +71,7 @@ export class LDAPAccountService {
       this.safeUnbind();
     }
   }
+
 
   private async getYearOUPath(studentData: any): Promise<string> {
     const baseDN = process.env.LDAP_BASE_DN!;
