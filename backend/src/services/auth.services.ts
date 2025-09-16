@@ -1,11 +1,8 @@
-import { Request, Response } from "express";
 import { createLDAPClient, bindAsync, searchAsync, LDAPClient, getLDAPPool, unifiedLDAPSearch } from "../utils/ldap.utils";
 import ldap, {
     Attribute,
   } from "ldapjs";
 import { userDnCache } from "../utils/cache.utils";
-import { comparePassword } from "../utils/password.utils";
-import * as bcrypt from "bcryptjs";
 
 
 // Autenticación: Valida credenciales contra servidor LDAP
@@ -21,7 +18,9 @@ export const authenticateUser = async (username: string, password: string): Prom
     const authAttempts = [
       username, // sAMAccountName
       `${username}@uniss.edu.cu`, // UPN
-      `UNISS\\${username}` // formato NT (DOMAIN\username)
+      `UNISS\\${username}`, // formato NT (DOMAIN\username)
+      // Agregar formato de dominio completo como última opción
+      `uniss.edu.cu\\${username}` // Formato con dominio completo
     ];
 
     for (const authName of authAttempts) {

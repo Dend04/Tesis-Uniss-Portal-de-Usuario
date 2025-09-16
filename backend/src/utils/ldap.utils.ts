@@ -374,12 +374,18 @@ export const getLdapStructure = async (
  * @param baseDN DN base para la búsqueda (opcional)
  * @returns Promesa con los resultados de la búsqueda
  */
-export async function unifiedLDAPSearch(filter: string, baseDN: string = process.env.LDAP_BASE_DN!): Promise<any[]> {
+export async function unifiedLDAPSearch(
+  filter: string, 
+  attributes: string[] = ['*'], // Por defecto todos los atributos
+  baseDN: string = process.env.LDAP_BASE_DN!
+): Promise<any[]> {
   if (!process.env.LDAP_URL || !process.env.LDAP_ADMIN_DN || !process.env.LDAP_ADMIN_PASSWORD) {
     throw new Error("Configuración LDAP incompleta");
   }
+  
   const pool = getLDAPPool();
   let client: LDAPClient | null = null;
+  
   try {
     client = await pool.getConnection();
     return new Promise((resolve, reject) => {
@@ -387,7 +393,7 @@ export async function unifiedLDAPSearch(filter: string, baseDN: string = process
       client!.search(baseDN, {
         scope: 'sub',
         filter,
-        attributes: ['sAMAccountName', 'uid']
+        attributes: attributes // Usar los atributos proporcionados
       }, (err: Error | null, res: SearchCallbackResponse) => {
         if (err) {
           return reject(err);

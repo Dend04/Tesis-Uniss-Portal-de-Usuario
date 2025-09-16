@@ -11,7 +11,7 @@ export class StudentAccountController {
   ): Promise<void> {
     try {
       const { ci } = req.params;
-      const { password } = req.body; // Obtener la contraseña del cuerpo de la solicitud
+      const { password, email, userData } = req.body; // Obtener email y userData del cuerpo
 
       // Validar que se proporcionó una contraseña
       if (!password) {
@@ -19,6 +19,16 @@ export class StudentAccountController {
           success: false,
           error: "La contraseña es requerida",
           code: "PASSWORD_REQUIRED"
+        });
+        return;
+      }
+
+      // Validar que se proporcionó un email
+      if (!email) {
+        res.status(400).json({
+          success: false,
+          error: "El email es requerido",
+          code: "EMAIL_REQUIRED"
         });
         return;
       }
@@ -36,10 +46,11 @@ export class StudentAccountController {
         return;
       }
 
-      // 3. Crear cuenta LDAP con la contraseña proporcionada por el usuario
+      // 3. Crear cuenta LDAP con la contraseña y email proporcionados por el usuario
       const ldapService = new LDAPAccountService();
       const result = await ldapService.createStudentAccount({
         ...studentResponse.data,
+        backupEmail: email // Usar el email proporcionado por el usuario
       }, password); // Pasar la contraseña al servicio
 
       // 4. Enviar respuesta unificada

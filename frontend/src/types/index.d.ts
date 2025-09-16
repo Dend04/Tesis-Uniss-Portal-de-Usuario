@@ -1,18 +1,18 @@
 // src/types/index.ts
 
+// En tu archivo de tipos (types.ts)
 export interface UserInfo {
-  id: string;
+  name: string;
+  username: string;
+  universityEmail: string;
+  backupEmail: string;
   faculty: string;
   major: string;
   year: string;
   phone: string;
-  backupEmail: string;
-  universityEmail: string;
-  name: string;
   status: string;
-  // Añadir las propiedades faltantes
-  username: string;
   lastLogin: string;
+  id: string;
 }
   
   export interface Device {

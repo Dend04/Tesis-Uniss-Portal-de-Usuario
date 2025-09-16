@@ -86,7 +86,7 @@ export default function LoginPage() {
       }
 
       // Guardar token en localStorage
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("authToken", data.accessToken);
 
       // Redirigir al dashboard
       router.push("/dashboard");

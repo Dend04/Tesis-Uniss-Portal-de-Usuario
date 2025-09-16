@@ -35,7 +35,7 @@ export class LDAPAccountService {
     this.structureBuilder = new LDAPStructureBuilder();
   }
 
-  async createStudentAccount(studentData: any, password: string) { // Añadir parámetro password
+  async createStudentAccount(studentData: any, password: string) {
     try {
       await this.authenticate();
       const yearDN = await this.getYearOUPath(studentData);
@@ -45,8 +45,8 @@ export class LDAPAccountService {
         this.generateBaseUsername(studentData)
       );
 
-      // Usar la contraseña proporcionada por el usuario
-      await this.createUserEntry(userDN, studentData, username, password);
+      // Usar la contraseña y email proporcionados por el usuario
+      await this.createUserEntry(userDN, studentData, username, password, studentData.backupEmail);
 
       return {
         success: true,
@@ -71,6 +71,8 @@ export class LDAPAccountService {
       this.safeUnbind();
     }
   }
+
+  
 
 
   private async getYearOUPath(studentData: any): Promise<string> {
@@ -187,21 +189,18 @@ export class LDAPAccountService {
     };
   }
 
-  private async createUserEntry(dn: string, studentData: any, username: string, password: string) {
+  private async createUserEntry(dn: string, studentData: any, username: string, password: string, userEmail: string) {
     console.log("📝 Creando entrada para el estudiante:", {
       name: studentData.rawData.personalData.name,
-      middleName: studentData.rawData.personalData.middleName,
-      lastName: studentData.rawData.personalData.lastName,
       fullName: studentData.personalData.fullName,
     });
-  
+
     const name = studentData.rawData.personalData.name.toString();
     const middleName = studentData.rawData.personalData.middleName.toString();
     const lastName = studentData.rawData.personalData.lastName.toString();
     const fullName = studentData.personalData.fullName.toString();
-    
-  
-    // Atributos INCLUYENDO contraseña y userAccountControl
+
+    // Atributos usando el email proporcionado por el usuario
     const attributes = {
       objectClass: ["top", "person", "organizationalPerson", "user"],
       sAMAccountName: username,
@@ -210,7 +209,7 @@ export class LDAPAccountService {
       givenName: this.normalizeDisplayName(name),
       sn: this.normalizeDisplayName(`${middleName} ${lastName}`),
       displayName: this.normalizeDisplayName(fullName),
-      mail: studentData.backupEmail || this.generateStudentEmail(studentData),
+      mail: userEmail, // Usar el email proporcionado por el usuario
       userPrincipalName: `${username}@uniss.edu.cu`,
       employeeID: studentData.personalData.identification,
       telephoneNumber: this.formatPhoneNumber(
@@ -229,9 +228,9 @@ export class LDAPAccountService {
       userAccountControl: "512", // Cuenta habilitada
       unicodePwd: this.encodePassword(password), // Contraseña codificada
     };
-  
+
     console.log("📁 Atributos a agregar en la entrada del estudiante:", attributes);
-  
+
     // Crear usuario CON contraseña y habilitado
     await new Promise((resolve, reject) => {
       this.client.add(dn, attributes, (err) => {
@@ -244,7 +243,7 @@ export class LDAPAccountService {
         }
       });
     });
-  
+
     // Agregar a grupos
     const requiredGroups = [
       "CN=correo_nac,OU=_Grupos,DC=uniss,DC=edu,DC=cu",

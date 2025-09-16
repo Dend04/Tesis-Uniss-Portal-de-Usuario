@@ -65,7 +65,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', studentRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api', ldap);
-app.use('/api', users);
+app.use('/api/users', users);
 app.use('/api/students', studentAccountRoutes);
 app.use('/api/worker', workerAccountRoutes);
 app.use('/api/removal', accountRemoval);
