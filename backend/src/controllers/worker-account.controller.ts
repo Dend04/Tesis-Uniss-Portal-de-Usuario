@@ -7,16 +7,23 @@ const userBuilder = new UserEntriesBuilder();
 
 export class WorkerAccountController {
   static async createUserByCI(
-    req: Request<{ ci: string }>,
+    req: Request<{ ci: string }, any, { username: string, password: string, email: string }>,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
       const { ci } = req.params;
+      const { username, password, email } = req.body;// Obtener username del body
 
       // Validación mejorada del CI
       if (!/^\d{11}$/.test(ci)) {
         WorkerAccountController.sendErrorResponse(res, 400, 'Formato de CI inválido', 'INVALID_CI');
+        return;
+      }
+
+      // Validar que se proporcionó un username
+      if (!username) {
+        WorkerAccountController.sendErrorResponse(res, 400, 'Username es requerido', 'USERNAME_REQUIRED');
         return;
       }
 
@@ -32,12 +39,13 @@ export class WorkerAccountController {
         return;
       }
 
-      // Crear entrada de usuario basada en el CI
-      await userBuilder.createUserEntryByCI(ci);
+      // Crear entrada de usuario basada en el CI y username
+      await userBuilder.createUserEntryByCI(ci, username, password, email);
 
       WorkerAccountController.sendSuccessResponse(res, {
         message: 'Usuario creado exitosamente',
-        employeeId: employee.Id_Expediente
+        employeeId: employee.Id_Expediente,
+        username: username
       });
 
     } catch (error: any) {

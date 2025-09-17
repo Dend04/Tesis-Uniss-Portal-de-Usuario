@@ -280,14 +280,52 @@ export const addAsync = (client: Client, dn: string, entry: object): Promise<voi
  * @returns Valor escapado seguro para LDAP
  */
 export function escapeLDAPValue(value: string): string {
-  return value
-    .replace(/\\/g, '\\5c')
-    .replace(/\*/g, '\\2a')
-    .replace(/\(/g, '\\28')
-    .replace(/\)/g, '\\29')
-    .replace(/\u0000/g, '\\00')
-    .replace(/\//g, '\\2f')
-    .replace(/(^ | $)/g, (m) => `\\${m.charCodeAt(0).toString(16)}`);
+  if (!value) return '';
+  
+  // Primero normalizar el texto para eliminar tildes y caracteres especiales
+  const normalizedValue = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Eliminar tildes
+    .replace(/[^a-zA-Z0-9\s\-_]/g, '') // Solo permitir letras, números, espacios, guiones y guiones bajos
+    .replace(/\s+/g, ' ') // Reemplazar múltiples espacios por uno solo
+    .trim();
+  
+  // Luego escapar caracteres especiales LDAP
+  return normalizedValue
+    .replace(/\\/g, '\\\\')
+    .replace(/,/g, '\\,')
+    .replace(/=/g, '\\=')
+    .replace(/\+/g, '\\+')
+    .replace(/</g, '\\<')
+    .replace(/>/g, '\\>')
+    .replace(/#/g, '\\#')
+    .replace(/;/g, '\\;')
+    .replace(/"/g, '\\"')
+    .substring(0, 64); // Limitar longitud
+}
+
+export function escapeDNValue(value: string): string {
+  if (!value) return '';
+  
+  // Normalizar más agresivamente para DN
+  const normalizedValue = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Eliminar tildes
+    .replace(/[^a-zA-Z0-9\s\-_]/g, '') // Solo caracteres seguros
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  return normalizedValue
+    .replace(/\\/g, '\\\\')
+    .replace(/,/g, '\\,')
+    .replace(/=/g, '\\=')
+    .replace(/\+/g, '\\+')
+    .replace(/</g, '\\<')
+    .replace(/>/g, '\\>')
+    .replace(/#/g, '\\#')
+    .replace(/;/g, '\\;')
+    .replace(/"/g, '\\"')
+    .substring(0, 64);
 }
 
 // Caché simple para resultados de búsqueda LDAP

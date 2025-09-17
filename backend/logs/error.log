@@ -112,3 +112,942 @@ Timed out fetching a new connection from the connection pool. More info: http://
 2025-09-09 18:15:56 [error]: Error global: Error: Error al eliminar cuenta: LDAP bind operation timed out
     at LDAPAccountRemovalService.removeAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\ldap-account-removal.services.ts:43:15)
     at async deleteAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\controllers\account-removal.controller.ts:25:22)
+2025-09-16 14:01:14 [error]: Error global: InvalidDnSyntaxError: Invalid Dn Syntax
+    at messageCallback (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:1267:45)
+    at Parser.onMessage (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:925:14)
+    at Parser.emit (node:events:518:28)
+    at Parser.emit (node:domain:489:12)
+    at Parser.write (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\messages\parser.js:135:8)
+    at TLSSocket.onData (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:875:22)
+    at TLSSocket.emit (node:events:518:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-09-17 09:19:02 [error]: Error en SIGENU API: 503 - <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2019 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" CONTENT="text/html; charset=utf-8">
+<title>ERROR: The requested URL could not be retrieved</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2020 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions from numerous individuals and organizations.
+ * Please see the COPYING and CONTRIBUTORS files for details.
+ */
+
+/*
+ Stylesheet for Squid Error pages
+ Adapted from design by Free CSS Templates
+ http://www.freecsstemplates.org
+ Released for free under a Creative Commons Attribution 2.5 License
+*/
+
+/* Page basics */
+* {
+	font-family: verdana, sans-serif;
+}
+
+html body {
+	margin: 0;
+	padding: 0;
+	background: #efefef;
+	font-size: 12px;
+	color: #1e1e1e;
+}
+
+/* Page displayed title area */
+#titles {
+	margin-left: 15px;
+	padding: 10px;
+	padding-left: 100px;
+	background: url('/squid-internal-static/icons/SN.png') no-repeat left;
+}
+
+/* initial title */
+#titles h1 {
+	color: #000000;
+}
+#titles h2 {
+	color: #000000;
+}
+
+/* special event: FTP success page titles */
+#titles ftpsuccess {
+	background-color:#00ff00;
+	width:100%;
+}
+
+/* Page displayed body content area */
+#content {
+	padding: 10px;
+	background: #ffffff;
+}
+
+/* General text */
+p {
+}
+
+/* error brief description */
+#error p {
+}
+
+/* some data which may have caused the problem */
+#data {
+}
+
+/* the error message received from the system or other software */
+#sysmsg {
+}
+
+pre {
+}
+
+/* special event: FTP / Gopher directory listing */
+#dirmsg {
+    font-family: courier, monospace;
+    color: black;
+    font-size: 10pt;
+}
+#dirlisting {
+    margin-left: 2%;
+    margin-right: 2%;
+}
+#dirlisting tr.entry td.icon,td.filename,td.size,td.date {
+    border-bottom: groove;
+}
+#dirlisting td.size {
+    width: 50px;
+    text-align: right;
+    padding-right: 5px;
+}
+
+/* horizontal lines */
+hr {
+	margin: 0;
+}
+
+/* page displayed footer area */
+#footer {
+	font-size: 9px;
+	padding-left: 10px;
+}
+
+
+body
+:lang(fa) { direction: rtl; font-size: 100%; font-family: Tahoma, Roya, sans-serif; float: right; }
+:lang(he) { direction: rtl; }
+ --></style>
+</head><body id=ERR_CONNECT_FAIL>
+<div id="titles">
+<h1>ERROR</h1>
+<h2>The requested URL could not be retrieved</h2>
+</div>
+<hr>
+
+<div id="content">
+<p>The following error was encountered while trying to retrieve the URL: <a href="http://localhost:5550/api/students/01110172948">http://localhost:5550/api/students/01110172948</a></p>
+
+<blockquote id="error">
+<p><b>Connection to ::1 failed.</b></p>
+</blockquote>
+
+<p id="sysmsg">The system returned: <i>(111) Connection refused</i></p>
+
+<p>The remote host or network may be down. Please try the request again.</p>
+
+<p>Your cache administrator is <a href="mailto:webmaster?subject=CacheErrorInfo%20-%20ERR_CONNECT_FAIL&amp;body=CacheHost%3A%20proxy-mes1%0D%0AErrPage%3A%20ERR_CONNECT_FAIL%0D%0AErr%3A%20(111)%20Connection%20refused%0D%0ATimeStamp%3A%20Wed,%2017%20Sep%202025%2013%3A19%3A42%20GMT%0D%0A%0D%0AClientIP%3A%2010.16.1.8%0D%0AServerIP%3A%20localhost%0D%0A%0D%0AHTTP%20Request%3A%0D%0AGET%20%2Fapi%2Fstudents%2F01110172948%20HTTP%2F1.1%0AAccept%3A%20application%2Fjson,%20text%2Fplain,%20*%2F*%0D%0AAuthorization%3A%20Basic%20Y29uc3VsdG9yOnNpZ2VudXF1ZXJ5KjQw%0D%0AUser-Agent%3A%20axios%2F1.8.1%0D%0AAccept-Encoding%3A%20gzip,%20compress,%20deflate,%20br%0D%0AVia%3A%201.1%20proxy2.uniss.edu.cu%20(squid%2F3.4.8)%0D%0AX-Forwarded-For%3A%2010.16.23.60%0D%0ACache-Control%3A%20max-age%3D259200%0D%0AHost%3A%20localhost%3A5550%0D%0A%0D%0A%0D%0A">webmaster</a>.</p>
+
+<br>
+</div>
+
+<hr>
+<div id="footer">
+<p>Generated Wed, 17 Sep 2025 13:19:42 GMT by proxy-mes1 (squid/4.10)</p>
+<!-- ERR_CONNECT_FAIL -->
+</div>
+</body></html>
+
+2025-09-17 09:19:02 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Request failed with status code 503
+2025-09-17 09:19:02 [error]: Error al verificar identidad: Error al consultar SIGENU: Request failed with status code 503
+2025-09-17 09:19:06 [error]: Error en SIGENU API: 503 - <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2019 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" CONTENT="text/html; charset=utf-8">
+<title>ERROR: The requested URL could not be retrieved</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2020 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions from numerous individuals and organizations.
+ * Please see the COPYING and CONTRIBUTORS files for details.
+ */
+
+/*
+ Stylesheet for Squid Error pages
+ Adapted from design by Free CSS Templates
+ http://www.freecsstemplates.org
+ Released for free under a Creative Commons Attribution 2.5 License
+*/
+
+/* Page basics */
+* {
+	font-family: verdana, sans-serif;
+}
+
+html body {
+	margin: 0;
+	padding: 0;
+	background: #efefef;
+	font-size: 12px;
+	color: #1e1e1e;
+}
+
+/* Page displayed title area */
+#titles {
+	margin-left: 15px;
+	padding: 10px;
+	padding-left: 100px;
+	background: url('/squid-internal-static/icons/SN.png') no-repeat left;
+}
+
+/* initial title */
+#titles h1 {
+	color: #000000;
+}
+#titles h2 {
+	color: #000000;
+}
+
+/* special event: FTP success page titles */
+#titles ftpsuccess {
+	background-color:#00ff00;
+	width:100%;
+}
+
+/* Page displayed body content area */
+#content {
+	padding: 10px;
+	background: #ffffff;
+}
+
+/* General text */
+p {
+}
+
+/* error brief description */
+#error p {
+}
+
+/* some data which may have caused the problem */
+#data {
+}
+
+/* the error message received from the system or other software */
+#sysmsg {
+}
+
+pre {
+}
+
+/* special event: FTP / Gopher directory listing */
+#dirmsg {
+    font-family: courier, monospace;
+    color: black;
+    font-size: 10pt;
+}
+#dirlisting {
+    margin-left: 2%;
+    margin-right: 2%;
+}
+#dirlisting tr.entry td.icon,td.filename,td.size,td.date {
+    border-bottom: groove;
+}
+#dirlisting td.size {
+    width: 50px;
+    text-align: right;
+    padding-right: 5px;
+}
+
+/* horizontal lines */
+hr {
+	margin: 0;
+}
+
+/* page displayed footer area */
+#footer {
+	font-size: 9px;
+	padding-left: 10px;
+}
+
+
+body
+:lang(fa) { direction: rtl; font-size: 100%; font-family: Tahoma, Roya, sans-serif; float: right; }
+:lang(he) { direction: rtl; }
+ --></style>
+</head><body id=ERR_CONNECT_FAIL>
+<div id="titles">
+<h1>ERROR</h1>
+<h2>The requested URL could not be retrieved</h2>
+</div>
+<hr>
+
+<div id="content">
+<p>The following error was encountered while trying to retrieve the URL: <a href="http://localhost:5550/api/students/01110172948">http://localhost:5550/api/students/01110172948</a></p>
+
+<blockquote id="error">
+<p><b>Connection to ::1 failed.</b></p>
+</blockquote>
+
+<p id="sysmsg">The system returned: <i>(111) Connection refused</i></p>
+
+<p>The remote host or network may be down. Please try the request again.</p>
+
+<p>Your cache administrator is <a href="mailto:webmaster?subject=CacheErrorInfo%20-%20ERR_CONNECT_FAIL&amp;body=CacheHost%3A%20proxy-mes1%0D%0AErrPage%3A%20ERR_CONNECT_FAIL%0D%0AErr%3A%20(111)%20Connection%20refused%0D%0ATimeStamp%3A%20Wed,%2017%20Sep%202025%2013%3A19%3A46%20GMT%0D%0A%0D%0AClientIP%3A%2010.16.1.8%0D%0AServerIP%3A%20localhost%0D%0A%0D%0AHTTP%20Request%3A%0D%0AGET%20%2Fapi%2Fstudents%2F01110172948%20HTTP%2F1.1%0AAccept%3A%20application%2Fjson,%20text%2Fplain,%20*%2F*%0D%0AAuthorization%3A%20Basic%20Y29uc3VsdG9yOnNpZ2VudXF1ZXJ5KjQw%0D%0AUser-Agent%3A%20axios%2F1.8.1%0D%0AAccept-Encoding%3A%20gzip,%20compress,%20deflate,%20br%0D%0AVia%3A%201.1%20proxy2.uniss.edu.cu%20(squid%2F3.4.8)%0D%0AX-Forwarded-For%3A%2010.16.23.60%0D%0ACache-Control%3A%20max-age%3D259200%0D%0AHost%3A%20localhost%3A5550%0D%0A%0D%0A%0D%0A">webmaster</a>.</p>
+
+<br>
+</div>
+
+<hr>
+<div id="footer">
+<p>Generated Wed, 17 Sep 2025 13:19:46 GMT by proxy-mes1 (squid/4.10)</p>
+<!-- ERR_CONNECT_FAIL -->
+</div>
+</body></html>
+
+2025-09-17 09:19:06 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Request failed with status code 503
+2025-09-17 09:19:06 [error]: Error al verificar identidad: Error al consultar SIGENU: Request failed with status code 503
+2025-09-17 09:20:34 [error]: Error en SIGENU API: 503 - <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2017 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" CONTENT="text/html; charset=utf-8">
+<title>ERROR: The requested URL could not be retrieved</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2017 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions from numerous individuals and organizations.
+ * Please see the COPYING and CONTRIBUTORS files for details.
+ */
+
+/*
+ Stylesheet for Squid Error pages
+ Adapted from design by Free CSS Templates
+ http://www.freecsstemplates.org
+ Released for free under a Creative Commons Attribution 2.5 License
+*/
+
+/* Page basics */
+* {
+	font-family: verdana, sans-serif;
+}
+
+html body {
+	margin: 0;
+	padding: 0;
+	background: #efefef;
+	font-size: 12px;
+	color: #1e1e1e;
+}
+
+/* Page displayed title area */
+#titles {
+	margin-left: 15px;
+	padding: 10px;
+	padding-left: 100px;
+	background: url('/squid-internal-static/icons/SN.png') no-repeat left;
+}
+
+/* initial title */
+#titles h1 {
+	color: #000000;
+}
+#titles h2 {
+	color: #000000;
+}
+
+/* special event: FTP success page titles */
+#titles ftpsuccess {
+	background-color:#00ff00;
+	width:100%;
+}
+
+/* Page displayed body content area */
+#content {
+	padding: 10px;
+	background: #ffffff;
+}
+
+/* General text */
+p {
+}
+
+/* error brief description */
+#error p {
+}
+
+/* some data which may have caused the problem */
+#data {
+}
+
+/* the error message received from the system or other software */
+#sysmsg {
+}
+
+pre {
+    font-family:sans-serif;
+}
+
+/* special event: FTP / Gopher directory listing */
+#dirmsg {
+    font-family: courier;
+    color: black;
+    font-size: 10pt;
+}
+#dirlisting {
+    margin-left: 2%;
+    margin-right: 2%;
+}
+#dirlisting tr.entry td.icon,td.filename,td.size,td.date {
+    border-bottom: groove;
+}
+#dirlisting td.size {
+    width: 50px;
+    text-align: right;
+    padding-right: 5px;
+}
+
+/* horizontal lines */
+hr {
+	margin: 0;
+}
+
+/* page displayed footer area */
+#footer {
+	font-size: 9px;
+	padding-left: 10px;
+}
+
+
+body
+:lang(fa) { direction: rtl; font-size: 100%; font-family: Tahoma, Roya, sans-serif; float: right; }
+:lang(he) { direction: rtl; }
+ --></style>
+</head><body id=ERR_CONNECT_FAIL>
+<div id="titles">
+<h1>ERROR</h1>
+<h2>The requested URL could not be retrieved</h2>
+</div>
+<hr>
+
+<div id="content">
+<p>The following error was encountered while trying to retrieve the URL: <a href="http://localhost:5550/api/students/01110172948">http://localhost:5550/api/students/01110172948</a></p>
+
+<blockquote id="error">
+<p><b>Connection to ::1 failed.</b></p>
+</blockquote>
+
+<p id="sysmsg">The system returned: <i>(111) Connection refused</i></p>
+
+<p>The remote host or network may be down. Please try the request again.</p>
+
+<p>Your cache administrator is <a href="mailto:webmaster?subject=CacheErrorInfo%20-%20ERR_CONNECT_FAIL&amp;body=CacheHost%3A%20proxy2-etecsa.uniss.edu.cu%0D%0AErrPage%3A%20ERR_CONNECT_FAIL%0D%0AErr%3A%20(111)%20Connection%20refused%0D%0ATimeStamp%3A%20Wed,%2017%20Sep%202025%2013%3A21%3A14%20GMT%0D%0A%0D%0AClientIP%3A%2010.16.1.8%0D%0AServerIP%3A%20localhost%0D%0A%0D%0AHTTP%20Request%3A%0D%0AGET%20%2Fapi%2Fstudents%2F01110172948%20HTTP%2F1.1%0AAccept%3A%20application%2Fjson,%20text%2Fplain,%20*%2F*%0D%0AAuthorization%3A%20Basic%20Y29uc3VsdG9yOnNpZ2VudXF1ZXJ5KjQw%0D%0AUser-Agent%3A%20axios%2F1.8.1%0D%0AAccept-Encoding%3A%20gzip,%20compress,%20deflate,%20br%0D%0AVia%3A%201.1%20proxy2.uniss.edu.cu%20(squid%2F3.4.8)%0D%0AX-Forwarded-For%3A%2010.16.23.60%0D%0ACache-Control%3A%20max-age%3D259200%0D%0AHost%3A%20localhost%3A5550%0D%0A%0D%0A%0D%0A">webmaster</a>.</p>
+
+<br>
+</div>
+
+<hr>
+<div id="footer">
+<p>Generated Wed, 17 Sep 2025 13:21:14 GMT by proxy2-etecsa.uniss.edu.cu (squid/3.5.27)</p>
+<!-- ERR_CONNECT_FAIL -->
+</div>
+</body></html>
+
+2025-09-17 09:20:34 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Request failed with status code 503
+2025-09-17 09:20:34 [error]: Error al verificar identidad: Error al consultar SIGENU: Request failed with status code 503
+2025-09-17 09:55:47 [error]: Error en SIGENU API: 503 - <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2019 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" CONTENT="text/html; charset=utf-8">
+<title>ERROR: The requested URL could not be retrieved</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2020 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions from numerous individuals and organizations.
+ * Please see the COPYING and CONTRIBUTORS files for details.
+ */
+
+/*
+ Stylesheet for Squid Error pages
+ Adapted from design by Free CSS Templates
+ http://www.freecsstemplates.org
+ Released for free under a Creative Commons Attribution 2.5 License
+*/
+
+/* Page basics */
+* {
+	font-family: verdana, sans-serif;
+}
+
+html body {
+	margin: 0;
+	padding: 0;
+	background: #efefef;
+	font-size: 12px;
+	color: #1e1e1e;
+}
+
+/* Page displayed title area */
+#titles {
+	margin-left: 15px;
+	padding: 10px;
+	padding-left: 100px;
+	background: url('/squid-internal-static/icons/SN.png') no-repeat left;
+}
+
+/* initial title */
+#titles h1 {
+	color: #000000;
+}
+#titles h2 {
+	color: #000000;
+}
+
+/* special event: FTP success page titles */
+#titles ftpsuccess {
+	background-color:#00ff00;
+	width:100%;
+}
+
+/* Page displayed body content area */
+#content {
+	padding: 10px;
+	background: #ffffff;
+}
+
+/* General text */
+p {
+}
+
+/* error brief description */
+#error p {
+}
+
+/* some data which may have caused the problem */
+#data {
+}
+
+/* the error message received from the system or other software */
+#sysmsg {
+}
+
+pre {
+}
+
+/* special event: FTP / Gopher directory listing */
+#dirmsg {
+    font-family: courier, monospace;
+    color: black;
+    font-size: 10pt;
+}
+#dirlisting {
+    margin-left: 2%;
+    margin-right: 2%;
+}
+#dirlisting tr.entry td.icon,td.filename,td.size,td.date {
+    border-bottom: groove;
+}
+#dirlisting td.size {
+    width: 50px;
+    text-align: right;
+    padding-right: 5px;
+}
+
+/* horizontal lines */
+hr {
+	margin: 0;
+}
+
+/* page displayed footer area */
+#footer {
+	font-size: 9px;
+	padding-left: 10px;
+}
+
+
+body
+:lang(fa) { direction: rtl; font-size: 100%; font-family: Tahoma, Roya, sans-serif; float: right; }
+:lang(he) { direction: rtl; }
+ --></style>
+</head><body id=ERR_CONNECT_FAIL>
+<div id="titles">
+<h1>ERROR</h1>
+<h2>The requested URL could not be retrieved</h2>
+</div>
+<hr>
+
+<div id="content">
+<p>The following error was encountered while trying to retrieve the URL: <a href="http://localhost:5550/api/students/01110172948">http://localhost:5550/api/students/01110172948</a></p>
+
+<blockquote id="error">
+<p><b>Connection to ::1 failed.</b></p>
+</blockquote>
+
+<p id="sysmsg">The system returned: <i>(111) Connection refused</i></p>
+
+<p>The remote host or network may be down. Please try the request again.</p>
+
+<p>Your cache administrator is <a href="mailto:webmaster?subject=CacheErrorInfo%20-%20ERR_CONNECT_FAIL&amp;body=CacheHost%3A%20proxy-mes1%0D%0AErrPage%3A%20ERR_CONNECT_FAIL%0D%0AErr%3A%20(111)%20Connection%20refused%0D%0ATimeStamp%3A%20Wed,%2017%20Sep%202025%2013%3A56%3A27%20GMT%0D%0A%0D%0AClientIP%3A%2010.16.1.8%0D%0AServerIP%3A%20localhost%0D%0A%0D%0AHTTP%20Request%3A%0D%0AGET%20%2Fapi%2Fstudents%2F01110172948%20HTTP%2F1.1%0AAccept%3A%20application%2Fjson,%20text%2Fplain,%20*%2F*%0D%0AAuthorization%3A%20Basic%20Y29uc3VsdG9yOnNpZ2VudXF1ZXJ5KjQw%0D%0AUser-Agent%3A%20axios%2F1.8.1%0D%0AAccept-Encoding%3A%20gzip,%20compress,%20deflate,%20br%0D%0AVia%3A%201.1%20proxy2.uniss.edu.cu%20(squid%2F3.4.8)%0D%0AX-Forwarded-For%3A%2010.16.23.60%0D%0ACache-Control%3A%20max-age%3D259200%0D%0AHost%3A%20localhost%3A5550%0D%0A%0D%0A%0D%0A">webmaster</a>.</p>
+
+<br>
+</div>
+
+<hr>
+<div id="footer">
+<p>Generated Wed, 17 Sep 2025 13:56:27 GMT by proxy-mes1 (squid/4.10)</p>
+<!-- ERR_CONNECT_FAIL -->
+</div>
+</body></html>
+
+2025-09-17 09:55:48 [error]: Error al consultar SIGENU para CI: 01110172948. Error: Request failed with status code 503
+2025-09-17 09:55:48 [error]: Error al verificar identidad: Error al consultar SIGENU: Request failed with status code 503
+2025-09-17 10:08:34 [error]: Error en SIGENU API: 404 - 
+2025-09-17 10:19:04 [error]: Error en SIGENU API: 503 - <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2017 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" CONTENT="text/html; charset=utf-8">
+<title>ERROR: The requested URL could not be retrieved</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2017 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions from numerous individuals and organizations.
+ * Please see the COPYING and CONTRIBUTORS files for details.
+ */
+
+/*
+ Stylesheet for Squid Error pages
+ Adapted from design by Free CSS Templates
+ http://www.freecsstemplates.org
+ Released for free under a Creative Commons Attribution 2.5 License
+*/
+
+/* Page basics */
+* {
+	font-family: verdana, sans-serif;
+}
+
+html body {
+	margin: 0;
+	padding: 0;
+	background: #efefef;
+	font-size: 12px;
+	color: #1e1e1e;
+}
+
+/* Page displayed title area */
+#titles {
+	margin-left: 15px;
+	padding: 10px;
+	padding-left: 100px;
+	background: url('/squid-internal-static/icons/SN.png') no-repeat left;
+}
+
+/* initial title */
+#titles h1 {
+	color: #000000;
+}
+#titles h2 {
+	color: #000000;
+}
+
+/* special event: FTP success page titles */
+#titles ftpsuccess {
+	background-color:#00ff00;
+	width:100%;
+}
+
+/* Page displayed body content area */
+#content {
+	padding: 10px;
+	background: #ffffff;
+}
+
+/* General text */
+p {
+}
+
+/* error brief description */
+#error p {
+}
+
+/* some data which may have caused the problem */
+#data {
+}
+
+/* the error message received from the system or other software */
+#sysmsg {
+}
+
+pre {
+    font-family:sans-serif;
+}
+
+/* special event: FTP / Gopher directory listing */
+#dirmsg {
+    font-family: courier;
+    color: black;
+    font-size: 10pt;
+}
+#dirlisting {
+    margin-left: 2%;
+    margin-right: 2%;
+}
+#dirlisting tr.entry td.icon,td.filename,td.size,td.date {
+    border-bottom: groove;
+}
+#dirlisting td.size {
+    width: 50px;
+    text-align: right;
+    padding-right: 5px;
+}
+
+/* horizontal lines */
+hr {
+	margin: 0;
+}
+
+/* page displayed footer area */
+#footer {
+	font-size: 9px;
+	padding-left: 10px;
+}
+
+
+body
+:lang(fa) { direction: rtl; font-size: 100%; font-family: Tahoma, Roya, sans-serif; float: right; }
+:lang(he) { direction: rtl; }
+ --></style>
+</head><body id=ERR_CONNECT_FAIL>
+<div id="titles">
+<h1>ERROR</h1>
+<h2>The requested URL could not be retrieved</h2>
+</div>
+<hr>
+
+<div id="content">
+<p>The following error was encountered while trying to retrieve the URL: <a href="http://localhost:5550/api/students/01110172948">http://localhost:5550/api/students/01110172948</a></p>
+
+<blockquote id="error">
+<p><b>Connection to ::1 failed.</b></p>
+</blockquote>
+
+<p id="sysmsg">The system returned: <i>(111) Connection refused</i></p>
+
+<p>The remote host or network may be down. Please try the request again.</p>
+
+<p>Your cache administrator is <a href="mailto:webmaster?subject=CacheErrorInfo%20-%20ERR_CONNECT_FAIL&amp;body=CacheHost%3A%20proxy2-etecsa.uniss.edu.cu%0D%0AErrPage%3A%20ERR_CONNECT_FAIL%0D%0AErr%3A%20(111)%20Connection%20refused%0D%0ATimeStamp%3A%20Wed,%2017%20Sep%202025%2014%3A19%3A44%20GMT%0D%0A%0D%0AClientIP%3A%2010.16.1.8%0D%0AServerIP%3A%20localhost%0D%0A%0D%0AHTTP%20Request%3A%0D%0AGET%20%2Fapi%2Fstudents%2F01110172948%20HTTP%2F1.1%0AAccept%3A%20application%2Fjson,%20text%2Fplain,%20*%2F*%0D%0AContent-Type%3A%20application%2Fjson%0D%0AAuthorization%3A%20Basic%20Y29uc3VsdG9yOnNpZ2VudXF1ZXJ5KjQw%0D%0AUser-Agent%3A%20axios%2F1.8.1%0D%0AAccept-Encoding%3A%20gzip,%20compress,%20deflate,%20br%0D%0AVia%3A%201.1%20proxy2.uniss.edu.cu%20(squid%2F3.4.8)%0D%0AX-Forwarded-For%3A%2010.16.23.60%0D%0ACache-Control%3A%20max-age%3D259200%0D%0AHost%3A%20localhost%3A5550%0D%0A%0D%0A%0D%0A">webmaster</a>.</p>
+
+<br>
+</div>
+
+<hr>
+<div id="footer">
+<p>Generated Wed, 17 Sep 2025 14:19:44 GMT by proxy2-etecsa.uniss.edu.cu (squid/3.5.27)</p>
+<!-- ERR_CONNECT_FAIL -->
+</div>
+</body></html>
+
+2025-09-17 10:19:04 [error]: Error al verificar identidad: Error en SIGENU API: 503 - Request failed with status code 503
+2025-09-17 10:27:54 [error]: Error en SIGENU API: 503 - <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2019 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ERROR: The requested URL could not be retrieved</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2020 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions from numerous individuals and organizations.
+ * Please see the COPYING and CONTRIBUTORS files for details.
+ */
+
+/*
+ Stylesheet for Squid Error pages
+ Adapted from design by Free CSS Templates
+ http://www.freecsstemplates.org
+ Released for free under a Creative Commons Attribution 2.5 License
+*/
+
+/* Page basics */
+* {
+	font-family: verdana, sans-serif;
+}
+
+html body {
+	margin: 0;
+	padding: 0;
+	background: #efefef;
+	font-size: 12px;
+	color: #1e1e1e;
+}
+
+/* Page displayed title area */
+#titles {
+	margin-left: 15px;
+	padding: 10px;
+	padding-left: 100px;
+	background: url('/squid-internal-static/icons/SN.png') no-repeat left;
+}
+
+/* initial title */
+#titles h1 {
+	color: #000000;
+}
+#titles h2 {
+	color: #000000;
+}
+
+/* special event: FTP success page titles */
+#titles ftpsuccess {
+	background-color:#00ff00;
+	width:100%;
+}
+
+/* Page displayed body content area */
+#content {
+	padding: 10px;
+	background: #ffffff;
+}
+
+/* General text */
+p {
+}
+
+/* error brief description */
+#error p {
+}
+
+/* some data which may have caused the problem */
+#data {
+}
+
+/* the error message received from the system or other software */
+#sysmsg {
+}
+
+pre {
+}
+
+/* special event: FTP / Gopher directory listing */
+#dirmsg {
+    font-family: courier, monospace;
+    color: black;
+    font-size: 10pt;
+}
+#dirlisting {
+    margin-left: 2%;
+    margin-right: 2%;
+}
+#dirlisting tr.entry td.icon,td.filename,td.size,td.date {
+    border-bottom: groove;
+}
+#dirlisting td.size {
+    width: 50px;
+    text-align: right;
+    padding-right: 5px;
+}
+
+/* horizontal lines */
+hr {
+	margin: 0;
+}
+
+/* page displayed footer area */
+#footer {
+	font-size: 9px;
+	padding-left: 10px;
+}
+
+
+body
+:lang(fa) { direction: rtl; font-size: 100%; font-family: Tahoma, Roya, sans-serif; float: right; }
+:lang(he) { direction: rtl; }
+ --></style>
+</head><body id=ERR_DNS_FAIL>
+<div id="titles">
+<h1>ERROR</h1>
+<h2>The requested URL could not be retrieved</h2>
+</div>
+<hr>
+
+<div id="content">
+<p>The following error was encountered while trying to retrieve the URL: <a href="http://tudominio.edu.cu/api/students/01110172948">http://tudominio.edu.cu/api/students/01110172948</a></p>
+
+<blockquote id="error">
+<p><b>Unable to determine IP address from host name <q>tudominio.edu.cu</q></b></p>
+</blockquote>
+
+<p>The DNS server returned:</p>
+<blockquote id="data">
+<pre>Name Error: The domain name does not exist.</pre>
+</blockquote>
+
+<p>This means that the cache was not able to resolve the hostname presented in the URL. Check if the address is correct.</p>
+
+<p>Your cache administrator is <a href="mailto:webmaster?subject=CacheErrorInfo%20-%20ERR_DNS_FAIL&amp;body=CacheHost%3A%20proxy-mes1%0D%0AErrPage%3A%20ERR_DNS_FAIL%0D%0AErr%3A%20%5Bnone%5D%0D%0ADNS%20ErrMsg%3A%20Name%20Error%3A%20The%20domain%20name%20does%20not%20exist.%0D%0ATimeStamp%3A%20Wed,%2017%20Sep%202025%2014%3A28%3A34%20GMT%0D%0A%0D%0AClientIP%3A%2010.16.1.8%0D%0A%0D%0AHTTP%20Request%3A%0D%0AGET%20%2Fapi%2Fstudents%2F01110172948%20HTTP%2F1.1%0AAccept%3A%20application%2Fjson,%20text%2Fplain,%20*%2F*%0D%0AContent-Type%3A%20application%2Fjson%0D%0AAuthorization%3A%20Basic%20Y29uc3VsdG9yOnNpZ2VudXF1ZXJ5KjQw%0D%0AUser-Agent%3A%20axios%2F1.8.1%0D%0AAccept-Encoding%3A%20gzip,%20compress,%20deflate,%20br%0D%0AVia%3A%201.1%20proxy2.uniss.edu.cu%20(squid%2F3.4.8)%0D%0AX-Forwarded-For%3A%2010.16.23.60%0D%0ACache-Control%3A%20max-age%3D259200%0D%0AHost%3A%20tudominio.edu.cu%0D%0A%0D%0A%0D%0A">webmaster</a>.</p>
+<br>
+</div>
+
+<hr>
+<div id="footer">
+<p>Generated Wed, 17 Sep 2025 14:28:34 GMT by proxy-mes1 (squid/4.10)</p>
+<!-- ERR_DNS_FAIL -->
+</div>
+</body></html>
+
+2025-09-17 10:27:54 [error]: Error al verificar identidad: Error en SIGENU API: 503 - Request failed with status code 503
+2025-09-17 10:33:35 [error]: Error al consultar SIGENU para CI: 01110172948. Error: SIGENU devolvió un error: [getMainStudentData] Error 501: Request failed with status code 501
+2025-09-17 10:33:35 [error]: Error al verificar identidad: Error al consultar SIGENU: SIGENU devolvió un error: [getMainStudentData] Error 501: Request failed with status code 501
+2025-09-17 10:42:16 [error]: Error desconocido al consultar SIGENU: SIGENU devolvió un error: [getMainStudentData] Error 501: Request failed with status code 501
+2025-09-17 11:19:37 [error]: No se encontraron datos válidos para el CI: 01110172948. Error: Error en datos principales: [getMainStudentData] Error 501: Request failed with status code 501
+2025-09-17 12:28:42 [error]: Error global: InvalidDnSyntaxError: Invalid Dn Syntax
+    at messageCallback (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:1267:45)
+    at Parser.onMessage (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:925:14)
+    at Parser.emit (node:events:518:28)
+    at Parser.emit (node:domain:489:12)
+    at Parser.write (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\messages\parser.js:135:8)
+    at TLSSocket.onData (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:875:22)
+    at TLSSocket.emit (node:events:518:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-09-17 13:14:25 [error]: Error global: InvalidDnSyntaxError: Invalid Dn Syntax
+    at messageCallback (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:1267:45)
+    at Parser.onMessage (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:925:14)
+    at Parser.emit (node:events:518:28)
+    at Parser.emit (node:domain:489:12)
+    at Parser.write (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\messages\parser.js:135:8)
+    at TLSSocket.onData (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:875:22)
+    at TLSSocket.emit (node:events:518:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-09-17 13:34:08 [error]: Error global: InvalidDnSyntaxError: Invalid Dn Syntax
+    at messageCallback (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:1267:45)
+    at Parser.onMessage (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:925:14)
+    at Parser.emit (node:events:518:28)
+    at Parser.emit (node:domain:489:12)
+    at Parser.write (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\messages\parser.js:135:8)
+    at TLSSocket.onData (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:875:22)
+    at TLSSocket.emit (node:events:518:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)

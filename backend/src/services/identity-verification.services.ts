@@ -4,6 +4,7 @@ import axios from "axios";
 import logger from '../utils/logger';
 import https from 'https';
 import dotenv from 'dotenv';
+import { SigenuService } from "./sigenu.services";
 
 dotenv.config();
 
@@ -25,9 +26,11 @@ export type EmployeeWithDepartment = {
 
 class IdentityVerificationService {
   private prisma: PrismaClient;
+  private sigenuService: SigenuService;
 
   constructor() {
     this.prisma = new PrismaClient();
+    this.sigenuService = new SigenuService(); // Instancia de SigenuService
   }
 
   async verifyCI(ci: string): Promise<{ type: 'student' | 'employee', data: StudentData | EmployeeWithDepartment }> {
@@ -63,60 +66,55 @@ class IdentityVerificationService {
     try {
       logger.info(`Consultando datos de estudiante para CI: ${ci}`);
   
-      const username = process.env.SIGENU_API_USER;
-      const password = process.env.SIGENU_API_PASSWORD;
+      // Usar métodos estáticos de SigenuService
+      const response = await SigenuService.getStudentData(ci);
   
-      if (!username || !password) {
-        throw new Error(
-          'Credenciales SIGENU no configuradas. Verifique las variables de entorno: ' +
-          'SIGENU_API_USER y SIGENU_API_PASSWORD'
-        );
+      // Manejar el caso de error explícitamente
+      if (!response.success) {
+        logger.error(`No se encontraron datos válidos para el CI: ${ci}. Error: ${response.error}`);
+        return null;
       }
   
-      const authHeader = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
+      // Si llegamos aquí, TypeScript sabe que response.success es true y response.data existe
+      const studentData = response.data.mainData;
+      const rawData = studentData.rawData;
   
-      const response = await axios.get(
-        `http://localhost:5550/api/students/${ci}`,
-        {
-          headers: {
-            Authorization: authHeader
-          },
-          httpsAgent: new https.Agent({
-            rejectUnauthorized: false
-          }),
-          timeout: 10000
-        }
-      );
-  
-      // Solo considera estudiante activo si studentStatus es "Activo"
-      if (response.data?.success && response.data?.data?.rawData?.docentData?.studentStatus === "Activo") {
-        return {
-          fullName: response.data.data.personalData.fullName,
-          career: response.data.data.academicData.career,
-          faculty: response.data.data.academicData.faculty,
-          academicYear: parseInt(response.data.data.academicData.year),
-          status: 'active',
-          ci: response.data.data.personalData.identification
-        };
+      // Verificar si el estudiante está activo
+      const studentStatus = rawData.docentData?.studentStatus || 'Desconocido';
+      if (studentStatus !== 'Activo') {
+        logger.info(`Estudiante con CI ${ci} está ${studentStatus.toLowerCase()}. No se considera activo.`);
+        return null;
       }
   
-      return null;
+      // Obtener el nombre de la carrera usando el método estático
+      const careerCode = rawData.docentData?.career || '00000';
+      const careerName = await SigenuService.getNationalCareerName(careerCode);
+  
+      // Extraer el año académico
+      let academicYear = 1;
+      if (rawData.docentData?.year) {
+        academicYear = parseInt(rawData.docentData.year);
+      } else if (typeof rawData.docentData?.academicSituation === 'string') {
+        const yearMatch = rawData.docentData.academicSituation.match(/\d+/);
+        academicYear = yearMatch ? parseInt(yearMatch[0]) : 1;
+      }
+  
+      return {
+        fullName: studentData.personalData.fullName,
+        career: careerName,
+        faculty: studentData.academicData.faculty,
+        academicYear: academicYear,
+        status: 'active',
+        ci: studentData.personalData.identification,
+      };
+  
     } catch (error: any) {
-      if (axios.isAxiosError(error)) {
-        logger.error(`Error en SIGENU API: ${error.response?.status} - ${error.response?.data}`);
-  
-        if (error.response?.status === 401) {
-          throw new Error('Credenciales SIGENU inválidas');
-        }
-        if (error.response?.status === 404) {
-          return null;
-        }
-      }
-  
-      logger.error(`Error al consultar SIGENU para CI: ${ci}. Error: ${error.message}`);
-      throw new Error(`Error al consultar SIGENU: ${error.message}`);
+      logger.error(`Error al consultar estudiante con CI ${ci}: ${error.message}`);
+      return null;
     }
   }
+  
+
   
   
 
@@ -129,25 +127,36 @@ class IdentityVerificationService {
           Baja: false
         }
       });
-
+  
       if (!employee) {
         logger.warn(`No se encontraron datos de empleado para CI: ${ci}`);
-        return null;
+        return null; // <-- Correcto
       }
-
-      const department = await this.getDepartmentData(employee.Id_Direccion);
-
-      return {
-        fullName: `${employee.Nombre} ${employee.Apellido_1} ${employee.Apellido_2 || ''}`.trim(),
-        department: department?.Desc_Direccion || 'Sin departamento',
-        ci: employee.No_CI,
-        status: 'active'
-      };
+  
+      try {
+        const department = await this.getDepartmentData(employee.Id_Direccion);
+        return {
+          fullName: `${employee.Nombre} ${employee.Apellido_1} ${employee.Apellido_2 || ''}`.trim(),
+          department: department?.Desc_Direccion || 'Sin departamento',
+          ci: employee.No_CI,
+          status: 'active'
+        };
+      } catch (departmentError: any) {
+        logger.error(`Error al consultar departamento para CI: ${ci}. Usando valores por defecto.`);
+        // Devuelve datos parciales (sin departamento) en lugar de fallar
+        return {
+          fullName: `${employee.Nombre} ${employee.Apellido_1} ${employee.Apellido_2 || ''}`.trim(),
+          department: 'Sin departamento',
+          ci: employee.No_CI,
+          status: 'active'
+        };
+      }
     } catch (error: any) {
       logger.error(`Error al consultar datos de empleado para CI: ${ci}. Error: ${error.message}`);
-      throw new Error(`Error al consultar datos de empleado: ${error.message}`);
+      return null; // <-- Ahora devuelve null en lugar de lanzar el error
     }
   }
+  
 
 
   private async getDepartmentData(idDireccion: string) {

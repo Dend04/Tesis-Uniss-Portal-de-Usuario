@@ -26,23 +26,23 @@ export default function LoginPage() {
     password?: string;
     general?: string;
   }>({});
-  
+
   // Expresiones regulares para validación
   const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@(estudiante\.)?uniss\.edu\.cu$/;
   const USERNAME_REGEX = /^[a-zA-Z0-9]{4,20}$/;
-  
+
   const router = useRouter();
 
   // Prefetch estratégico de rutas
   useEffect(() => {
     const handleInteraction = () => {
       router.prefetch("/dashboard");
-      window.removeEventListener('mousedown', handleInteraction);
+      window.removeEventListener("mousedown", handleInteraction);
     };
-    
-    window.addEventListener('mousedown', handleInteraction);
-    
-    return () => window.removeEventListener('mousedown', handleInteraction);
+
+    window.addEventListener("mousedown", handleInteraction);
+
+    return () => window.removeEventListener("mousedown", handleInteraction);
   }, [router]);
 
   const validateForm = () => {
@@ -121,23 +121,35 @@ export default function LoginPage() {
               className="object-contain mx-auto"
             />
           </div>
-          
+
           <div className="space-y-4 text-white">
-            <h1 className="text-3xl font-bold">Bienvenido al Sistema de Credenciales UNISS</h1>
+            <h1 className="text-3xl font-bold">
+              Bienvenido al Sistema de Credenciales UNISS
+            </h1>
             <p className="text-xl leading-relaxed">
-              Sistema integral para la visualización de credenciales académica y vinculación de dispositivos institucionales
+              Sistema integral para la visualización de credenciales académica y
+              vinculación de dispositivos institucionales
             </p>
             <div className="mt-6 space-y-2 text-left">
               <div className="flex items-center gap-2">
-                <IdentificationIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                <IdentificationIcon
+                  className="h-6 w-6 text-white"
+                  aria-hidden="true"
+                />
                 <span>Acceso seguro y personalizado</span>
               </div>
               <div className="flex items-center gap-2">
-                <LockClosedIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                <LockClosedIcon
+                  className="h-6 w-6 text-white"
+                  aria-hidden="true"
+                />
                 <span>Protección de datos garantizada</span>
               </div>
               <div className="flex items-center gap-2">
-                <UserCircleIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                <UserCircleIcon
+                  className="h-6 w-6 text-white"
+                  aria-hidden="true"
+                />
                 <span>Simple y sencillo</span>
               </div>
             </div>
@@ -146,9 +158,16 @@ export default function LoginPage() {
 
         {/* Columna Derecha - Formulario */}
         <div className="p-8 md:p-12 md:w-1/2 flex flex-col justify-center">
-          <form onSubmit={handleSubmit} className="space-y-6" aria-label="Formulario de inicio de sesión">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6"
+            aria-label="Formulario de inicio de sesión"
+          >
             <div>
-              <label htmlFor="username" className="block text-lg font-semibold text-gray-800 mb-3">
+              <label
+                htmlFor="username"
+                className="block text-lg font-semibold text-gray-800 mb-3"
+              >
                 <span className="text-blue-700">*</span> Usuario o Correo
               </label>
               <div className="relative">
@@ -163,10 +182,16 @@ export default function LoginPage() {
                   } rounded-lg focus:ring-4 focus:ring-blue-200 focus:border-blue-500`}
                   aria-required="true"
                   aria-invalid={!!errors.username}
-                  aria-describedby={errors.username ? "username-error" : undefined}
+                  aria-describedby={
+                    errors.username ? "username-error" : undefined
+                  }
                 />
                 {errors.username && (
-                  <p id="username-error" className="text-red-600 text-sm mt-2" role="alert">
+                  <p
+                    id="username-error"
+                    className="text-red-600 text-sm mt-2"
+                    role="alert"
+                  >
                     {errors.username}
                   </p>
                 )}
@@ -174,7 +199,10 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-lg font-semibold text-gray-800 mb-3">
+              <label
+                htmlFor="password"
+                className="block text-lg font-semibold text-gray-800 mb-3"
+              >
                 <span className="text-blue-700">*</span> Contraseña
               </label>
               <div className="relative">
@@ -188,13 +216,17 @@ export default function LoginPage() {
                   } rounded-lg pr-12 focus:ring-4 focus:ring-blue-200 focus:border-blue-500`}
                   aria-required="true"
                   aria-invalid={!!errors.password}
-                  aria-describedby={errors.password ? "password-error" : undefined}
+                  aria-describedby={
+                    errors.password ? "password-error" : undefined
+                  }
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 bottom-4 text-gray-600 hover:text-blue-700"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  aria-label={
+                    showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                  }
                 >
                   {showPassword ? (
                     <EyeSlashIcon className="h-6 w-6" aria-hidden="true" />
@@ -203,7 +235,11 @@ export default function LoginPage() {
                   )}
                 </button>
                 {errors.password && (
-                  <p id="password-error" className="text-red-600 text-sm mt-2" role="alert">
+                  <p
+                    id="password-error"
+                    className="text-red-600 text-sm mt-2"
+                    role="alert"
+                  >
                     {errors.password}
                   </p>
                 )}
@@ -211,7 +247,10 @@ export default function LoginPage() {
             </div>
 
             {errors.general && (
-              <div className="bg-red-50 p-3 rounded-lg border border-red-200" role="alert">
+              <div
+                className="bg-red-50 p-3 rounded-lg border border-red-200"
+                role="alert"
+              >
                 <p className="text-red-700 text-center font-medium">
                   ⚠️ {errors.general}
                 </p>
@@ -226,7 +265,10 @@ export default function LoginPage() {
             >
               {isSubmitting ? (
                 <>
-                  <ArrowPathIcon className="h-6 w-6 animate-spin" aria-hidden="true" />
+                  <ArrowPathIcon
+                    className="h-6 w-6 animate-spin"
+                    aria-hidden="true"
+                  />
                   Verificando...
                 </>
               ) : (
@@ -245,7 +287,7 @@ export default function LoginPage() {
                   ¿No recuerda su contraseña?
                 </Link>
               </div>
-              
+
               <div className="relative" aria-hidden="true">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-300"></div>
@@ -261,7 +303,7 @@ export default function LoginPage() {
                 className="w-full inline-block text-center bg-gray-100 text-gray-800 py-4 rounded-lg hover:bg-gray-200 transition-all font-semibold text-lg border-2 border-dashed border-gray-300"
                 aria-label="Solicitar credenciales"
               >
-                Solicitar credenciales 
+                Solicitar credenciales
               </Link>
             </div>
           </form>

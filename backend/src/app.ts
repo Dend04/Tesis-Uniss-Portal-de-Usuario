@@ -18,6 +18,7 @@ import identity from './routes/identity.routes';
 import email from './routes/email.routes';
 import usernameOptions from './routes/username-options.routes';
 import { getLDAPPool } from './utils/ldap.utils'; // Importar el pool de conexiones
+import { SigenuService } from './services/sigenu.services';
 
 // Cargar variables de entorno desde el archivo .env
 dotenv.config();
@@ -131,6 +132,15 @@ const errorHandler: ErrorRequestHandler = (err: any, req: Request, res: Response
 
 app.use(errorHandler);
 
+// Precargar caché al iniciar
+SigenuService.preloadCareerCache()
+  .then(() => {
+    console.log('Caché de carreras precargada exitosamente.');
+  })
+  .catch((error) => {
+    console.error('Error precargando caché de carreras:', error);
+  });
+
 // Manejadores para el cierre graceful de la aplicación
 process.on('SIGINT', () => {
   console.log('Recibido SIGINT. Cerrando servidor y pool LDAP...');
@@ -159,7 +169,6 @@ app.listen(PORT, async () => {
       logger.warn(`Detalles: ${error.message}`);
     }
   }
-
   logger.info(`🚀 Servidor en http://localhost:${PORT}`);
   logger.info(`📄 Docs: http://localhost:${PORT}/api-docs`);
 });

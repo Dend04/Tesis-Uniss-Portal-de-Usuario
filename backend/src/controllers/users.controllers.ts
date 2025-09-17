@@ -8,6 +8,10 @@ interface LdapAttribute {
   values: string[];
 }
 
+const MAX_PASSWORD_AGE_DAYS = process.env.MAX_PASSWORD_AGE_DAYS 
+  ? parseInt(process.env.MAX_PASSWORD_AGE_DAYS) 
+  : 90; // Valor por defecto de 90 días
+const MAX_PASSWORD_AGE_MS = MAX_PASSWORD_AGE_DAYS * 24 * 60 * 60 * 1000;
 
 // Mapeo de grupos a descripciones
 const mapGroupToDescription = (group: string): string => {
@@ -24,6 +28,119 @@ const mapGroupToDescription = (group: string): string => {
       return "Grupo desconocido";
   }
 };
+
+// Función para convertir timestamp LDAP a milisegundos
+function ldapTimestampToMs(timestamp: string): number | null {
+  if (!timestamp || timestamp === '0') return null;
+  try {
+    const ldapTimestamp = BigInt(timestamp);
+    const windowsEpoch = BigInt(116444736000000000);
+    const unixTimestamp = Number((ldapTimestamp - windowsEpoch) / BigInt(10000));
+    return unixTimestamp;
+  } catch (error) {
+    console.error("Error converting LDAP timestamp:", error);
+    return null;
+  }
+}
+
+// Función para formatear el tiempo restante en días o meses
+function formatTimeRemaining(days: number): string {
+  if (days >= 30) {
+    const months = Math.floor(days / 30);
+    return `Vence en ${months} ${months === 1 ? 'mes' : 'meses'}`;
+  } else if (days > 0) {
+    return `Vence en ${days} ${days === 1 ? 'día' : 'días'}`;
+  } else if (days === 0) {
+    return 'Vence hoy';
+  } else {
+    return 'Expirada';
+  }
+}
+
+// Función para formatear timestamps de LDAP
+function formatLdapTimestamp(timestamp: string): string {
+  if (!timestamp || timestamp === '0') return 'Nunca';
+  
+  try {
+    // Convertir el timestamp de Active Directory (100-nanosecond intervals since January 1, 1601)
+    const ldapTimestamp = BigInt(timestamp);
+    const windowsEpoch = BigInt(116444736000000000); // January 1, 1601 to January 1, 1970
+    const unixTimestamp = Number((ldapTimestamp - windowsEpoch) / BigInt(10000000));
+    
+    return new Date(unixTimestamp * 1000).toLocaleString('es-ES');
+  } catch (error) {
+    return 'Fecha no válida';
+  }
+}
+
+// Función auxiliar para formatear datos de usuario
+function formatUserData(entry: any): any {
+  const getAttributeValue = (attrName: string): string => {
+    const attribute = entry.attributes.find((attr: any) => attr.type === attrName);
+    return attribute && attribute.values && attribute.values.length > 0 
+      ? String(attribute.values[0]) 
+      : '';
+  };
+
+  // Cálculo de vencimiento de contraseña
+  const userAccountControlValue = parseInt(getAttributeValue('userAccountControl') || '0');
+  const passwordNeverExpires = (userAccountControlValue & 65536) !== 0;
+
+  const pwdLastSetValue = getAttributeValue('pwdLastSet');
+  const pwdLastSetMs = pwdLastSetValue && pwdLastSetValue !== '0' 
+    ? ldapTimestampToMs(pwdLastSetValue) 
+    : null;
+
+  let passwordExpira = 'Desconocido';
+  let diasHastaVencimiento: number | null = null;
+  let tiempoHastaVencimiento = 'Desconocido';
+
+  if (passwordNeverExpires) {
+    passwordExpira = 'No expira';
+    tiempoHastaVencimiento = 'No expira';
+  } else if (pwdLastSetMs) {
+    const passwordExpiraMs = pwdLastSetMs + MAX_PASSWORD_AGE_MS;
+    const ahoraMs = Date.now();
+    diasHastaVencimiento = Math.floor((passwordExpiraMs - ahoraMs) / (1000 * 60 * 60 * 24));
+    passwordExpira = new Date(passwordExpiraMs).toLocaleDateString('es-ES');
+    tiempoHastaVencimiento = formatTimeRemaining(diasHastaVencimiento);
+  } else {
+    passwordExpira = 'No se ha cambiado la contraseña';
+  }
+
+  // Agrega estos campos al objeto de retorno
+  return {
+    sAMAccountName: getAttributeValue('sAMAccountName'),
+    uid: getAttributeValue('uid'),
+    nombreCompleto: getAttributeValue('cn'),
+    email: getAttributeValue('mail'),
+    nombre: getAttributeValue('givenName'),
+    apellido: getAttributeValue('sn'),
+    displayName: getAttributeValue('displayName'),
+    userPrincipalName: getAttributeValue('userPrincipalName'),
+    employeeID: getAttributeValue('employeeID'),
+    telefono: getAttributeValue('telephoneNumber'),
+    direccion: getAttributeValue('streetAddress'),
+    localidad: getAttributeValue('l'),
+    provincia: getAttributeValue('st'),
+    descripcion: getAttributeValue('description'),
+    titulo: getAttributeValue('title'),
+    añoAcademico: getAttributeValue('departmentNumber'),
+    tipoEmpleado: getAttributeValue('employeeType'),
+    facultad: getAttributeValue('ou'),
+    carrera: getAttributeValue('department'),
+    cuentaHabilitada: getAttributeValue('userAccountControl') === '512',
+    fechaCreacion: getAttributeValue('whenCreated'),
+    fechaModificacion: getAttributeValue('whenChanged'),
+    ultimoInicioSesion: formatLdapTimestamp(getAttributeValue('lastLogon')),
+    ultimoCambioPassword: formatLdapTimestamp(getAttributeValue('pwdLastSet')),
+    // Nuevos campos agregados
+    userAccountControl: userAccountControlValue,
+    passwordExpira,
+    diasHastaVencimiento,
+    tiempoHastaVencimiento
+  };
+}
 
 export const searchUsers = async (
   req: Request<{}, {}, { searchTerm: string }>,
@@ -215,56 +332,3 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
     });
   }
 };
-
-// Función auxiliar para formatear datos de usuario
-function formatUserData(entry: any): any {
-  const getAttributeValue = (attrName: string): string => {
-    const attribute = entry.attributes.find((attr: any) => attr.type === attrName);
-    return attribute && attribute.values && attribute.values.length > 0 
-      ? String(attribute.values[0]) 
-      : '';
-  };
-
-  return {
-    sAMAccountName: getAttributeValue('sAMAccountName'),
-    uid: getAttributeValue('uid'),
-    nombreCompleto: getAttributeValue('cn'),
-    email: getAttributeValue('mail'),
-    nombre: getAttributeValue('givenName'),
-    apellido: getAttributeValue('sn'),
-    displayName: getAttributeValue('displayName'),
-    userPrincipalName: getAttributeValue('userPrincipalName'),
-    employeeID: getAttributeValue('employeeID'),
-    telefono: getAttributeValue('telephoneNumber'),
-    direccion: getAttributeValue('streetAddress'),
-    localidad: getAttributeValue('l'),
-    provincia: getAttributeValue('st'),
-    descripcion: getAttributeValue('description'),
-    titulo: getAttributeValue('title'),
-    añoAcademico: getAttributeValue('departmentNumber'),
-    tipoEmpleado: getAttributeValue('employeeType'),
-    facultad: getAttributeValue('ou'),
-    carrera: getAttributeValue('department'),
-    cuentaHabilitada: getAttributeValue('userAccountControl') === '512',
-    fechaCreacion: getAttributeValue('whenCreated'),
-    fechaModificacion: getAttributeValue('whenChanged'),
-    ultimoInicioSesion: formatLdapTimestamp(getAttributeValue('lastLogon')),
-    ultimoCambioPassword: formatLdapTimestamp(getAttributeValue('pwdLastSet'))
-  };
-}
-
-// Función para formatear timestamps de LDAP (si es necesaria)
-function formatLdapTimestamp(timestamp: string): string {
-  if (!timestamp || timestamp === '0') return 'Nunca';
-  
-  try {
-    // Convertir el timestamp de Active Directory (100-nanosecond intervals since January 1, 1601)
-    const ldapTimestamp = BigInt(timestamp);
-    const windowsEpoch = BigInt(116444736000000000); // January 1, 1601 to January 1, 1970
-    const unixTimestamp = Number((ldapTimestamp - windowsEpoch) / BigInt(10000000));
-    
-    return new Date(unixTimestamp * 1000).toLocaleString('es-ES');
-  } catch (error) {
-    return 'Fecha no válida';
-  }
-}

@@ -13,6 +13,9 @@ export interface UserInfo {
   status: string;
   lastLogin: string;
   id: string;
+  passwordExpira?: string;
+  diasHastaVencimiento?: number | null;
+  tiempoHastaVencimiento?: string;
 }
   
   export interface Device {

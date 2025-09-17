@@ -1,3 +1,4 @@
+// src/services/segenu.services.ts
 import https from "https";
 import axios, { AxiosRequestConfig } from "axios";
 import dotenv from "dotenv";
@@ -28,13 +29,22 @@ export class SigenuService {
         keepAlive: true,
         maxSockets: 10,
       }),
+      // Configuración del proxy si es necesario
+      proxy: process.env.HTTP_PROXY ? {
+        host: 'proxy2.uniss.edu.cu',
+        port: 3128,
+        auth: {
+          username: process.env.PROXY_USER || 'denamorado',
+          password: process.env.PROXY_PASS || 'abcd.1234'
+        }
+      } : false,
       headers: {
         Authorization: `Basic ${this.getAuthCredentials()}`,
         Accept: "application/json",
         "X-Request-Source": "student-portal-api",
       },
     };
-  }
+  }  
 
   // Método para obtener las credenciales de autenticación
   private static getAuthCredentials(): string {
@@ -54,26 +64,43 @@ export class SigenuService {
       const response = await axios.get(
         `http://sigenu.uniss.edu.cu/sigenu-rest/dss/getcareermodel`,
         {
-          headers: {
-            Authorization: `Basic ${this.getAuthCredentials()}`, // Usar la función para obtener las credenciales
-          },
+          ...this.getConfig(),
+          // Aseguramos que la respuesta sea tratada como JSON
+          responseType: 'json'
         }
       );
-      const careers = response.data;
-
-      // Asegúrate de que la caché se esté llenando correctamente
-      careers.forEach((career: { idCarrera: string; nombre: string }) => {
-        const normalizedId = career.idCarrera.padStart(5, "0"); // Normalizar el ID
-        this.careerCache[normalizedId] = career.nombre; // Almacenar en la caché
+  
+      // Verificamos si la respuesta tiene la estructura esperada
+      let careersData = response.data;
+  
+      // Si la respuesta está envuelta en un objeto con propiedad 'data'
+      if (careersData && careersData.data && Array.isArray(careersData.data)) {
+        careersData = careersData.data;
+      }
+      // Si la respuesta es directamente un array
+      else if (!Array.isArray(careersData)) {
+        console.error('La respuesta no es un array:', careersData);
+        throw new Error('Formato de respuesta inesperado');
+      }
+  
+      // Limpiamos la caché anterior
+      this.careerCache = {};
+  
+      // Llenamos la caché con los nuevos datos
+      careersData.forEach((career: { idCarrera: string; nombre: string }) => {
+        const normalizedId = career.idCarrera?.toString().padStart(5, "0") || "00000";
+        this.careerCache[normalizedId] = career.nombre || `Carrera ${normalizedId}`;
       });
-
-      cache.set("nationalCareers", careers, 3600000); // Almacenar por 1 hora
-      return careers;
+  
+      // Guardamos en la caché de NodeCache
+      cache.set("nationalCareers", careersData, 3600000);
+      return careersData;
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         console.error(
           "Error obteniendo carreras nacionales:",
-          error.response ? error.response.data : error.message
+          error.response?.status,
+          error.response?.data || error.message
         );
       } else {
         console.error(
@@ -82,6 +109,17 @@ export class SigenuService {
         );
       }
       return [];
+    }
+  }
+  
+  // Precargar la caché de carreras al iniciar (opcional pero recomendado)
+  public static async preloadCareerCache(): Promise<void> {
+    try {
+      await this.getNationalCareers();
+      console.log('Caché de carreras precargada exitosamente.');
+    } catch (error) {
+      console.error('Error precargando caché de carreras:', error);
+      throw error;
     }
   }
 
@@ -93,25 +131,20 @@ export class SigenuService {
     return careers;
   }
 
-  private static async getNationalCareerName(
-    careerCode: string
-  ): Promise<string> {
+  
+
+  public static async getNationalCareerName(careerCode: string): Promise<string> {
     const careers = await this.getNationalCareerFromCache();
-    const career = careers.find(
-      (c: { idCarrera: string }) => c.idCarrera === careerCode
-    );
+    const career = careers.find((c: { idCarrera: string }) => c.idCarrera === careerCode);
     if (career) {
       return career.nombre;
     }
-    return careerCode; // Si no se encuentra, devolver el código original
+    return careerCode;
   }
 
   // Método principal para obtener todos los datos
-  static async getStudentData(
-    ci: string
-  ): Promise<ApiResponse<StudentCompleteData>> {
+  public static async getStudentData(ci: string): Promise<ApiResponse<StudentCompleteData>> {
     try {
-      // Verificar si los datos están en caché
       const cachedData = cache.get<StudentCompleteData>(ci);
       if (cachedData) {
         console.log(`Datos obtenidos de la caché para CI: ${ci}`);
@@ -121,15 +154,12 @@ export class SigenuService {
         };
       }
 
-      // Si no están en caché, obtener los datos
       await this.fetchCareerData();
       const main = await this.getMainStudentData(ci);
-
       if (!main.success) {
         return this.handlePartialErrors(main);
       }
 
-      // Almacenar los datos en caché
       cache.set(ci, {
         mainData: main.data,
       });
