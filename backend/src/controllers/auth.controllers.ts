@@ -33,16 +33,33 @@ export const loginController = async (req: Request, res: Response): Promise<void
     await authenticateUser(username, password);
     const ldapUser = await getUserData(username);
     
-    const tokens = generateTokens({
+    // Validar que tenemos los campos requeridos
+    if (!ldapUser.employeeID) {
+      console.warn(`Usuario ${username} no tiene employeeID asignado`);
+      // Decidir si es un error crítico o continuar con valor vacío
+      // throw new Error("El usuario no tiene employeeID asignado");
+    }
+
+    // Preparar el payload del token
+    const tokenPayload: TokenPayload = {
       sAMAccountName: ldapUser.sAMAccountName,
       username: username.trim() || ldapUser.sAMAccountName,
-    });
+      employeeID: ldapUser.employeeID || '',
+      nombreCompleto: ldapUser.nombreCompleto,
+      email: ldapUser.email,
+    };
+
+    const tokens = generateTokens(tokenPayload);
 
     res.json({
       success: true,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      user: { ...ldapUser, username: username.trim() || ldapUser.sAMAccountName },
+      user: { 
+        ...ldapUser, 
+        username: username.trim() || ldapUser.sAMAccountName,
+        employeeID: ldapUser.employeeID 
+      },
     });
   } catch (error: any) {
     console.error("Error en loginController:", error.message);

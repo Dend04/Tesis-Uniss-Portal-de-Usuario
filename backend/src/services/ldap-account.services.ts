@@ -6,6 +6,7 @@ import {
 } from "../utils/ldap.utils";
 import { LDAPStructureBuilder } from "../utils/ldap.structure";
 import dotenv from "dotenv";
+import { getUserData } from "./auth.services";
 dotenv.config();
 
 interface LDAPError extends Error {
@@ -92,37 +93,39 @@ export class LDAPAccountService {
     return this.handleYearOU(courseTypeDN, academicYear);
   }
 
-  private async findOUByPostalCode(parentDN: string, postalCode: string): Promise<string> {
-    const searchOptions: SearchOptions = {
-      scope: "one",
-      filter: `(&(objectClass=organizationalUnit)(postalCode=${postalCode}))`,
-      attributes: ["ou"],
+/**
+   * Obtiene la cuenta de estudiante desde LDAP por employeeID (CI)
+   */
+async getStudentAccount(employeeID: string): Promise<any> {
+  try {
+    // Usar la función existente getUserData que ya tienes implementada
+    const userData = await getUserData(employeeID);
+    
+    return {
+      sAMAccountName: userData.sAMAccountName || '',
+      userPrincipalName: userData.userPrincipalName || '',
+      mail: userData.email || userData.mail || '',
+      cuentaHabilitada: true, // Esto deberías obtenerlo de LDAP si está disponible
+      ultimoInicioSesion: 'Nunca', // Esto también deberías obtenerlo de LDAP
+      displayName: userData.displayName || userData.nombreCompleto || '',
+      email: userData.email || ''
     };
-    const entries = await new Promise<string[]>((resolve, reject) => {
-      this.client.search(parentDN, searchOptions, (err, res) => {
-        if (err) return reject(err);
-        const results: string[] = [];
-        res.on("searchEntry", (entry: SearchEntry) => {
-          const ou = entry.pojo.attributes.find((a: LdapAttribute) => a.type === "ou")?.values?.[0];
-          if (ou) results.push(ou);
-        });
-        res.on("error", reject);
-        res.on("end", () => resolve(results));
-      });
-    });
-    if (entries.length === 0) {
-      throw new Error(`No se encontró OU con postalCode ${postalCode} en ${parentDN}`);
-    }
-    return `OU=${entries[0]},${parentDN}`;
+    
+  } catch (error) {
+    console.error("Error obteniendo datos LDAP:", error);
+    // En caso de error, devolver objeto con valores por defecto
+    return {
+      sAMAccountName: '',
+      userPrincipalName: '',
+      mail: '',
+      cuentaHabilitada: true,
+      ultimoInicioSesion: 'Nunca',
+      displayName: '',
+      email: ''
+    };
   }
+}
 
-  private async verifyOUExistence(dn: string, type: string): Promise<void> {
-    try {
-      await this.searchOU(dn);
-    } catch (error) {
-      throw new Error(`${type} no encontrada: ${dn}`);
-    }
-  }
 
   private async handleYearOU(parentDN: string, academicYear: string): Promise<string> {
     const yearOU = `OU=${academicYear},${parentDN}`;
@@ -199,8 +202,11 @@ export class LDAPAccountService {
     const middleName = studentData.rawData.personalData.middleName.toString();
     const lastName = studentData.rawData.personalData.lastName.toString();
     const fullName = studentData.personalData.fullName.toString();
+    
+    // Generar el userPrincipalName que será usado también para mail
+    const userPrincipalName = `${username}@uniss.edu.cu`;
 
-    // Atributos usando el email proporcionado por el usuario
+    // Atributos modificados según los nuevos requerimientos
     const attributes = {
       objectClass: ["top", "person", "organizationalPerson", "user"],
       sAMAccountName: username,
@@ -209,8 +215,8 @@ export class LDAPAccountService {
       givenName: this.normalizeDisplayName(name),
       sn: this.normalizeDisplayName(`${middleName} ${lastName}`),
       displayName: this.normalizeDisplayName(fullName),
-      mail: userEmail, // Usar el email proporcionado por el usuario
-      userPrincipalName: `${username}@uniss.edu.cu`,
+      mail: userPrincipalName, // Usar el mismo valor que userPrincipalName
+      userPrincipalName: userPrincipalName,
       employeeID: studentData.personalData.identification,
       telephoneNumber: this.formatPhoneNumber(
         studentData.rawData.personalData.phone,
@@ -219,12 +225,14 @@ export class LDAPAccountService {
       streetAddress: studentData.personalData.address,
       l: this.sanitizeAttribute(studentData.rawData.personalData.town),
       st: this.sanitizeAttribute(studentData.rawData.personalData.province),
-      description: `Estudiante de ${studentData.academicData.career} actualmente ${studentData.rawData.docentData.studentType}`,
+      // description se deja vacío o no se incluye
+      physicalDeliveryOfficeName: `Estudiante de ${studentData.academicData.career} actualmente ${studentData.rawData.docentData.studentType}`, // Lo que iba en description ahora va en office
       title: "Estudiante",
       departmentNumber: studentData.academicData.year,
       employeeType: "Estudiante",
       ou: studentData.academicData.faculty,
       department: studentData.academicData.career,
+      company: userEmail, // El email del usuario ahora va en company
       userAccountControl: "512", // Cuenta habilitada
       unicodePwd: this.encodePassword(password), // Contraseña codificada
     };
@@ -246,9 +254,8 @@ export class LDAPAccountService {
 
     // Agregar a grupos
     const requiredGroups = [
-      "CN=correo_nac,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
-      "CN=wifi_users,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
-      "CN=internet_est,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
+      "CN=correo_int,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
+      "CN=UNISS-Everyone,OU=_Grupos,DC=uniss,DC=edu,DC=cu"
     ];
     
     try {

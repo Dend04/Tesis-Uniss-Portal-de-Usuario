@@ -69,6 +69,8 @@ private async createUserEntry(departmentDN: string, employee: any, username: str
   // Determinar la descripción según el rol del empleado
   const description = this.getEmployeeDescription(employee);
   const departmentName = await this.getDepartmentName(employee.Id_Direccion);
+   // Generar el userPrincipalName que será usado también para mail
+   const userPrincipalName = `${username}@uniss.edu.cu`;
 
   const entry = {
     objectClass: ['top', 'person', 'organizationalPerson', 'user'],
@@ -81,10 +83,11 @@ private async createUserEntry(departmentDN: string, employee: any, username: str
     employeeID: employee.No_CI.replace(/\D/g, '').trim(),
     sAMAccountName: username,
     uid: username,
-    userPrincipalName: `${username}@uniss.edu.cu`,
-    mail: email, // Usar el email proporcionado por el usuario
-    description: description,
+    userPrincipalName: userPrincipalName,
+    mail: userPrincipalName,
+    physicalDeliveryOfficeName: description,
     department: departmentName,
+    company: email,
     userAccountControl: '512', // Cuenta habilitada
     unicodePwd: this.encodePassword(password) // Contraseña codificada
   };
@@ -102,8 +105,9 @@ private async createUserEntry(departmentDN: string, employee: any, username: str
   console.log('uid:', entry.uid);
   console.log('userPrincipalName:', entry.userPrincipalName);
   console.log('mail:', entry.mail);
-  console.log('description:', entry.description);
+  console.log('physicalDeliveryOfficeName:', entry.physicalDeliveryOfficeName);
   console.log('DN del usuario:', userDN);
+  console.log('email de respaldo del usuario:', entry.company);
 
   await new Promise((resolve, reject) => {
     this.client.add(userDN, entry, (err) => {
@@ -113,8 +117,8 @@ private async createUserEntry(departmentDN: string, employee: any, username: str
   });
 
   await this.addUserToGroups(userDN, [
-    'CN=correo_nac,OU=_Grupos,DC=uniss,DC=edu,DC=cu',
-    'CN=wifi_users,OU=_Grupos,DC=uniss,DC=edu,DC=cu'
+    'CN=correo_int,OU=_Grupos,DC=uniss,DC=edu,DC=cu',
+    'CN=UNISS-Everyone,OU=_Grupos,DC=uniss,DC=edu,DC=cu'
   ]);
 }
 

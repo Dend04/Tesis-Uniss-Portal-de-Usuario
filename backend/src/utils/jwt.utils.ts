@@ -4,8 +4,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export interface TokenPayload {
-  username: string,
-  sAMAccountName: string,
+  sAMAccountName: string;
+  username: string;
+  employeeID: string;
+  nombreCompleto?: string;
+  email?: string;
 }
 
 const JWT_CONFIG = {
@@ -46,10 +49,50 @@ export const generateTokens = (payload: TokenPayload) => {
   );
 
   const refreshToken = jwt.sign(
-    payload,
+    {
+      // Para el refresh token, incluir solo los campos esenciales
+      username: payload.username,
+      employeeID: payload.employeeID,
+      sAMAccountName: payload.sAMAccountName
+    },
     JWT_CONFIG.refreshSecret,
     JWT_CONFIG.refreshOptions
   );
 
   return { accessToken, refreshToken };
+};
+
+// Función para verificar refresh token (opcional, pero recomendado)
+export const verifyRefreshToken = (token: string): { username: string; employeeID: string; sAMAccountName: string } => {
+  try {
+    return jwt.verify(
+      token,
+      JWT_CONFIG.refreshSecret,
+      JWT_CONFIG.verifyOptions
+    ) as { username: string; employeeID: string; sAMAccountName: string };
+  } catch (error) {
+    throw new Error('Refresh token inválido o expirado');
+  }
+};
+
+// Función para renovar tokens (opcional, pero útil)
+export const refreshTokens = (refreshToken: string): { accessToken: string; refreshToken: string } => {
+  try {
+    const decoded = verifyRefreshToken(refreshToken);
+    
+    // Aquí podrías validar contra la base de datos si el usuario aún existe
+    // y obtener datos actualizados si es necesario
+    
+    const newPayload: TokenPayload = {
+      sAMAccountName: decoded.sAMAccountName,
+      username: decoded.username,
+      employeeID: decoded.employeeID,
+      // Nota: nombreCompleto y email no están en el refresh token
+      // Podrías obtenerlos de la base de datos si son necesarios
+    };
+
+    return generateTokens(newPayload);
+  } catch (error) {
+    throw new Error('No se pudo renovar el token');
+  }
 };

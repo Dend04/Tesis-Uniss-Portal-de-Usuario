@@ -7,20 +7,18 @@ import { userDnCache } from "../utils/cache.utils";
 
 // Autenticación: Valida credenciales contra servidor LDAP
 // [!] Considerar migrar a estrategia passport-ldap
-export const authenticateUser = async (username: string, password: string): Promise<void> => {
+export const authenticateUser = async (username: string, password: string): Promise<any> => {
   const pool = getLDAPPool();
   let client: LDAPClient | null = null;
 
   try {
     client = await pool.getConnection();
     
-    // Intentar diferentes formatos de nombre de usuario
     const authAttempts = [
-      username, // sAMAccountName
-      `${username}@uniss.edu.cu`, // UPN
-      `UNISS\\${username}`, // formato NT (DOMAIN\username)
-      // Agregar formato de dominio completo como última opción
-      `uniss.edu.cu\\${username}` // Formato con dominio completo
+      username,
+      `${username}@uniss.edu.cu`,
+      `UNISS\\${username}`,
+      `uniss.edu.cu\\${username}`
     ];
 
     for (const authName of authAttempts) {
@@ -28,24 +26,24 @@ export const authenticateUser = async (username: string, password: string): Prom
         console.log(`Intentando autenticar como: ${authName}`);
         await bindAsync(client, authName, password);
         console.log(`Autenticación exitosa como: ${authName}`);
-        return;
+        
+        // Obtener datos completos del usuario incluyendo employeeID
+        const userData = await getUserData(username);
+        return userData; // Devuelve los datos del usuario
+        
       } catch (attemptError) {
-        // Verificar el tipo de error antes de acceder a .message
         const errorMessage = attemptError instanceof Error 
           ? attemptError.message 
           : String(attemptError);
         console.log(`Falló autenticación como ${authName}:`, errorMessage);
-        // Continuar con el siguiente intento
       }
     }
 
-    // Si todos los intentos fallan
     throw new Error("Todos los métodos de autenticación fallaron");
     
   } catch (authError: any) {
     console.log("Autenticación fallida:", authError.message);
     
-    // Verificar si el usuario existe
     const userExists = await checkUserExists(username);
     if (!userExists) {
       throw new Error("Usuario no encontrado");
@@ -61,7 +59,6 @@ export const authenticateUser = async (username: string, password: string): Prom
         employeeID: userData.employeeID
       });
     } catch (diagError) {
-      // Verificar el tipo de error antes de acceder a .message
       const errorMessage = diagError instanceof Error 
         ? diagError.message 
         : String(diagError);
@@ -99,13 +96,10 @@ export const authenticateUser = async (username: string, password: string): Prom
       client = createLDAPClient(process.env.LDAP_URL);
       await bindAsync(client, process.env.LDAP_ADMIN_DN, process.env.LDAP_ADMIN_PASSWORD);
   
-      // Determinar el formato de búsqueda basado en el username
       let searchFilter: string;
       if (username.includes('@')) {
-        // Si ya es un UPN, buscar por userPrincipalName
         searchFilter = `(userPrincipalName=${username})`;
       } else {
-        // Si no, buscar por sAMAccountName y también por UPN con el dominio agregado
         searchFilter = `(|(sAMAccountName=${username})(userPrincipalName=${username}@uniss.edu.cu))`;
       }
   
@@ -118,8 +112,7 @@ export const authenticateUser = async (username: string, password: string): Prom
         ],
       };
   
-      // Buscar en la base DN correcta (ajusta según tu estructura)
-      const baseDN = "dc=uniss,dc=edu,dc=cu"; // O la OU específica donde están tus usuarios
+      const baseDN = "dc=uniss,dc=edu,dc=cu";
       const entries = await searchAsync(client, baseDN, searchOptions);
   
       if (entries.length === 0) {
@@ -134,6 +127,13 @@ export const authenticateUser = async (username: string, password: string): Prom
   
       const userDn = entries[0].dn;
       const sAMAccountName = getLdapAttribute(entries[0], "sAMAccountName");
+      const employeeID = getLdapAttribute(entries[0], "employeeID");
+      
+      // Validar que employeeID existe
+      if (!employeeID) {
+        console.warn(`Usuario ${username} no tiene employeeID asignado`);
+      }
+  
       const userData = {
         sAMAccountName,
         dn: userDn,
@@ -143,7 +143,7 @@ export const authenticateUser = async (username: string, password: string): Prom
         nombre: getLdapAttribute(entries[0], "givenName"),
         apellido: getLdapAttribute(entries[0], "sn"),
         displayName: getLdapAttribute(entries[0], "displayName"),
-        employeeID: getLdapAttribute(entries[0], "employeeID"),
+        employeeID: employeeID, // Aseguramos que siempre esté presente
       };
   
       // Guardar en caché

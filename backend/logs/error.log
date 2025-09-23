@@ -1051,3 +1051,8 @@ body
     at TLSSocket.emit (node:domain:489:12)
     at addChunk (node:internal/streams/readable:561:12)
     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-09-22 10:02:06 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-09-23 12:31:07 [error]: Error global: Error: Error al eliminar cuenta: No se encontró usuario con employeeID o sAMAccountName: 01110172948
+    at LDAPAccountRemovalService.removeAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\ldap-account-removal.services.ts:43:15)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async deleteAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\controllers\account-removal.controller.ts:25:22)
