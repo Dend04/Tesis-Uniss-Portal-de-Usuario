@@ -8,11 +8,6 @@ interface LdapAttribute {
   values: string[];
 }
 
-const MAX_PASSWORD_AGE_DAYS = process.env.MAX_PASSWORD_AGE_DAYS 
-  ? parseInt(process.env.MAX_PASSWORD_AGE_DAYS) 
-  : 90; // Valor por defecto de 90 días
-const MAX_PASSWORD_AGE_MS = MAX_PASSWORD_AGE_DAYS * 24 * 60 * 60 * 1000;
-
 // Mapeo de grupos a descripciones
 const mapGroupToDescription = (group: string): string => {
   switch (group) {
@@ -62,15 +57,104 @@ function formatLdapTimestamp(timestamp: string): string {
   if (!timestamp || timestamp === '0') return 'Nunca';
   
   try {
-    // Convertir el timestamp de Active Directory (100-nanosecond intervals since January 1, 1601)
     const ldapTimestamp = BigInt(timestamp);
-    const windowsEpoch = BigInt(116444736000000000); // January 1, 1601 to January 1, 1970
+    const windowsEpoch = BigInt(116444736000000000);
     const unixTimestamp = Number((ldapTimestamp - windowsEpoch) / BigInt(10000000));
     
     return new Date(unixTimestamp * 1000).toLocaleString('es-ES');
   } catch (error) {
     return 'Fecha no válida';
   }
+}
+
+// ✅ NUEVA FUNCIÓN: Obtener información exacta de expiración de contraseña
+function getPasswordExpirationInfo(entry: any): any {
+  const getAttributeValue = (attrName: string): string => {
+    const attribute = entry.attributes.find((attr: any) => attr.type === attrName);
+    return attribute && attribute.values && attribute.values.length > 0 
+      ? String(attribute.values[0]) 
+      : '';
+  };
+
+  const userAccountControlValue = parseInt(getAttributeValue('userAccountControl') || '0');
+  const passwordNeverExpires = (userAccountControlValue & 0x10000) !== 0; // 65536 = 0x10000
+
+  // Si la contraseña nunca expira
+  if (passwordNeverExpires) {
+    return {
+      passwordExpira: 'No expira',
+      diasHastaVencimiento: null,
+      tiempoHastaVencimiento: 'No expira',
+      fechaExpiracion: 'Nunca',
+      expirada: false,
+      expiraProximamente: false
+    };
+  }
+
+  // ✅ Obtener la fecha exacta de expiración calculada por AD
+  const passwordExpiryTimeComputed = getAttributeValue('msDS-UserPasswordExpiryTimeComputed');
+  
+  if (passwordExpiryTimeComputed && passwordExpiryTimeComputed !== '0') {
+    try {
+      // Convertir el timestamp de AD a fecha
+      const expiryTicks = BigInt(passwordExpiryTimeComputed);
+      const ticksPerMillisecond = 10000n;
+      const millisecondsSince1601 = expiryTicks / ticksPerMillisecond;
+      const millisecondsSince1970 = millisecondsSince1601 - 11644473600000n;
+      const expiryDate = new Date(Number(millisecondsSince1970));
+      
+      const ahora = new Date();
+      const diasHastaVencimiento = Math.ceil((expiryDate.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
+      
+      return {
+        passwordExpira: expiryDate.toLocaleDateString('es-ES'),
+        diasHastaVencimiento,
+        tiempoHastaVencimiento: formatTimeRemaining(diasHastaVencimiento),
+        fechaExpiracion: expiryDate.toISOString(),
+        expirada: diasHastaVencimiento <= 0,
+        expiraProximamente: diasHastaVencimiento > 0 && diasHastaVencimiento <= 7
+      };
+    } catch (error) {
+      console.error('Error procesando msDS-UserPasswordExpiryTimeComputed:', error);
+    }
+  }
+
+  // ✅ Fallback: cálculo basado en pwdLastSet (tu método actual)
+  const pwdLastSetValue = getAttributeValue('pwdLastSet');
+  const pwdLastSetMs = pwdLastSetValue && pwdLastSetValue !== '0' 
+    ? ldapTimestampToMs(pwdLastSetValue) 
+    : null;
+
+  if (pwdLastSetMs) {
+    // Usar la política del dominio (90 días por defecto)
+    const MAX_PASSWORD_AGE_DAYS = 90; // Esto deberías obtenerlo de la política real
+    const MAX_PASSWORD_AGE_MS = MAX_PASSWORD_AGE_DAYS * 24 * 60 * 60 * 1000;
+    
+    const passwordExpiraMs = pwdLastSetMs + MAX_PASSWORD_AGE_MS;
+    const ahoraMs = Date.now();
+    const diasHastaVencimiento = Math.floor((passwordExpiraMs - ahoraMs) / (1000 * 60 * 60 * 24));
+    const expiryDate = new Date(passwordExpiraMs);
+    
+    return {
+      passwordExpira: expiryDate.toLocaleDateString('es-ES'),
+      diasHastaVencimiento,
+      tiempoHastaVencimiento: formatTimeRemaining(diasHastaVencimiento),
+      fechaExpiracion: expiryDate.toISOString(),
+      expirada: diasHastaVencimiento <= 0,
+      expiraProximamente: diasHastaVencimiento > 0 && diasHastaVencimiento <= 7,
+      calculado: true // Indica que fue calculado, no obtenido directamente
+    };
+  }
+
+  // Si no hay información suficiente
+  return {
+    passwordExpira: 'Desconocido',
+    diasHastaVencimiento: null,
+    tiempoHastaVencimiento: 'Desconocido',
+    fechaExpiracion: null,
+    expirada: false,
+    expiraProximamente: false
+  };
 }
 
 // Función auxiliar para formatear datos de usuario
@@ -82,33 +166,9 @@ function formatUserData(entry: any): any {
       : '';
   };
 
-  // Cálculo de vencimiento de contraseña
-  const userAccountControlValue = parseInt(getAttributeValue('userAccountControl') || '0');
-  const passwordNeverExpires = (userAccountControlValue & 65536) !== 0;
+  // ✅ Obtener información de expiración usando la nueva función
+  const passwordInfo = getPasswordExpirationInfo(entry);
 
-  const pwdLastSetValue = getAttributeValue('pwdLastSet');
-  const pwdLastSetMs = pwdLastSetValue && pwdLastSetValue !== '0' 
-    ? ldapTimestampToMs(pwdLastSetValue) 
-    : null;
-
-  let passwordExpira = 'Desconocido';
-  let diasHastaVencimiento: number | null = null;
-  let tiempoHastaVencimiento = 'Desconocido';
-
-  if (passwordNeverExpires) {
-    passwordExpira = 'No expira';
-    tiempoHastaVencimiento = 'No expira';
-  } else if (pwdLastSetMs) {
-    const passwordExpiraMs = pwdLastSetMs + MAX_PASSWORD_AGE_MS;
-    const ahoraMs = Date.now();
-    diasHastaVencimiento = Math.floor((passwordExpiraMs - ahoraMs) / (1000 * 60 * 60 * 24));
-    passwordExpira = new Date(passwordExpiraMs).toLocaleDateString('es-ES');
-    tiempoHastaVencimiento = formatTimeRemaining(diasHastaVencimiento);
-  } else {
-    passwordExpira = 'No se ha cambiado la contraseña';
-  }
-
-  // Agrega estos campos al objeto de retorno
   return {
     sAMAccountName: getAttributeValue('sAMAccountName'),
     uid: getAttributeValue('uid'),
@@ -129,16 +189,22 @@ function formatUserData(entry: any): any {
     tipoEmpleado: getAttributeValue('employeeType'),
     facultad: getAttributeValue('ou'),
     carrera: getAttributeValue('department'),
-    cuentaHabilitada: getAttributeValue('userAccountControl') === '512',
+    cuentaHabilitada: (parseInt(getAttributeValue('userAccountControl') || '0') & 2) === 0, // 2 = ACCOUNTDISABLE
     fechaCreacion: getAttributeValue('whenCreated'),
     fechaModificacion: getAttributeValue('whenChanged'),
     ultimoInicioSesion: formatLdapTimestamp(getAttributeValue('lastLogon')),
     ultimoCambioPassword: formatLdapTimestamp(getAttributeValue('pwdLastSet')),
-    // Nuevos campos agregados
-    userAccountControl: userAccountControlValue,
-    passwordExpira,
-    diasHastaVencimiento,
-    tiempoHastaVencimiento
+    
+    // ✅ NUEVA INFORMACIÓN MEJORADA DE EXPIRACIÓN
+    userAccountControl: parseInt(getAttributeValue('userAccountControl') || '0'),
+    passwordExpira: passwordInfo.passwordExpira,
+    diasHastaVencimiento: passwordInfo.diasHastaVencimiento,
+    tiempoHastaVencimiento: passwordInfo.tiempoHastaVencimiento,
+    fechaExpiracion: passwordInfo.fechaExpiracion,
+    passwordExpirada: passwordInfo.expirada,
+    passwordExpiraProximamente: passwordInfo.expiraProximamente,
+    passwordNuncaExpira: passwordInfo.tiempoHastaVencimiento === 'No expira',
+    calculado: passwordInfo.calculado || false
   };
 }
 
@@ -161,17 +227,14 @@ export const searchUsers = async (
       return;
     }
 
-    // Convertir atributos a objeto con tipos correctos
     const userData = entries[0].attributes.reduce(
       (acc: Record<string, any>, attr: LdapAttribute) => {
-        acc[attr.type] =
-          attr.values?.length === 1 ? attr.values[0] : attr.values;
+        acc[attr.type] = attr.values?.length === 1 ? attr.values[0] : attr.values;
         return acc;
       },
       {} as Record<string, any>
     );
 
-    // Añadir DN con tipo correcto
     userData.dn = entries[0].dn;
 
     res.json(userData);
@@ -195,64 +258,64 @@ export const getUserDetails = async (
       return;
     }
 
-    const entries = await unifiedLDAPSearch(searchTerm);
+    // ✅ INCLUIR EL NUEVO ATRIBUTO EN LA BÚSQUEDA
+    const entries = await unifiedLDAPSearch(searchTerm, [
+      'msDS-UserPasswordExpiryTimeComputed', // ✅ NUEVO ATRIBUTO
+      'accountExpires',
+      'sAMAccountName',
+      'mail',
+      'displayName',
+      'userAccountControl',
+      'pwdLastSet',
+      'lockoutTime',
+      'studeninfo',
+      'logonCount',
+      'memberOf'
+    ]);
 
     if (entries.length === 0) {
       res.status(404).json({ message: "Usuario no encontrado" });
       return;
     }
 
-    // Encontrar atributos con tipos explícitos
-    const accountExpiresAttr = entries[0].attributes.find(
-      (attr: LdapAttribute) => attr.type === "accountExpires"
-    );
-    const accountExpiresValue = accountExpiresAttr?.values[0] || "0";
+    // ✅ OBTENER INFORMACIÓN DE EXPIRACIÓN EXACTA
+    const passwordInfo = getPasswordExpirationInfo(entries[0]);
 
-    const samAccountNameAttr = entries[0].attributes.find(
-      (attr: LdapAttribute) => attr.type === "sAMAccountName"
-    );
-    const mailAttr = entries[0].attributes.find(
-      (attr: LdapAttribute) => attr.type === "mail"
-    );
-    const displayNameAttr = entries[0].attributes.find(
-      (attr: LdapAttribute) => attr.type === "displayName"
-    );
-    const userAccountControlAttr = entries[0].attributes.find(
-      (attr: LdapAttribute) => attr.type === "userAccountControl"
-    );
-    const pwdLastSetAttr = entries[0].attributes.find(
-      (attr: LdapAttribute) => attr.type === "pwdLastSet"
-    );
-    const lockoutTimeAttr = entries[0].attributes.find(
-      (attr: LdapAttribute) => attr.type === "lockoutTime"
-    );
-    const studeninfoAttr = entries[0].attributes.find(
-      (attr: LdapAttribute) => attr.type === "studeninfo"
-    );
-    const logonCountAttr = entries[0].attributes.find(
-      (attr: LdapAttribute) => attr.type === "logonCount"
-    );
+    const getAttributeValue = (attrName: string): string => {
+      const attribute = entries[0].attributes.find((attr: any) => attr.type === attrName);
+      return attribute && attribute.values && attribute.values.length > 0 
+        ? String(attribute.values[0]) 
+        : '';
+    };
 
-    // Extraer y formatear los datos importantes
+    const accountExpiresValue = getAttributeValue("accountExpires");
+
     const userData = {
-      username: samAccountNameAttr?.values[0] || "",
-      email: mailAttr?.values[0] || "",
-      displayName: displayNameAttr?.values[0] || "",
-      accountEnabled: userAccountControlAttr?.values[0] === "512", // 512 indica que la cuenta está habilitada
-      lastPasswordChange: formatLdapTimestamp(pwdLastSetAttr?.values[0] || "0"),
-      accountLocked: lockoutTimeAttr?.values[0] !== "0", // 0 indica que no está bloqueada
-      accountExpires:
-        accountExpiresValue === "0" ||
-        accountExpiresValue === "9223372036854775807"
-          ? "Nunca"
-          : formatLdapTimestamp(accountExpiresValue),
-      groups:
-        entries[0].attributes
-          .filter((attr: LdapAttribute) => attr.type === "memberOf")
-          .flatMap((attr: LdapAttribute) => attr.values)
-          .map(mapGroupToDescription) || [],
-      lastLogon: formatLdapTimestamp(studeninfoAttr?.values[0] || "0"),
-      logonCount: logonCountAttr?.values[0] || 0,
+      username: getAttributeValue('sAMAccountName'),
+      email: getAttributeValue('mail'),
+      displayName: getAttributeValue('displayName'),
+      accountEnabled: (parseInt(getAttributeValue('userAccountControl') || '0') & 2) === 0,
+      lastPasswordChange: formatLdapTimestamp(getAttributeValue('pwdLastSet')),
+      accountLocked: getAttributeValue('lockoutTime') !== "0",
+      accountExpires: accountExpiresValue === "0" || accountExpiresValue === "9223372036854775807"
+        ? "Nunca"
+        : formatLdapTimestamp(accountExpiresValue),
+      groups: entries[0].attributes
+        .filter((attr: LdapAttribute) => attr.type === "memberOf")
+        .flatMap((attr: LdapAttribute) => attr.values)
+        .map(mapGroupToDescription) || [],
+      lastLogon: formatLdapTimestamp(getAttributeValue('studeninfo') || "0"),
+      logonCount: getAttributeValue('logonCount') || 0,
+      
+      // ✅ NUEVA INFORMACIÓN DE EXPIRACIÓN DE CONTRASEÑA
+      passwordExpiration: {
+        fechaExpiracion: passwordInfo.fechaExpiracion,
+        diasHastaVencimiento: passwordInfo.diasHastaVencimiento,
+        estado: passwordInfo.tiempoHastaVencimiento,
+        expirada: passwordInfo.expirada,
+        expiraProximamente: passwordInfo.expiraProximamente,
+        nuncaExpira: passwordInfo.tiempoHastaVencimiento === 'No expira'
+      }
     };
 
     res.json(userData);
@@ -266,7 +329,6 @@ export const getUserDetails = async (
 
 export const getUserProfile = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Obtener el sAMAccountName del middleware
     const sAMAccountName = (req as any).user.sAMAccountName;
     
     if (!sAMAccountName) {
@@ -274,13 +336,10 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Escapar el valor para prevenir inyecciones
     const safeUsername = escapeLDAPValue(sAMAccountName);
-    
-    // Buscar por sAMAccountName o UID
     const filter = `(|(sAMAccountName=${safeUsername})(uid=${safeUsername}))`;
     
-    // Atributos que queremos obtener
+    // ✅ INCLUIR EL NUEVO ATRIBUTO EN LA BÚSQUEDA DEL PERFIL
     const attributes = [
       'cn',
       'sAMAccountName', 
@@ -305,7 +364,8 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
       'whenCreated',
       'whenChanged',
       'lastLogon',
-      'pwdLastSet'
+      'pwdLastSet',
+      'msDS-UserPasswordExpiryTimeComputed' // ✅ NUEVO ATRIBUTO CLAVE
     ];
 
     const entries = await unifiedLDAPSearch(filter, attributes);
@@ -315,7 +375,6 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Formatear los datos de respuesta
     const userData = formatUserData(entries[0]);
     
     res.json({
@@ -325,6 +384,53 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
     
   } catch (error: any) {
     console.error("Error al obtener perfil de usuario:", error);
+    res.status(500).json({
+      success: false,
+      error: "Error interno del servidor",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// ✅ NUEVO ENDPOINT: Obtener específicamente información de expiración de contraseña
+export const getPasswordExpiration = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const sAMAccountName = (req as any).user?.sAMAccountName || req.body.username;
+    
+    if (!sAMAccountName) {
+      res.status(400).json({ error: "Nombre de usuario requerido" });
+      return;
+    }
+
+    const safeUsername = escapeLDAPValue(sAMAccountName);
+    const filter = `(|(sAMAccountName=${safeUsername})(uid=${safeUsername}))`;
+    
+    const attributes = [
+      'sAMAccountName',
+      'displayName',
+      'userAccountControl',
+      'pwdLastSet',
+      'msDS-UserPasswordExpiryTimeComputed'
+    ];
+
+    const entries = await unifiedLDAPSearch(filter, attributes);
+
+    if (entries.length === 0) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+      return;
+    }
+
+    const passwordInfo = getPasswordExpirationInfo(entries[0]);
+    
+    res.json({
+      success: true,
+      username: sAMAccountName,
+      displayName: entries[0].attributes.find((attr: any) => attr.type === 'displayName')?.values[0] || '',
+      passwordExpiration: passwordInfo
+    });
+    
+  } catch (error: any) {
+    console.error("Error al obtener expiración de contraseña:", error);
     res.status(500).json({
       success: false,
       error: "Error interno del servidor",

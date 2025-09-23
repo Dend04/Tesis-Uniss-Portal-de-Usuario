@@ -1,25 +1,31 @@
-"use client";
+'use client';
 
 import {
   useState,
   useEffect,
   useCallback,
   useMemo,
-  useRef,
   Suspense,
   startTransition,
 } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Head from "next/head";
 import dynamic from "next/dynamic";
 
 // Tipos
-import { UserInfo, Device } from "@/types";
+import { Device } from "@/types";
 
 // Utilidades
-import { formatMAC } from "../../utils/format";
-import { deviceSchema } from "../../validations/device";
 import TutorialModal from "@/app/components/TutorialModal";
+
+// ✅ Definir interfaz para los datos de contraseña
+interface PasswordData {
+  lastPasswordChange: string;
+  passwordExpirationDate: string | null;
+  daysUntilExpiration: number | null;
+  isPasswordExpired: boolean;
+  expiresSoon: boolean;
+}
 
 // Componentes optimizados con carga diferida
 const Header = dynamic(() => import("@/app/components/Header"), {
@@ -39,21 +45,19 @@ const AddDeviceModal = dynamic(
 // Pre-carga de componentes después del renderizado inicial
 const preloadDashboardComponents = () => {
   if (typeof window !== "undefined") {
-    // Precargar componentes usando requestIdleCallback para no bloquear el hilo principal
     if ("requestIdleCallback" in window) {
       requestIdleCallback(() => {
         Promise.allSettled([
           import("../../components/dashboard/UserProfile"),
-          import("../../components/dashboard/AccountStatus"),
+          import("../../components/dashboard/PasswordStatus"),
           import("../../components/dashboard/DevicesSection"),
         ]);
       });
     } else {
-      // Fallback para navegadores que no soportan requestIdleCallback
       setTimeout(() => {
         Promise.allSettled([
           import("../../components/dashboard/UserProfile"),
-          import("../../components/dashboard/AccountStatus"),
+          import("../../components/dashboard/PasswordStatus"),
           import("../../components/dashboard/DevicesSection"),
         ]);
       }, 1000);
@@ -77,8 +81,8 @@ const UserProfile = dynamic(
   }
 );
 
-const AccountStatus = dynamic(
-  () => import("../../components/dashboard/AccountStatus"),
+const PasswordStatus = dynamic(
+  () => import("../../components/dashboard/PasswordStatus"),
   {
     loading: () => (
       <div className="rounded-xl shadow-sm p-6 bg-gray-100 dark:bg-gray-800 min-h-[200px] animate-pulse">
@@ -110,7 +114,6 @@ const useDarkMode = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
-    // Aplicar clase al body para modo oscuro
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
     } else {
@@ -125,6 +128,72 @@ const useDarkMode = () => {
   return { isDarkMode, toggleDarkMode };
 };
 
+// Hook para obtener datos de expiración de contraseña del backend
+const usePasswordData = () => {
+  const [passwordData, setPasswordData] = useState<PasswordData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPasswordData = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          throw new Error('No se encontró token de autenticación');
+        }
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            localStorage.removeItem('authToken');
+            throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+          }
+          throw new Error(`Error en la petición: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.success && data.user) {
+          const passwordInfo: PasswordData = {
+            lastPasswordChange: data.user.ultimoCambioPassword || new Date().toISOString(),
+            passwordExpirationDate: data.user.fechaExpiracion || null,
+            daysUntilExpiration: data.user.diasHastaVencimiento || null,
+            isPasswordExpired: data.user.passwordExpirada || false,
+            expiresSoon: data.user.passwordExpiraProximamente || false
+          };
+          setPasswordData(passwordInfo);
+        } else {
+          throw new Error('Formato de respuesta inválido');
+        }
+      } catch (err: any) {
+        setError(err.message);
+        const fallbackData: PasswordData = {
+          lastPasswordChange: new Date().toISOString(),
+          passwordExpirationDate: null,
+          daysUntilExpiration: 90,
+          isPasswordExpired: false,
+          expiresSoon: false
+        };
+        setPasswordData(fallbackData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPasswordData();
+  }, []);
+
+  return { passwordData, loading, error };
+};
+
 export default function Dashboard() {
   const router = useRouter();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -132,18 +201,20 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [dashboardKey, setDashboardKey] = useState(0);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Obtener datos de expiración de contraseña del backend
+  const { passwordData, loading: passwordLoading, error: passwordError } = usePasswordData();
 
   // Efecto para verificar si es la primera vez que el usuario ve el dashboard
   useEffect(() => {
-    // Verificar si el tutorial ya se ha mostrado
     const tutorialSeen = localStorage.getItem("tutorialSeen");
-
     if (!tutorialSeen) {
-      // Esperar a que la página cargue completamente
       const timer = setTimeout(() => {
         setShowTutorial(true);
       }, 1000);
-
       return () => clearTimeout(timer);
     }
   }, []);
@@ -153,26 +224,13 @@ export default function Dashboard() {
     preloadDashboardComponents();
   }, []);
 
-  // Datos estáticos para mejor rendimiento
-  const userInfo = useMemo(
-    (): UserInfo => ({
-      name: "Ana María Pérez",
-      id: "95020123456",
-      faculty: "Ingeniería Informática",
-      major: "Ciencia de la Computación",
-      year: "3er Año",
-      phone: "+53 51234567",
-      backupEmail: "ana.perez@gmail.com",
-      universityEmail: "u20231234@uniss.edu.cu",
-      lastLogin: "Hace 2 horas",
-      status: "Estudiante",
-    }),
-    []
-  );
+  // Efecto para resetear la key cuando se entre al dashboard
+  useEffect(() => {
+    setDashboardKey(prev => prev + 1);
+  }, [pathname, searchParams]);  // Se ejecuta cuando la ruta cambia al dashboard
 
   // Pre-carga de rutas optimizada
   useEffect(() => {
-    // Precargar rutas comunes usando startTransition para no bloquear la UI
     startTransition(() => {
       router.prefetch("/config");
       router.prefetch("/activity-logs");
@@ -180,18 +238,21 @@ export default function Dashboard() {
     });
   }, [router]);
 
-  // Datos de cuenta optimizados
-  const { creationDate, expirationDate } = useMemo(() => {
-    const accountCreationDate = new Date();
-    const expirationMonths = 6;
-    const expDate = new Date(accountCreationDate);
-    expDate.setMonth(expDate.getMonth() + expirationMonths);
-
+  // Datos de contraseña con fallback seguro
+  const passwordProps = useMemo((): PasswordData => {
+    if (passwordData) {
+      return passwordData;
+    }
+    
+    // Fallback mientras carga o si hay error
     return {
-      creationDate: accountCreationDate.toISOString(),
-      expirationDate: expDate.toISOString(),
+      lastPasswordChange: new Date().toISOString(),
+      passwordExpirationDate: null,
+      daysUntilExpiration: 90,
+      isPasswordExpired: false,
+      expiresSoon: false
     };
-  }, []);
+  }, [passwordData]);
 
   // Simulación de carga optimizada con cleanup
   useEffect(() => {
@@ -221,6 +282,9 @@ export default function Dashboard() {
     setShowDeviceModal(true);
   }, []);
 
+  // Loading combinado: datos principales + datos de contraseña
+  const isLoading = loading || passwordLoading;
+
   return (
     <>
       <Head>
@@ -241,7 +305,6 @@ export default function Dashboard() {
           crossOrigin="anonymous"
         />
 
-        {/* Preload de imágenes críticas */}
         <link
           rel="preload"
           href={isDarkMode ? "/uniss-logoDark.png" : "/uniss-logo.png"}
@@ -262,7 +325,7 @@ export default function Dashboard() {
           <Header onToggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
         </Suspense>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex flex-col lg:flex-row gap-8 p-8">
             <div className="lg:w-2/5 rounded-xl shadow-sm p-6 bg-gray-100 dark:bg-gray-800 min-h-[500px] animate-pulse">
               <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded mb-4"></div>
@@ -285,18 +348,20 @@ export default function Dashboard() {
           </div>
         ) : (
           <main className="flex flex-col lg:flex-row gap-8 p-8">
-            <UserProfile
-              userInfo={userInfo}
-              isDarkMode={isDarkMode}
-              className="user-profile-section"
-            />
+            {/* ✅ CORREGIDO: Solo pasar isDarkMode al UserProfile */}
+            <UserProfile isDarkMode={isDarkMode} />
 
             <div className="lg:w-3/5 space-y-8">
-              <AccountStatus
+              {/* REEMPLAZADO: AccountStatus por PasswordStatus con datos reales */}
+              <PasswordStatus
+                key={`password-status-${dashboardKey}`}
                 isDarkMode={isDarkMode}
-                creationDate={creationDate}
-                expirationDate={expirationDate}
-                className="account-status-section"
+                lastPasswordChange={passwordProps.lastPasswordChange}
+                passwordExpirationDate={passwordProps.passwordExpirationDate}
+                daysUntilExpiration={passwordProps.daysUntilExpiration}
+                isPasswordExpired={passwordProps.isPasswordExpired}
+                expiresSoon={passwordProps.expiresSoon}
+                className="password-status-section"
               />
 
               <DevicesSection
@@ -316,11 +381,19 @@ export default function Dashboard() {
           onAddDevice={handleAddDevice}
           isDarkMode={isDarkMode}
         />
+        
         <TutorialModal
           isOpen={showTutorial}
           onClose={() => setShowTutorial(false)}
           isDarkMode={isDarkMode}
         />
+
+        {/* Mostrar error de contraseña si existe (sin interrumpir la UI) */}
+        {passwordError && (
+          <div className="fixed bottom-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg shadow-lg max-w-sm">
+            <strong>Nota:</strong> Los datos de expiración de contraseña podrían no estar actualizados.
+          </div>
+        )}
       </div>
     </>
   );
