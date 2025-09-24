@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { escapeLDAPValue, unifiedLDAPSearch } from "../utils/ldap.utils";
 import ldap from "ldapjs";
+import { TokenPayload } from "../utils/jwt.utils";
 
 // Definir una interfaz para los atributos LDAP
 interface LdapAttribute {
@@ -438,3 +439,197 @@ export const getPasswordExpiration = async (req: Request, res: Response): Promis
     });
   }
 };
+
+// ✅ FUNCIÓN MODIFICADA: Obtener trazas y logs del usuario desde el token
+export const getUserAuditLogs = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Obtener el usuario del token (ya verificado por el middleware)
+    const user = (req as any).user as TokenPayload;
+    const sAMAccountName = user?.sAMAccountName;
+
+    if (!sAMAccountName) {
+      res.status(400).json({ error: "Nombre de usuario no encontrado en el token" });
+      return;
+    }
+
+    const safeUsername = escapeLDAPValue(sAMAccountName);
+    const filter = `(|(sAMAccountName=${safeUsername})(uid=${safeUsername}))`;
+    
+    // Atributos relacionados con logs y auditoría
+    const attributes = [
+      'sAMAccountName',
+      'displayName',
+      'lastLogon',
+      'lastLogonTimestamp',
+      'lastLogoff',
+      'logonCount',
+      'badPasswordTime',
+      'badPwdCount',
+      'lockoutTime',
+      'pwdLastSet',
+      'whenCreated',
+      'whenChanged',
+      'accountExpires',
+      'userAccountControl',
+      'msDS-UserPasswordExpiryTimeComputed'
+    ];
+
+    const entries = await unifiedLDAPSearch(filter, attributes);
+
+    if (entries.length === 0) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+      return;
+    }
+
+    const getAttributeValue = (attrName: string): string => {
+      const attribute = entries[0].attributes.find((attr: any) => attr.type === attrName);
+      return attribute && attribute.values && attribute.values.length > 0 
+        ? String(attribute.values[0]) 
+        : '';
+    };
+
+    // Obtener información de expiración
+    const passwordInfo = getPasswordExpirationInfo(entries[0]);
+
+    // Formatear los logs del usuario
+    const userLogs = {
+      // Información básica
+      username: sAMAccountName,
+      displayName: getAttributeValue('displayName'),
+      employeeID: user.employeeID, // Del token
+      nombreCompleto: user.nombreCompleto, // Del token
+      email: user.email, // Del token
+      
+      // Logs de autenticación
+      authentication: {
+        lastSuccessfulLogon: formatLdapTimestamp(getAttributeValue('lastLogon')),
+        lastLogonTimestamp: formatLdapTimestamp(getAttributeValue('lastLogonTimestamp')),
+        lastLogoff: formatLdapTimestamp(getAttributeValue('lastLogoff')),
+        totalLogons: parseInt(getAttributeValue('logonCount') || '0'),
+        failedLogonTime: formatLdapTimestamp(getAttributeValue('badPasswordTime')),
+        failedLogonCount: parseInt(getAttributeValue('badPwdCount') || '0'),
+        accountLocked: getAttributeValue('lockoutTime') !== "0" && getAttributeValue('lockoutTime') !== "",
+        lockoutTime: getAttributeValue('lockoutTime') !== "0" ? formatLdapTimestamp(getAttributeValue('lockoutTime')) : 'No bloqueada'
+      },
+      
+      // Logs de contraseña
+      password: {
+        lastChange: formatLdapTimestamp(getAttributeValue('pwdLastSet')),
+        expiration: {
+          fechaExpiracion: passwordInfo.fechaExpiracion,
+          diasHastaVencimiento: passwordInfo.diasHastaVencimiento,
+          estado: passwordInfo.tiempoHastaVencimiento,
+          expirada: passwordInfo.expirada,
+          expiraProximamente: passwordInfo.expiraProximamente
+        },
+        neverExpires: passwordInfo.tiempoHastaVencimiento === 'No expira'
+      },
+      
+      // Información de la cuenta
+      account: {
+        created: formatLdapTimestamp(getAttributeValue('whenCreated')),
+        lastModified: formatLdapTimestamp(getAttributeValue('whenChanged')),
+        expires: getAttributeValue('accountExpires') === "0" || 
+                 getAttributeValue('accountExpires') === "9223372036854775807"
+          ? "Nunca" 
+          : formatLdapTimestamp(getAttributeValue('accountExpires')),
+        enabled: (parseInt(getAttributeValue('userAccountControl') || '0') & 2) === 0,
+        passwordRequired: (parseInt(getAttributeValue('userAccountControl') || '0') & 32) === 0
+      },
+      
+      // Estadísticas resumen
+      statistics: {
+        daysSinceLastLogon: calculateDaysSince(getAttributeValue('lastLogon')),
+        daysSincePasswordChange: calculateDaysSince(getAttributeValue('pwdLastSet')),
+        accountAgeDays: calculateDaysSince(getAttributeValue('whenCreated')),
+        securityStatus: getSecurityStatus(
+          parseInt(getAttributeValue('badPwdCount') || '0'),
+          getAttributeValue('lockoutTime') !== "0",
+          passwordInfo.expirada
+        )
+      }
+    };
+
+    res.json({
+      success: true,
+      logs: userLogs,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error: any) {
+    console.error("Error al obtener logs del usuario:", error);
+    res.status(500).json({
+      success: false,
+      error: "Error interno del servidor",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Función auxiliar para calcular días desde un timestamp LDAP
+function calculateDaysSince(ldapTimestamp: string): number | null {
+  if (!ldapTimestamp || ldapTimestamp === '0') return null;
+  
+  try {
+    const timestampMs = ldapTimestampToMs(ldapTimestamp);
+    if (!timestampMs) return null;
+    
+    const now = Date.now();
+    const diffMs = now - timestampMs;
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  } catch (error) {
+    return null;
+  }
+}
+
+// Función para determinar el estado de seguridad
+function getSecurityStatus(
+  failedAttempts: number, 
+  isLocked: boolean, 
+  isExpired: boolean
+): string {
+  if (isLocked) return 'CRITICAL';
+  if (isExpired) return 'HIGH';
+  if (failedAttempts > 5) return 'MEDIUM';
+  if (failedAttempts > 0) return 'LOW';
+  return 'NORMAL';
+}
+
+// ✅ FUNCIÓN PARA ADMINISTRADORES: Obtener logs de cualquier usuario
+export const getUserAuditLogsAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { username } = req.params; // Desde parámetro de ruta
+    const currentUser = (req as any).user as TokenPayload; // Usuario que hace la solicitud
+    
+    // Verificar permisos de administrador (aquí debes implementar tu lógica)
+    if (!isAdmin(currentUser)) {
+      res.status(403).json({ error: "No tiene permisos de administrador" });
+      return;
+    }
+
+    if (!username) {
+      res.status(400).json({ error: "Nombre de usuario requerido" });
+      return;
+    }
+
+    // ... resto del código igual que getUserAuditLogs pero con el username del parámetro
+    const safeUsername = escapeLDAPValue(username);
+    // ... (misma lógica que getUserAuditLogs)
+    
+  } catch (error: any) {
+    console.error("Error al obtener logs del usuario (admin):", error);
+    res.status(500).json({
+      success: false,
+      error: "Error interno del servidor",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Función auxiliar para verificar permisos de administrador
+function isAdmin(user: TokenPayload): boolean {
+  // Implementa tu lógica de verificación de administrador
+  // Por ejemplo, verificar contra una lista de administradores o un atributo LDAP
+  const adminUsers = ['admin1', 'admin2']; // Lista de administradores
+  return adminUsers.includes(user.sAMAccountName);
+}

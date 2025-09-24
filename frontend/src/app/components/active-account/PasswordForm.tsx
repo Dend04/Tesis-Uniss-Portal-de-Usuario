@@ -14,36 +14,90 @@ interface PasswordFormProps {
   username: string;
   email: string;
   userType: "student" | "employee";
+  fullName: string; // <- Nueva prop para el nombre completo
   onAccountCreated: (userPrincipalName: string) => void;
   onBack: () => void;
 }
 
-const PasswordStrength = ({ password }: { password: string }) => {
+const PasswordStrength = ({ 
+  password, 
+  username, 
+  fullName 
+}: { 
+  password: string;
+  username: string;
+  fullName: string;
+}) => {
+  // Función para normalizar texto (eliminar acentos y convertir a minúsculas)
+  const normalizeText = (text: string) => {
+    return text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  };
+
+  // Verificar si la contraseña contiene el nombre de usuario o nombre completo
+  const containsUsername = username && normalizeText(password).includes(normalizeText(username));
+  const containsFullName = fullName && normalizeText(password).includes(normalizeText(fullName));
+
+  // Dividir el nombre completo en partes para verificar coincidencias parciales
+  const nameParts = fullName ? fullName.split(/\s+/) : [];
+  const containsNameParts = nameParts.some(part => 
+    part.length > 2 && normalizeText(password).includes(normalizeText(part))
+  );
+
   const requirements = [
     { regex: /.{8,}/, text: "Mínimo 8 caracteres" },
     { regex: /[A-Z]/, text: "Al menos una mayúscula" },
     { regex: /[0-9]/, text: "Al menos un número" },
     { regex: /[^A-Za-z0-9]/, text: "Al menos un carácter especial" },
+    { 
+      validator: () => !containsUsername && !containsFullName && !containsNameParts, 
+      text: "No coincidir con nombre de usuario o nombre completo" 
+    },
   ];
 
   return (
     <div className="mt-4 space-y-2">
-      {requirements.map((req, index) => (
-        <div key={index} className="flex items-center gap-2">
-          {req.regex.test(password) ? (
-            <CheckCircleIcon className="w-4 h-4 text-green-500" />
-          ) : (
-            <XCircleIcon className="w-4 h-4 text-red-500" />
-          )}
-          <span
-            className={`text-sm ${
-              req.regex.test(password) ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {req.text}
-          </span>
+      {requirements.map((req, index) => {
+        const isValid = req.regex ? req.regex.test(password) : req.validator!();
+        
+        return (
+          <div key={index} className="flex items-center gap-2">
+            {isValid ? (
+              <CheckCircleIcon className="w-4 h-4 text-green-500" />
+            ) : (
+              <XCircleIcon className="w-4 h-4 text-red-500" />
+            )}
+            <span
+              className={`text-sm ${
+                isValid ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {req.text}
+            </span>
+          </div>
+        );
+      })}
+      
+      {/* Mensajes explicativos si hay coincidencias */}
+      {containsUsername && (
+        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          ❌ La contraseña contiene su nombre de usuario "{username}"
         </div>
-      ))}
+      )}
+      
+      {containsFullName && (
+        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          ❌ La contraseña contiene su nombre completo "{fullName}"
+        </div>
+      )}
+      
+      {containsNameParts && !containsFullName && (
+        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          ❌ La contraseña contiene partes de su nombre completo
+        </div>
+      )}
     </div>
   );
 };
@@ -53,6 +107,7 @@ export default function PasswordForm({
   username,
   email,
   userType,
+  fullName, // <- Recibir la nueva prop
   onAccountCreated,
   onBack,
 }: PasswordFormProps) {
@@ -72,6 +127,38 @@ export default function PasswordForm({
     }
   }, [newPassword, confirmPassword]);
 
+  // Función para validar si la contraseña contiene información personal
+  const containsPersonalInfo = (password: string) => {
+    const normalizeText = (text: string) => {
+      return text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    };
+
+    const normalizedPassword = normalizeText(password);
+    
+    // Verificar nombre de usuario
+    if (username && normalizedPassword.includes(normalizeText(username))) {
+      return true;
+    }
+    
+    // Verificar nombre completo
+    if (fullName && normalizedPassword.includes(normalizeText(fullName))) {
+      return true;
+    }
+    
+    // Verificar partes del nombre (palabras de más de 2 caracteres)
+    if (fullName) {
+      const nameParts = fullName.split(/\s+/);
+      return nameParts.some(part => 
+        part.length > 2 && normalizedPassword.includes(normalizeText(part))
+      );
+    }
+    
+    return false;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
@@ -81,11 +168,19 @@ export default function PasswordForm({
       return;
     }
 
-    // Validar fortaleza de contraseña - expresión regular más flexible
+    // Validar fortaleza de contraseña
     const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     if (!strongPassword.test(newPassword)) {
       setErrorMessage(
         "La contraseña no cumple con los requisitos de seguridad"
+      );
+      return;
+    }
+
+    // Validar que no contenga información personal
+    if (containsPersonalInfo(newPassword)) {
+      setErrorMessage(
+        "La contraseña no puede contener su nombre de usuario o nombre completo"
       );
       return;
     }
@@ -176,7 +271,11 @@ export default function PasswordForm({
               )}
             </button>
           </div>
-          <PasswordStrength password={newPassword} />
+          <PasswordStrength 
+            password={newPassword} 
+            username={username}
+            fullName={fullName} // <- Pasar el nombre completo
+          />
         </div>
 
         <div>
@@ -221,7 +320,7 @@ export default function PasswordForm({
           </button>
           <button
             type="submit"
-            disabled={!!passwordError || isCreatingAccount}
+            disabled={!!passwordError || isCreatingAccount || containsPersonalInfo(newPassword)}
             className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium text-center text-sm sm:text-base disabled:opacity-50"
           >
             {isCreatingAccount ? "Creando cuenta..." : "Crear cuenta"}

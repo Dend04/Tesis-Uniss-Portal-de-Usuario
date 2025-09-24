@@ -341,6 +341,7 @@ export default function ActivationPage() {
               username={selectedUsername}
               email={verifiedEmail}
               userType={result.type}
+              fullName={result.fullName} 
               onAccountCreated={onAccountCreated}
               onBack={() => setCurrentStep("email")}
             />
