@@ -6,7 +6,7 @@ import { bindAsync, createLDAPClient, escapeDNValue, escapeLDAPValue } from "../
 export class UserEntriesBuilder {
   private client: Client;
   private prisma: PrismaClient;
-  baseDN: string = process.env.LDAP_BASE_DN!;
+  baseDN: string = process.env.LDAP_BASE_DN_Propio!;
 
   constructor() {
     this.client = createLDAPClient(process.env.LDAP_URL!);

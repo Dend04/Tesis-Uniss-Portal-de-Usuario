@@ -6,7 +6,7 @@ import {
 } from "../utils/ldap.utils";
 import { LDAPStructureBuilder } from "../utils/ldap.structure";
 import dotenv from "dotenv";
-import { getUserData } from "./auth.services";
+import { userService } from "./user.services"; // Ajusta la ruta según tu estructura
 dotenv.config();
 
 interface LDAPError extends Error {
@@ -77,7 +77,7 @@ export class LDAPAccountService {
 
 
   private async getYearOUPath(studentData: any): Promise<string> {
-    const baseDN = process.env.LDAP_BASE_DN!;
+    const baseDN = process.env.LDAP_BASE_DN_Propio!;
     const normalized = this.normalizeAcademicData(studentData);
     console.log("Normalized Data:", normalized);
     const facultyDN = `OU=${normalized.faculty},OU=SIGENU,${baseDN}`;
@@ -99,7 +99,7 @@ export class LDAPAccountService {
 async getStudentAccount(employeeID: string): Promise<any> {
   try {
     // Usar la función existente getUserData que ya tienes implementada
-    const userData = await getUserData(employeeID);
+    const userData = await userService.getUserData(employeeID);
     
     return {
       sAMAccountName: userData.sAMAccountName || '',

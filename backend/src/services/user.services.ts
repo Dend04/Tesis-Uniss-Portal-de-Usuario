@@ -1,8 +1,27 @@
 // src/services/user.service.ts
-import { createLDAPClient, bindAsync, searchAsync } from "../utils/ldap.utils";
+import { createLDAPClient, bindAsync, searchAsync, unifiedLDAPSearch, getLDAPPool } from "../utils/ldap.utils";
 import { LDAPClient } from "../utils/ldap.utils";
-import { Attribute, SearchOptions } from "ldapjs"; // <-- Importa SearchOptions
-import { addLogEntry } from "./auth.services";
+import { Attribute, SearchOptions } from "ldapjs";
+import { userDnCache } from "../utils/cache.utils";
+import { auditService } from './audit.services';
+import ldap from "ldapjs";
+
+// ✅ INTERFAZ EXPANDIDA CON TODOS LOS CAMPOS NECESARIOS
+export interface UserData {
+  sAMAccountName: string;
+  dn: string;
+  nombreCompleto: string;
+  email: string;
+  employeeID: string;
+  // ✅ NUEVOS CAMPOS REQUERIDOS
+  userPrincipalName: string;
+  mail: string;
+  displayName: string;
+  // ✅ CAMPOS OPCIONALES ADICIONALES
+  givenName?: string;
+  sn?: string;
+  uid?: string;
+}
 
 export const getUserProfile = async (username: string): Promise<any> => {
   let client: LDAPClient | null = null;
@@ -20,7 +39,7 @@ export const getUserProfile = async (username: string): Promise<any> => {
       process.env.LDAP_ADMIN_DN,
       process.env.LDAP_ADMIN_PASSWORD
     );
-    const searchOptions: SearchOptions = { // <-- Tipado explícito
+    const searchOptions: SearchOptions = {
       filter: `(uid=${username})`,
       scope: "sub",
       attributes: ["cn", "uid", "mail", "givenName", "sn", "displayName"],
@@ -41,6 +60,8 @@ export const getUserProfile = async (username: string): Promise<any> => {
       }
       return String(attr.values[0]);
     };
+    
+    // ✅ OBJETO COMPATIBLE CON LA INTERFAZ
     const userData = {
       username: getLdapAttribute(entries[0], "uid"),
       nombreCompleto: getLdapAttribute(entries[0], "cn"),
@@ -49,9 +70,139 @@ export const getUserProfile = async (username: string): Promise<any> => {
       apellido: getLdapAttribute(entries[0], "sn"),
       displayName: getLdapAttribute(entries[0], "displayName"),
     };
-    await addLogEntry(username, "PROFILE_ACCESS", "Consulta de perfil exitosa");
+    
+    await auditService.addLogEntry(username, "PROFILE_ACCESS", "Consulta de perfil exitosa");
     return userData;
   } finally {
     if (client) client.unbind();
   }
 };
+
+export class UserService {
+  
+  async getUserData(username: string): Promise<UserData> {
+    const cacheKey = `userDn-${username}`;
+    const cachedDn = userDnCache.get(cacheKey);
+    
+    // ✅ CORRECCIÓN: VERIFICAR QUE EL OBJETO EN CACHÉ SEA UserData VÁLIDO
+    if (cachedDn && this.isValidUserData(cachedDn)) {
+      console.log('✅ Datos obtenidos desde caché');
+      return cachedDn as UserData;
+    }
+
+    const pool = getLDAPPool();
+    let client: LDAPClient | null = null;
+
+    try {
+      client = await pool.getConnection();
+      await bindAsync(client, process.env.LDAP_ADMIN_DN!, process.env.LDAP_ADMIN_PASSWORD!);
+
+      console.log('🔍 Buscando datos de usuario en LDAP');
+
+      const searchFilter = `(|(sAMAccountName=${username})(userPrincipalName=${username}@uniss.edu.cu)(userPrincipalName=${username}))`;
+      const searchOptions: ldap.SearchOptions = {
+        filter: searchFilter,
+        scope: "sub",
+        attributes: [
+          "sAMAccountName", 
+          "cn", 
+          "mail", 
+          "displayName", 
+          "userPrincipalName", 
+          "employeeID", 
+          "dn",
+          "givenName",
+          "sn",
+          "uid"
+        ],
+      };
+
+      const baseDN = "dc=uniss,dc=edu,dc=cu";
+      const entries = await searchAsync(client, baseDN, searchOptions);
+
+      if (entries.length === 0) {
+        console.error('❌ Usuario no encontrado en el directorio');
+        throw new Error("Usuario no encontrado en el directorio");
+      }
+
+      const entry = entries[0];
+      console.log('✅ Datos de usuario encontrados');
+
+      // Extraer DN de manera segura
+      let userDn: string = 'DN-no-encontrado';
+      if ((entry as any).dn) {
+        userDn = String((entry as any).dn);
+      } else {
+        userDn = `CN=${username},OU=UNISS_Users,DC=uniss,DC=edu,DC=cu`;
+      }
+
+      // Extraer atributos
+      const extractAttr = (attrName: string): string => {
+        try {
+          const attrs = (entry as any).attributes || [];
+          const attr = attrs.find((a: any) => a.type === attrName);
+          return attr && attr.values && attr.values[0] ? String(attr.values[0]) : '';
+        } catch {
+          return '';
+        }
+      };
+
+      // ✅ OBJETO COMPLETO QUE CUMPLE CON LA INTERFAZ UserData
+      const userData: UserData = {
+        sAMAccountName: extractAttr('sAMAccountName') || username,
+        dn: userDn,
+        nombreCompleto: extractAttr('cn') || extractAttr('displayName') || username,
+        email: extractAttr('mail') || extractAttr('userPrincipalName') || `${username}@uniss.edu.cu`,
+        employeeID: extractAttr('employeeID') || '',
+        // ✅ NUEVOS CAMPOS REQUERIDOS
+        userPrincipalName: extractAttr('userPrincipalName') || `${username}@uniss.edu.cu`,
+        mail: extractAttr('mail') || extractAttr('userPrincipalName') || `${username}@uniss.edu.cu`,
+        displayName: extractAttr('displayName') || extractAttr('cn') || username,
+        // ✅ CAMPOS OPCIONALES
+        givenName: extractAttr('givenName') || '',
+        sn: extractAttr('sn') || '',
+        uid: extractAttr('uid') || username
+      };
+      
+      userDnCache.set(cacheKey, userData);
+      return userData;
+
+    } catch (error) {
+      console.error('❌ Error obteniendo datos de usuario:', error);
+      throw error;
+    } finally {
+      if (client) {
+        pool.releaseConnection(client);
+      }
+    }
+  }
+
+  // ✅ MÉTODO PARA VALIDAR QUE EL OBJETO EN CACHÉ SEA UserData VÁLIDO
+  private isValidUserData(obj: any): obj is UserData {
+    return obj && 
+           typeof obj === 'object' &&
+           'sAMAccountName' in obj &&
+           'dn' in obj &&
+           'nombreCompleto' in obj &&
+           'email' in obj &&
+           'employeeID' in obj;
+  }
+
+  async checkUserExists(username: string): Promise<boolean> {
+    try {
+      const filter = `(sAMAccountName=${username})`;
+      const entries = await unifiedLDAPSearch(filter);
+      return entries.length > 0;
+    } catch (error) {
+      console.error("Error verificando existencia de usuario:", error);
+      throw new Error("Error al verificar existencia del usuario");
+    }
+  }
+
+  extractUsernameFromDN(userDN: string): string {
+    const usernameMatch = userDN.match(/CN=([^,]+)/);
+    return usernameMatch ? usernameMatch[1] : 'unknown';
+  }
+}
+
+export const userService = new UserService();

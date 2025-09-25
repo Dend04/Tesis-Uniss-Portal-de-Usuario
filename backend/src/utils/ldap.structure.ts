@@ -71,7 +71,7 @@ export class LDAPStructureBuilder {
     baseDN: string;
     sigenuDN: string;
   }> {
-    const baseDN = process.env.LDAP_BASE_DN!; // OU=Pruebas_crear_usuarios,DC=uniss,DC=edu,DC=cu
+    const baseDN = process.env.LDAP_BASE_DN_Propio!; // OU=Pruebas_crear_usuarios,DC=uniss,DC=edu,DC=cu
     const sigenuDN = `OU=SIGENU,${baseDN}`;
 
     // Crear SIGENU dentro de Pruebas_crear_usuarios

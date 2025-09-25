@@ -20,7 +20,7 @@ type DepartmentStructure = {
 export class AssetStructureBuilder {
   private client: Client;
   private prisma: PrismaClient;
-  baseDN: string = process.env.LDAP_BASE_DN!;
+  baseDN: string = process.env.LDAP_BASE_DN_Propio!;
   private departmentCache: Map<
     string,
     { Desc_Direccion: string; employees: string[] }

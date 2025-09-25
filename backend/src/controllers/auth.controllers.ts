@@ -1,23 +1,13 @@
-// src/controllers/auth.controller.ts
 import { Request, Response } from "express";
-import {unifiedLDAPSearch,} from "../utils/ldap.utils";
-import { generateTokens, TokenPayload, verifyToken } from "../utils/jwt.utils";
+import { generateTokens, TokenPayload } from "../utils/jwt.utils";
 import { CustomSearchEntry } from "../interface/ildapInterface";
-import NodeCache from "node-cache";
-import { addLogEntry, authenticateUser, getUserData, ldapChangePassword } from "../services/auth.services";
+import { authService } from "../services/auth.services";
 
-const userDnCache = new NodeCache({
-  stdTTL: 3600, // 1 hora en segundos
-  checkperiod: 600, // Verificar caducidad cada 10 minutos
-});
+import { userService } from "../services/user.services";
+import { auditService } from "../services/audit.services";
+import { unifiedLDAPSearch } from "../utils/ldap.utils";
+import { passwordService } from "../services/password.services";
 
-// 2. Tipar la entrada LDAP
-/* const ldapUser = entries[0] as unknown as LDAPUser; // Conversión de tipo
- */
-// 3. Acceder al employeeID
-/* const employeeID = ldapUser.employeeID; */
-
-// src/controllers/auth.controller.ts
 export const loginController = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;
@@ -30,17 +20,13 @@ export const loginController = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    await authenticateUser(username, password);
-    const ldapUser = await getUserData(username);
+    await authService.authenticateUser(username, password);
+    const ldapUser = await userService.getUserData(username);
     
-    // Validar que tenemos los campos requeridos
     if (!ldapUser.employeeID) {
-      console.warn(`Usuario ${username} no tiene employeeID asignado`);
-      // Decidir si es un error crítico o continuar con valor vacío
-      // throw new Error("El usuario no tiene employeeID asignado");
+      console.warn('⚠️ Usuario sin employeeID asignado');
     }
 
-    // Preparar el payload del token
     const tokenPayload: TokenPayload = {
       sAMAccountName: ldapUser.sAMAccountName,
       username: username.trim() || ldapUser.sAMAccountName,
@@ -51,6 +37,7 @@ export const loginController = async (req: Request, res: Response): Promise<void
 
     const tokens = generateTokens(tokenPayload);
 
+    console.log('✅ Login exitoso');
     res.json({
       success: true,
       accessToken: tokens.accessToken,
@@ -62,7 +49,7 @@ export const loginController = async (req: Request, res: Response): Promise<void
       },
     });
   } catch (error: any) {
-    console.error("Error en loginController:", error.message);
+    console.error("❌ Error en login:", error.message);
     
     if (error.message.includes("no encontrado") || error.message.includes("no existe")) {
       res.status(404).json({ success: false, message: "Usuario no encontrado" });
@@ -74,8 +61,6 @@ export const loginController = async (req: Request, res: Response): Promise<void
   }
 };
 
-
-// Función para agregar EmployedID a LDAP
 export const checkAndUpdateEmployeeID = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user as { username?: string };
@@ -85,7 +70,6 @@ export const checkAndUpdateEmployeeID = async (req: Request, res: Response) => {
       return;
     }
 
-    // Usa la interfaz para tipar las entradas
     const entries: CustomSearchEntry[] = await unifiedLDAPSearch(user.username);
 
     if (entries.length === 0) {
@@ -102,83 +86,84 @@ export const checkAndUpdateEmployeeID = async (req: Request, res: Response) => {
       res.status(200).json({ message: "Por favor, complete su employeeID." });
     }
   } catch (error) {
-    console.error("Error en checkAndUpdateEmployeeID:", error);
+    console.error("❌ Error verificando employeeID:", error);
     res.status(500).json({ success: false, message: "Error interno" });
   }
 };
 
-
-export const changePasswordController = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const changePasswordController = async (req: Request, res: Response): Promise<void> => {
   try {
-    // 1. Obtener sAMAccountName del token
     const user = (req as any).user as { sAMAccountName: string };
-    const sAMAccountName = user?.sAMAccountName;
-
-    if (!sAMAccountName) {
-      res
-        .status(401)
-        .json({ error: "Token inválido o usuario no identificado" });
-      return;
-    }
-
-    // 2. Obtener DN desde cache o LDAP
-    let userDN: string;
-    const cachedData = userDnCache.get(`user-${sAMAccountName}`) as {
-      dn?: string;
-    };
-
-    if (cachedData?.dn) {
-      userDN = cachedData.dn;
-    } else {
-      // Buscar en LDAP si no está en caché
-      const ldapUser = await getUserData(sAMAccountName);
-      userDN = ldapUser.dn;
-      userDnCache.set(`user-${sAMAccountName}`, ldapUser);
-    }
-
-    // 3. Validar nueva contraseña
     const { newPassword } = req.body;
-    const errors: string[] = [];
 
-    // Ejemplo de validaciones
-
-    if (errors.length > 0) {
-      res.status(400).json({ errors });
+    if (!user?.sAMAccountName || !newPassword) {
+      res.status(400).json({ error: "Usuario y contraseña son requeridos" });
       return;
     }
 
-    // 4. Cambiar contraseña
-    try {
-      await ldapChangePassword(userDN, newPassword);
+    const ldapUser = await userService.getUserData(user.sAMAccountName);
+    if (!ldapUser.dn || ldapUser.dn.includes('no-encontrado')) {
+      res.status(400).json({ error: "Usuario no encontrado en el directorio" });
+      return;
+    }
 
-      // Actualizar caché
-      userDnCache.del(`user-${sAMAccountName}`);
+    await passwordService.changePassword(ldapUser.dn, newPassword);
 
-      await addLogEntry(sAMAccountName, "PASSWORD_CHANGE", "Cambio exitoso");
-      res.status(200).json({
-        success: true,
-        message: `¡Contraseña actualizada para ${sAMAccountName}!`,
+    await auditService.logPasswordChange(user.sAMAccountName, true, {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log('✅ Cambio de contraseña exitoso');
+    res.json({ success: true, message: "Contraseña cambiada correctamente" });
+
+  } catch (error: any) {
+    console.error('💥 Error cambiando contraseña:', error.message);
+
+    if (error.message.includes('historial') || error.message.includes('history')) {
+      res.status(400).json({
+        error: "La contraseña ya ha sido utilizada anteriormente. Por favor, elija una diferente."
       });
-    } catch (error) {
-      userDnCache.del(`user-${sAMAccountName}`);
-      const message =
-        error instanceof Error ? error.message : "Error desconocido";
+    } else if (error.message.includes('políticas') || error.message.includes('policy')) {
+      res.status(400).json({
+        error: "La contraseña no cumple con las políticas de seguridad"
+      });
+    } else {
       res.status(500).json({
-        error: "Error al actualizar contraseña",
-        details: message,
+        error: "Error interno del servidor"
       });
     }
-  } catch (error) {
-    console.error("Error en changePasswordController:", error);
-    const message = error instanceof Error ? error.message : "Error interno";
-    res.status(500).json({
-      success: false,
-      error: message,
-    });
   }
 };
 
+export const checkPasswordHistoryController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { username, newPassword } = req.body;
 
+    if (!username || !newPassword) {
+      res.status(400).json({ 
+        success: false, 
+        error: "Usuario y nueva contraseña son requeridos" 
+      });
+      return;
+    }
+
+    const isInHistory = await passwordService.checkPasswordAgainstHistory(username, newPassword);
+    
+    res.json({ 
+      success: true, 
+      isInHistory,
+      message: isInHistory 
+        ? "Esta contraseña ha sido utilizada recientemente" 
+        : "Contraseña válida (no está en el historial)"
+    });
+
+  } catch (error: any) {
+    console.error("❌ Error verificando historial:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Error al verificar historial de contraseñas"
+    });
+  }
+};
