@@ -92,12 +92,27 @@ export const checkAndUpdateEmployeeID = async (req: Request, res: Response) => {
 };
 
 export const changePasswordController = async (req: Request, res: Response): Promise<void> => {
+  // ✅ DECLARAR user FUERA DEL TRY PARA QUE ESTÉ DISPONIBLE EN EL CATCH
+  let user: { sAMAccountName: string } | null = null;
+  
   try {
-    const user = (req as any).user as { sAMAccountName: string };
-    const { newPassword } = req.body;
+    user = (req as any).user as { sAMAccountName: string };
+    const { currentPassword, newPassword } = req.body;
 
-    if (!user?.sAMAccountName || !newPassword) {
-      res.status(400).json({ error: "Usuario y contraseña son requeridos" });
+    if (!user?.sAMAccountName || !currentPassword || !newPassword) {
+      res.status(400).json({ error: "Usuario, contraseña actual y nueva contraseña son requeridos" });
+      return;
+    }
+
+    // ✅ VERIFICAR PRIMERO QUE LA CONTRASEÑA ACTUAL SEA CORRECTA
+    try {
+      await authService.authenticateUser(user.sAMAccountName, currentPassword);
+      console.log('✅ Contraseña actual verificada correctamente');
+    } catch (authError) {
+      console.error('❌ Contraseña actual incorrecta');
+      res.status(401).json({ 
+        error: "La contraseña actual es incorrecta" 
+      });
       return;
     }
 
@@ -107,19 +122,43 @@ export const changePasswordController = async (req: Request, res: Response): Pro
       return;
     }
 
+    // ✅ Validar que la nueva contraseña sea diferente a la actual
+    if (currentPassword === newPassword) {
+      res.status(400).json({ 
+        error: "La nueva contraseña debe ser diferente a la actual" 
+      });
+      return;
+    }
+
     await passwordService.changePassword(ldapUser.dn, newPassword);
 
     await auditService.logPasswordChange(user.sAMAccountName, true, {
       ip: req.ip,
       userAgent: req.get('User-Agent'),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      passwordChanged: true,
+      currentPasswordVerified: true
     });
     
     console.log('✅ Cambio de contraseña exitoso');
-    res.json({ success: true, message: "Contraseña cambiada correctamente" });
+    res.json({ 
+      success: true, 
+      message: "Contraseña cambiada correctamente" 
+    });
 
   } catch (error: any) {
     console.error('💥 Error cambiando contraseña:', error.message);
+
+    // ✅ USAR user SOLO SI ESTÁ DEFINIDO
+    const username = user?.sAMAccountName || 'unknown';
+    
+    await auditService.logPasswordChange(username, false, {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      userAvailable: !!user // ✅ Indicar si user estaba disponible
+    });
 
     if (error.message.includes('historial') || error.message.includes('history')) {
       res.status(400).json({
@@ -128,6 +167,10 @@ export const changePasswordController = async (req: Request, res: Response): Pro
     } else if (error.message.includes('políticas') || error.message.includes('policy')) {
       res.status(400).json({
         error: "La contraseña no cumple con las políticas de seguridad"
+      });
+    } else if (error.message.includes('Credenciales inválidas')) {
+      res.status(401).json({
+        error: "Error de autenticación"
       });
     } else {
       res.status(500).json({

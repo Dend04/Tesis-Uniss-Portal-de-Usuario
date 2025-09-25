@@ -6,9 +6,14 @@ import { userService } from "./user.services";
 export class PasswordService {
   private readonly maxRetries = 2;
 
-  async changePassword(userDN: string, newPassword: string): Promise<void> {
+  async changePassword(userDN: string, newPassword: string, currentPassword?: string): Promise<void> {
     let lastError;
     const username = userService.extractUsernameFromDN(userDN);
+
+    // ✅ VALIDACIÓN ADICIONAL EN EL SERVICIO
+    if (currentPassword && currentPassword === newPassword) {
+      throw new Error('La nueva contraseña no puede ser igual a la actual');
+    }
 
     for (let attempt = 1; attempt <= this.maxRetries + 1; attempt++) {
       const client = createLDAPClient(process.env.LDAP_URL!);
@@ -18,7 +23,8 @@ export class PasswordService {
 
         await auditService.addLogEntry(username, 'change_password_attempt', 'started', {
           attempt: attempt,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          currentPasswordProvided: !!currentPassword // ✅ Registrar si se proporcionó contraseña actual
         });
 
         await bindAsync(client, process.env.LDAP_ADMIN_DN!, process.env.LDAP_ADMIN_PASSWORD!);
@@ -53,7 +59,8 @@ export class PasswordService {
         await auditService.logPasswordChange(username, true, {
           attempt: attempt,
           timestamp: new Date().toISOString(),
-          retriesUsed: attempt - 1
+          retriesUsed: attempt - 1,
+          currentPasswordVerified: !!currentPassword
         });
         
         return; 
@@ -67,7 +74,8 @@ export class PasswordService {
           error: error.message,
           errorCode: error.code,
           timestamp: new Date().toISOString(),
-          isConnectionError: error.code === 80
+          isConnectionError: error.code === 80,
+          currentPasswordProvided: !!currentPassword
         });
 
         if (error.code === 80 && attempt <= this.maxRetries) {
@@ -84,15 +92,6 @@ export class PasswordService {
         }
       }
     }
-
-    console.error(`💥 Error en cambio de contraseña después de ${this.maxRetries + 1} intentos`);
-    
-    await auditService.logPasswordChange(username, false, {
-      finalError: lastError.message,
-      errorCode: lastError.code,
-      totalAttempts: this.maxRetries + 1,
-      timestamp: new Date().toISOString()
-    });
     
     throw lastError;
   }
