@@ -7,10 +7,9 @@ export interface TokenPayload {
   sAMAccountName: string;
   username: string;
   employeeID: string;
-  nombreCompleto?: string;
+  displayName?: string;
   email?: string;
 }
-
 const JWT_CONFIG = {
   secret: process.env.JWT_SECRET || 'default_secret',
   refreshSecret: process.env.JWT_REFRESH_SECRET || 'default_refresh_secret',

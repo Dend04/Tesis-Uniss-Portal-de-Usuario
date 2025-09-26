@@ -13,9 +13,6 @@ interface PasswordFormProps {
   isDarkMode: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
-  mode?: "change" | "reset";
-  username?: string;
-  fullName?: string; // Nueva prop para el nombre completo
 }
 
 // Función auxiliar para normalizar texto (eliminar acentos y convertir a minúsculas)
@@ -27,8 +24,8 @@ const normalizeText = (text: string) => {
 };
 
 // Función para verificar si la contraseña contiene información personal
-const containsPersonalInfo = (password: string, username?: string, fullName?: string) => {
-  if (!username && !fullName) return false;
+const containsPersonalInfo = (password: string, username?: string, displayName?: string) => {
+  if (!username && !displayName) return false;
   
   const normalizedPassword = normalizeText(password);
   
@@ -37,14 +34,14 @@ const containsPersonalInfo = (password: string, username?: string, fullName?: st
     return true;
   }
   
-  // Verificar nombre completo
-  if (fullName && normalizedPassword.includes(normalizeText(fullName))) {
+  // Verificar nombre completo (displayName)
+  if (displayName && normalizedPassword.includes(normalizeText(displayName))) {
     return true;
   }
   
   // Verificar partes del nombre (palabras de más de 2 caracteres)
-  if (fullName) {
-    const nameParts = fullName.split(/\s+/);
+  if (displayName) {
+    const nameParts = displayName.split(/\s+/);
     return nameParts.some(part => 
       part.length > 2 && normalizedPassword.includes(normalizeText(part))
     );
@@ -56,17 +53,17 @@ const containsPersonalInfo = (password: string, username?: string, fullName?: st
 interface PasswordStrengthProps {
   password: string;
   username?: string;
-  fullName?: string;
+  displayName?: string;
 }
 
-const PasswordStrength = ({ password, username, fullName }: PasswordStrengthProps) => {
+const PasswordStrength = ({ password, username, displayName }: PasswordStrengthProps) => {
   const requirements = [
     { regex: /.{8,}/, text: "Mínimo 8 caracteres" },
     { regex: /[A-Z]/, text: "Al menos una mayúscula" },
     { regex: /[0-9]/, text: "Al menos un número" },
     { regex: /[^A-Za-z0-9]/, text: "Al menos un carácter especial" },
     { 
-      validator: () => !containsPersonalInfo(password, username, fullName), 
+      validator: () => !containsPersonalInfo(password, username, displayName), 
       text: "No coincidir con nombre de usuario o nombre completo" 
     },
   ];
@@ -101,7 +98,7 @@ const PasswordStrength = ({ password, username, fullName }: PasswordStrengthProp
         </div>
       )}
       
-      {fullName && containsPersonalInfo(password, undefined, fullName) && (
+      {displayName && containsPersonalInfo(password, undefined, displayName) && (
         <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
           ❌ La contraseña contiene su nombre completo o partes del mismo
         </div>
@@ -110,27 +107,82 @@ const PasswordStrength = ({ password, username, fullName }: PasswordStrengthProp
   );
 };
 
-// Función para verificar contraseñas anteriores contra LDAP
-const checkPasswordHistory = async (username: string, newPassword: string): Promise<boolean> => {
+// Función para decodificar el token JWT
+const decodeToken = (token: string): any => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/check-password-history`, {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decodificando token:', error);
+    return null;
+  }
+};
+
+// Función para obtener los datos del usuario desde el token
+const getUserDataFromToken = () => {
+  if (typeof window === 'undefined') return null;
+  
+  const token = localStorage.getItem('authToken');
+  if (!token) return null;
+  
+  const decoded = decodeToken(token);
+  if (!decoded) return null;
+  
+  return {
+    username: decoded.sAMAccountName,
+    displayName: decoded.displayName || decoded.nombreCompleto
+  };
+};
+
+// Función principal para cambiar la contraseña en el backend
+const changePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      return {
+        success: false,
+        message: 'No se encontró token de autenticación'
+      };
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/password/change`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ username, newPassword }),
+      body: JSON.stringify({
+        currentPassword,
+        newPassword
+      }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error('Error al verificar historial de contraseñas');
+      return {
+        success: false,
+        message: data.error || data.message || 'Error al cambiar la contraseña'
+      };
     }
 
-    const result = await response.json();
-    return result.isInHistory; // true si la contraseña está en el historial
+    return {
+      success: true,
+      message: data.message
+    };
   } catch (error) {
-    console.error('Error verificando historial de contraseñas:', error);
-    // En caso de error, permitimos la contraseña pero mostramos advertencia
-    return false;
+    console.error('Error cambiando contraseña:', error);
+    return {
+      success: false,
+      message: 'Error de conexión con el servidor'
+    };
   }
 };
 
@@ -138,9 +190,6 @@ export default function PasswordForm({
   isDarkMode, 
   onSuccess, 
   onCancel, 
-  mode = "change",
-  username,
-  fullName // Nueva prop
 }: PasswordFormProps) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -152,7 +201,11 @@ export default function PasswordForm({
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [historyError, setHistoryError] = useState("");
+  
+  // Obtener datos del usuario desde el token
+  const userData = getUserDataFromToken();
+  const username = userData?.username;
+  const displayName = userData?.displayName;
 
   // Validar coincidencia de contraseñas en tiempo real
   useEffect(() => {
@@ -165,77 +218,68 @@ export default function PasswordForm({
 
   // Limpiar errores cuando cambia la contraseña
   useEffect(() => {
-    setHistoryError("");
-  }, [newPassword]);
+    setErrorMessage("");
+  }, [newPassword, currentPassword]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage("");
-    setHistoryError("");
 
-    // Validación adicional antes de enviar
+    // Validaciones básicas
+    if (!currentPassword) {
+      setErrorMessage("La contraseña actual es requerida");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!newPassword || !confirmPassword) {
+      setErrorMessage("La nueva contraseña y su confirmación son requeridas");
+      setIsLoading(false);
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setErrorMessage("Las contraseñas no coinciden");
       setIsLoading(false);
       return;
     }
 
-    // Validar que no contenga información personal
-    if (containsPersonalInfo(newPassword, username, fullName)) {
+    // Validar que no contenga información personal usando datos del token
+    if (containsPersonalInfo(newPassword, username, displayName)) {
       setErrorMessage("La contraseña no puede contener su nombre de usuario o nombre completo");
       setIsLoading(false);
       return;
     }
 
     try {
-      // Verificar historial de contraseñas (solo para cambios, no para resets iniciales)
-      if (mode === "change" && username) {
-        const isInHistory = await checkPasswordHistory(username, newPassword);
-        if (isInHistory) {
-          setHistoryError("Esta contraseña ha sido utilizada recientemente. Por favor, elija una diferente.");
-          setIsLoading(false);
-          return;
-        }
-      }
+      const result = await changePassword(currentPassword, newPassword);
 
-      if (mode === "change") {
-        // Lógica para cambio normal (con contraseña actual)
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        // Simulación de verificación de contraseña actual (debería venir de una API)
-        if (currentPassword !== "password123") { // Esto es solo para demostración
-          throw new Error("La contraseña actual es incorrecta");
-        }
-
-        // Simulación de cambio de contraseña
+      if (result.success) {
         setIsSuccess(true);
         setTimeout(() => {
           if (onSuccess) onSuccess();
         }, 2000);
       } else {
-        // Lógica para reset: llamar a la API de reset-password
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ username, newPassword }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Error al cambiar la contraseña");
+        // Manejo específico de errores del backend
+        if (result.message?.includes("contraseña actual es incorrecta") || 
+            result.message?.includes("current_password_incorrect")) {
+          setErrorMessage("La contraseña actual es incorrecta");
+        } else if (result.message?.includes("historial") || result.message?.includes("history")) {
+          setErrorMessage("Esta contraseña ha sido utilizada recientemente. Por favor, elija una diferente.");
+        } else if (result.message?.includes("políticas") || result.message?.includes("policy")) {
+          setErrorMessage("La contraseña no cumple con las políticas de seguridad");
+        } else if (result.message?.includes("conexión") || result.message?.includes("timeout")) {
+          setErrorMessage("Error de conexión con el servidor. Intente nuevamente.");
+        } else if (result.message?.includes("token") || result.message?.includes("autenticación")) {
+          setErrorMessage("Error de autenticación. Por favor, inicie sesión nuevamente.");
+        } else {
+          setErrorMessage(result.message || "Error al cambiar la contraseña");
         }
-
-        setIsSuccess(true);
-        setTimeout(() => {
-          if (onSuccess) onSuccess();
-        }, 2000);
       }
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Error al cambiar la contraseña"
+        error instanceof Error ? error.message : "Error inesperado al cambiar la contraseña"
       );
     } finally {
       setIsLoading(false);
@@ -246,8 +290,10 @@ export default function PasswordForm({
   const isSubmitDisabled = 
     isLoading || 
     !!passwordError || 
-    containsPersonalInfo(newPassword, username, fullName) ||
-    !!historyError;
+    containsPersonalInfo(newPassword, username, displayName) ||
+    !currentPassword ||
+    !newPassword ||
+    !confirmPassword;
 
   return (
     <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -265,48 +311,42 @@ export default function PasswordForm({
         </div>
       )}
 
-      {historyError && (
-        <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg flex items-center gap-2">
-          <ExclamationTriangleIcon className="w-5 h-5" />
-          {historyError}
-        </div>
-      )}
-
-      {mode === "change" && (
-        <div>
-          <label
-            className={`block mb-2 ${
-              isDarkMode ? "text-gray-300" : "text-gray-600"
+      <div>
+        <label
+          className={`block mb-2 ${
+            isDarkMode ? "text-gray-300" : "text-gray-600"
+          }`}
+        >
+          Contraseña actual
+        </label>
+        <div className="relative">
+          <input
+            type={showCurrentPassword ? "text" : "password"}
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className={`w-full p-3 rounded-lg border ${
+              isDarkMode
+                ? "bg-gray-700 border-gray-600 text-gray-200"
+                : "bg-white border-gray-300 text-gray-800"
             }`}
+            required
+            disabled={isLoading}
+          />
+          <button
+            type="button"
+            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+            className="absolute right-3 top-3.5"
+            disabled={isLoading}
           >
-            Contraseña actual
-          </label>
-          <div className="relative">
-            <input
-              type={showCurrentPassword ? "text" : "password"}
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className={`w-full p-3 rounded-lg border ${
-                isDarkMode
-                  ? "bg-gray-700 border-gray-600 text-gray-200"
-                  : "bg-white border-gray-300 text-gray-800"
-              }`}
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-              className="absolute right-3 top-3.5"
-            >
-              {showCurrentPassword ? (
-                <EyeSlashIcon className="w-5 h-5 text-gray-400" />
-              ) : (
-                <EyeIcon className="w-5 h-5 text-gray-400" />
-              )}
-            </button>
-          </div>
+            {showCurrentPassword ? (
+              <EyeSlashIcon className="w-5 h-5 text-gray-400" />
+            ) : (
+              <EyeIcon className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
         </div>
-      )}
+        {/* Se eliminó la notificación sobre registro en logs */}
+      </div>
 
       <div>
         <label
@@ -327,11 +367,13 @@ export default function PasswordForm({
                 : "bg-white border-gray-300 text-gray-800"
             }`}
             required
+            disabled={isLoading}
           />
           <button
             type="button"
             onClick={() => setShowNewPassword(!showNewPassword)}
             className="absolute right-3 top-3.5"
+            disabled={isLoading}
           >
             {showNewPassword ? (
               <EyeSlashIcon className="w-5 h-5 text-gray-400" />
@@ -343,7 +385,7 @@ export default function PasswordForm({
         <PasswordStrength 
           password={newPassword} 
           username={username}
-          fullName={fullName}
+          displayName={displayName}
         />
       </div>
 
@@ -368,11 +410,13 @@ export default function PasswordForm({
               passwordError ? "border-red-500" : ""
             }`}
             required
+            disabled={isLoading}
           />
           <button
             type="button"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
             className="absolute right-3 top-3.5"
+            disabled={isLoading}
           >
             {showConfirmPassword ? (
               <EyeSlashIcon className="w-5 h-5 text-gray-400" />
@@ -394,7 +438,8 @@ export default function PasswordForm({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
           >
             Cancelar
           </button>
@@ -404,7 +449,14 @@ export default function PasswordForm({
           disabled={isSubmitDisabled}
           className="flex-1 px-4 py-2 bg-uniss-blue text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? "Procesando..." : "Cambiar contraseña"}
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Procesando...
+            </span>
+          ) : (
+            "Cambiar contraseña"
+          )}
         </button>
       </div>
     </form>

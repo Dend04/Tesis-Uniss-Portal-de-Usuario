@@ -497,7 +497,6 @@ export const getUserAuditLogs = async (req: Request, res: Response): Promise<voi
       username: sAMAccountName,
       displayName: getAttributeValue('displayName'),
       employeeID: user.employeeID, // Del token
-      nombreCompleto: user.nombreCompleto, // Del token
       email: user.email, // Del token
       
       // Logs de autenticación

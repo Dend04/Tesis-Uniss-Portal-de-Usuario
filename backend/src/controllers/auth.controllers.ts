@@ -31,7 +31,7 @@ export const loginController = async (req: Request, res: Response): Promise<void
       sAMAccountName: ldapUser.sAMAccountName,
       username: username.trim() || ldapUser.sAMAccountName,
       employeeID: ldapUser.employeeID || '',
-      nombreCompleto: ldapUser.nombreCompleto,
+      displayName: ldapUser.nombreCompleto,
       email: ldapUser.email,
     };
 
