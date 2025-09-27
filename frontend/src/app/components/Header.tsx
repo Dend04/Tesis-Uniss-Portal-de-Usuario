@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Cog6ToothIcon,
   ChartBarIcon,
@@ -10,7 +12,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import { useState, useCallback, memo, useRef } from "react";
+import { useState, useCallback, memo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -37,11 +39,122 @@ interface MobileNavItemProps {
   onHover?: () => void;
 }
 
+// Hook personalizado para el modo oscuro con persistencia
+const useDarkMode = (): [boolean, () => void] => {
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Cargar preferencia del localStorage al montar el componente
+    const savedDarkMode = localStorage.getItem('darkMode');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Prioridad: localStorage > preferencia del sistema > claro por defecto
+    const initialDarkMode = savedDarkMode !== null 
+      ? JSON.parse(savedDarkMode) 
+      : prefersDark;
+    
+    setIsDarkMode(initialDarkMode);
+    applyDarkMode(initialDarkMode);
+  }, []);
+
+  const applyDarkMode = useCallback((dark: boolean) => {
+    // Aplicar clase al documento root
+    if (dark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(prev => {
+      const newValue = !prev;
+      
+      // Guardar en localStorage
+      localStorage.setItem('darkMode', JSON.stringify(newValue));
+      
+      // Aplicar cambios al DOM
+      applyDarkMode(newValue);
+      
+      return newValue;
+    });
+  }, [applyDarkMode]);
+
+  return [isDarkMode, toggleDarkMode];
+};
+
+// Función para limpiar el nombre eliminando palabras específicas
+const cleanDisplayName = (displayName: string): string => {
+  if (!displayName) return 'Usuario';
+  
+  // Palabras a eliminar (case insensitive)
+  const wordsToRemove = ['estudiante', 'trabajador', 'docente', 'investigador'];
+  
+  // Dividir el nombre en palabras y filtrar
+  const cleanedName = displayName
+    .split(' ')
+    .filter(word => {
+      const lowerWord = word.toLowerCase().trim();
+      return !wordsToRemove.includes(lowerWord) && word.trim() !== '';
+    })
+    .join(' ')
+    .trim();
+  
+  // Si después de limpiar queda vacío, devolver el nombre original o "Usuario"
+  return cleanedName || displayName || 'Usuario';
+};
+
+// Función para decodificar el token JWT
+const decodeToken = (token: string): any => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decodificando token:', error);
+    return null;
+  }
+};
+
+// Función para obtener los datos del usuario desde el token
+const getUserDataFromToken = () => {
+  if (typeof window === 'undefined') return null;
+  
+  const token = localStorage.getItem('authToken');
+  if (!token) return null;
+  
+  const decoded = decodeToken(token);
+  if (!decoded) return null;
+  
+  const rawDisplayName = decoded.displayName || decoded.nombreCompleto;
+  const cleanedDisplayName = cleanDisplayName(rawDisplayName);
+  
+  return {
+    username: decoded.sAMAccountName,
+    displayName: cleanedDisplayName
+  };
+};
+
 // Componente principal Header optimizado
 export const Header = memo(({ onToggleDarkMode, isDarkMode }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userDisplayName, setUserDisplayName] = useState<string>('Usuario');
   const router = useRouter();
   const preloadedPages = useRef(new Set<string>());
+  
+  // Cargar datos del usuario al montar el componente
+  useEffect(() => {
+    const userData = getUserDataFromToken();
+    if (userData?.displayName) {
+      setUserDisplayName(userData.displayName);
+    }
+  }, []);
   
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
   
@@ -133,7 +246,7 @@ export const Header = memo(({ onToggleDarkMode, isDarkMode }: HeaderProps) => {
 
             {/* Botón de usuario - siempre visible (fuera del menú móvil) */}
             <div className="hidden md:block">
-              <UserProfile isDarkMode={isDarkMode} onHover={() => preloadPage('/perfil')} />
+              <UserProfile isDarkMode={isDarkMode} displayName={userDisplayName} onHover={() => preloadPage('/perfil')} />
             </div>
 
             {/* Botón de menú móvil */}
@@ -233,10 +346,20 @@ export const Header = memo(({ onToggleDarkMode, isDarkMode }: HeaderProps) => {
                   <div className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"} mb-2`}>
                     Cuenta
                   </div>
+                  <div className={`py-3 px-4 rounded-lg ${
+                    isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <UserCircleIcon className="h-6 w-6" aria-hidden="true" />
+                      <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>
+                        {userDisplayName}
+                      </span>
+                    </div>
+                  </div>
                   <MobileNavItem
                     href="/perfil"
-                    icon={<UserCircleIcon className="h-6 w-6" aria-hidden="true" />}
-                    label="Mi perfil"
+                    icon={<Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />}
+                    label="Editar perfil"
                     isDarkMode={isDarkMode}
                     onClick={closeMenu}
                     onHover={() => preloadPage('/perfil')}
@@ -249,6 +372,8 @@ export const Header = memo(({ onToggleDarkMode, isDarkMode }: HeaderProps) => {
                 <button
                   onClick={() => {
                     // Lógica de cierre de sesión
+                    localStorage.removeItem('authToken');
+                    router.push('/login');
                     closeMenu();
                   }}
                   className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg ${
@@ -353,8 +478,14 @@ const MobileNavItem = memo(({
 
 MobileNavItem.displayName = 'MobileNavItem';
 
-// Componente UserProfile con precarga
-const UserProfile = memo(({ isDarkMode, onHover }: { isDarkMode: boolean; onHover?: () => void }) => (
+// Componente UserProfile actualizado
+interface UserProfileProps {
+  isDarkMode: boolean;
+  displayName: string;
+  onHover?: () => void;
+}
+
+const UserProfile = memo(({ isDarkMode, displayName, onHover }: UserProfileProps) => (
   <Link
     href="/perfil"
     className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold"
@@ -370,42 +501,54 @@ const UserProfile = memo(({ isDarkMode, onHover }: { isDarkMode: boolean; onHove
     />
     <span className="sr-only">Perfil de usuario</span>
     <span
-      className={`hidden md:block text-sm font-medium ${
+      className={`hidden md:block text-sm font-medium truncate max-w-32 ${
         isDarkMode ? "text-gray-200" : "text-gray-700"
       }`}
+      title={displayName}
     >
-      Juan Pérez
+      {displayName}
     </span>
   </Link>
 ));
 
 UserProfile.displayName = 'UserProfile';
 
-// Componente LogoutButton
-const LogoutButton = memo(({ isDarkMode }: { isDarkMode: boolean }) => (
-  <button 
-    className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold"
-    aria-label="Cerrar sesión"
-  >
-    <div className="flex items-center gap-1">
-      <ArrowRightOnRectangleIcon
-        className={`h-6 w-6 ${
-          isDarkMode ? "text-gray-300" : "text-gray-600"
-        } group-hover:text-red-500 transition-colors`}
-        aria-hidden="true"
-      />
-      <span className="sr-only">Cerrar sesión</span>
-      <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 opacity-0 group-hover:opacity-100 translate-y-0 group-hover:translate-y-1 transition-all duration-200 whitespace-nowrap text-sm bg-red-500 text-white px-2 py-1 rounded-md">
-        Cerrar sesión
-        <div className="absolute w-2 h-2 bg-red-500 -top-1 left-1/2 -translate-x-1/2 rotate-45" />
-      </span>
-    </div>
-  </button>
-));
+// Componente LogoutButton actualizado con funcionalidad real
+const LogoutButton = memo(({ isDarkMode }: { isDarkMode: boolean }) => {
+  const router = useRouter();
+  
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    // No removemos la preferencia del modo oscuro al hacer logout
+    router.push('/login');
+  };
+
+  return (
+    <button 
+      onClick={handleLogout}
+      className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold"
+      aria-label="Cerrar sesión"
+    >
+      <div className="flex items-center gap-1">
+        <ArrowRightOnRectangleIcon
+          className={`h-6 w-6 ${
+            isDarkMode ? "text-gray-300" : "text-gray-600"
+          } group-hover:text-red-500 transition-colors`}
+          aria-hidden="true"
+        />
+        <span className="sr-only">Cerrar sesión</span>
+        <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 opacity-0 group-hover:opacity-100 translate-y-0 group-hover:translate-y-1 transition-all duration-200 whitespace-nowrap text-sm bg-red-500 text-white px-2 py-1 rounded-md">
+          Cerrar sesión
+          <div className="absolute w-2 h-2 bg-red-500 -top-1 left-1/2 -translate-x-1/2 rotate-45" />
+        </span>
+      </div>
+    </button>
+  );
+});
 
 LogoutButton.displayName = 'LogoutButton';
 
-// Componente DarkModeButton
+// Componente DarkModeButton actualizado para usar la nueva lógica
 const DarkModeButton = memo(({ onToggleDarkMode, isDarkMode }: { onToggleDarkMode: () => void; isDarkMode: boolean }) => (
   <button
     onClick={onToggleDarkMode}
@@ -436,5 +579,8 @@ const DarkModeButton = memo(({ onToggleDarkMode, isDarkMode }: { onToggleDarkMod
 ));
 
 DarkModeButton.displayName = 'DarkModeButton';
+
+// Hook de modo oscuro para usar en otros componentes
+export { useDarkMode };
 
 export default Header;

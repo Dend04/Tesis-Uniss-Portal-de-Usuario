@@ -1,9 +1,7 @@
 'use client';
-
 import { memo, useMemo, useState, useEffect } from 'react';
 import { UserInfo } from '@/types';
 import IconLoader from '../IconLoader';
- import { parsePhoneNumber } from 'libphonenumber-js';
 
 // Mapa de iconos para reutilización
 const iconMap = {
@@ -21,7 +19,6 @@ interface InfoItemConfig {
   label: string;
   value: FormattedPhone | string;
 }
-
 
 interface FormattedPhone {
   countryCode: string;
@@ -45,6 +42,7 @@ interface BackendUserData {
   uid?: string;
   titulo?: string;
   userPrincipalName?: string;
+  isEmployee?: boolean;
 }
 
 // Lista de códigos de país para teléfonos
@@ -78,7 +76,6 @@ const countryFlags: Record<string, string> = {
   HT: '🇭🇹', // Haití
 };
 
-
 // Mapeo de códigos de carrera a descripciones completas
 const carreraCodes: Record<string, string> = {
   'CD': 'Curso Diurno',
@@ -94,7 +91,6 @@ const carreraCodes: Record<string, string> = {
 const expandCarreraCode = (carrera: string): string => {
   if (!carrera) return 'No disponible';
   
-  // Buscar códigos entre paréntesis al final de la cadena
   const match = carrera.match(/\(([^)]+)\)$/);
   if (match && match[1]) {
     const code = match[1];
@@ -106,26 +102,53 @@ const expandCarreraCode = (carrera: string): string => {
 };
 
 // Función para formatear número de teléfono con código de país
-
-
 const formatPhoneNumber = (phone: string): FormattedPhone | string => {
-  if (!phone || phone === 'Teléfono no disponible') return 'No disponible';
-
+  if (!phone || phone === 'Teléfono no disponible' || phone === 'No disponible') {
+    return 'No disponible';
+  }
+  
   try {
-    const phoneNumber = parsePhoneNumber(phone);
-    if (!phoneNumber) return phone;
-
-    const countryCode = phoneNumber.country;
-    const countryFlag = countryCode ? (countryFlags[countryCode] || '🌍') : '🌍';
+    if (phone.includes('+')) {
+      const plusIndex = phone.indexOf('+');
+      const spaceIndex = phone.indexOf(' ', plusIndex);
+      
+      if (spaceIndex !== -1) {
+        const countryCode = phone.substring(plusIndex, spaceIndex);
+        const nationalNumber = phone.substring(spaceIndex + 1);
+        
+        const country = Object.entries(countryCodes).find(
+          ([, code]) => code === countryCode
+        )?.[0] || 'UNKNOWN';
+        
+        const countryFlag = countryFlags[country] || '🌍';
+        
+        return {
+          countryCode: countryCode,
+          countryFlag: countryFlag,
+          phone: nationalNumber
+        };
+      }
+    }
     
-    console.log('Country code:', countryCode, 'Country flag:', countryFlag); // Para depurar
-
-    return {
-      countryCode: `+${phoneNumber.countryCallingCode}`,
-      countryFlag: countryFlag,
-      phone: phoneNumber.nationalNumber.toString()
-    };
+    if (phone.startsWith('53') && phone.length > 2) {
+      return {
+        countryCode: '+53',
+        countryFlag: '🇨🇺',
+        phone: phone.substring(2)
+      };
+    }
+    
+    if (phone.replace(/\D/g, '').length >= 7 && phone.replace(/\D/g, '').length <= 8) {
+      return {
+        countryCode: '+53',
+        countryFlag: '🇨🇺',
+        phone: phone
+      };
+    }
+    
+    return phone;
   } catch (e) {
+    console.error('Error formateando número de teléfono:', e);
     return phone;
   }
 };
@@ -143,7 +166,51 @@ const mapBackendToFrontend = (backendData: BackendUserData): UserInfo => ({
   status: backendData.titulo || (backendData.cuentaHabilitada ? 'Activo' : 'Inactivo'),
   lastLogin: backendData.ultimoInicioSesion || 'Nunca',
   id: backendData.employeeID || backendData.uid || 'ID no disponible',
+  isEmployee: backendData.isEmployee || false
 });
+
+// Hook personalizado para verificar el estado dual (estudiante/trabajador)
+const useDualVerification = () => {
+  const [isAlsoEmployee, setIsAlsoEmployee] = useState<boolean>(false);
+  const [loadingDual, setLoadingDual] = useState<boolean>(false);
+
+  useEffect(() => {
+    const verifyDualStatus = async () => {
+      setLoadingDual(true);
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/verify/dual-status`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setIsAlsoEmployee(data.isAlsoEmployee || false);
+        } else {
+          throw new Error('Error en la respuesta del servidor');
+        }
+      } catch (error) {
+        console.error('Error verificando estado dual:', error);
+        setIsAlsoEmployee(false);
+      } finally {
+        setLoadingDual(false);
+      }
+    };
+
+    verifyDualStatus();
+  }, []);
+
+  return { isAlsoEmployee, loadingDual };
+};
 
 // Hook personalizado para obtener el perfil del usuario
 const useUserProfile = () => {
@@ -200,7 +267,7 @@ const useUserProfile = () => {
 const InfoItem = memo(({ icon, label, value, darkMode }: { 
   icon?: keyof typeof iconMap; 
   label: string; 
-  value: string | FormattedPhone; // Aceptar ambos tipos
+  value: string | FormattedPhone;
   darkMode: boolean;
 }) => {
   const bgColor = darkMode ? "bg-gray-700" : "bg-gray-100";
@@ -208,13 +275,11 @@ const InfoItem = memo(({ icon, label, value, darkMode }: {
   const labelColor = darkMode ? "text-gray-300" : "text-gray-600";
   const iconColor = darkMode ? "text-uniss-gold" : "text-uniss-blue";
   
-  // Función para formatear el valor basado en su tipo
   const formatValue = (val: string | FormattedPhone): React.ReactNode => {
     if (typeof val === 'string') {
       return val;
     }
     
-    // Si es un objeto FormattedPhone, mostrar bandera y número
     return (
       <span className="flex items-center gap-2">
         <span className="text-2xl">{val.countryFlag}</span>
@@ -256,17 +321,32 @@ interface UserProfileProps {
 
 // Componente principal memoizado
 const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileProps) => {
-  // Precalcular todos los valores que dependen de las props
+  const { isAlsoEmployee, loadingDual } = useDualVerification();
+
   const bgColor = isDarkMode ? "bg-gray-800" : "bg-white";
   const statusBgColor = isDarkMode ? "bg-gray-700 text-green-400" : "bg-green-100 text-green-800";
   const avatarColor = isDarkMode ? "text-gray-400" : "text-gray-600";
   const nameColor = isDarkMode ? "text-white" : "text-gray-900";
   
-  // Formatear el número de teléfono con código de país
   const formattedPhone = formatPhoneNumber(userInfo.phone);
   
-  // Configuración de los items de información con valores por defecto
-  const infoItems = useMemo((): InfoItemConfig[] => [
+  const getStatusText = (): string => {
+    if (userInfo.isEmployee) {
+      return 'Trabajador';
+    }
+    return isAlsoEmployee ? 'Estudiante/Administrador' : 'Estudiante';
+  };
+
+  const getWorkerInfoItems = (): InfoItemConfig[] => [
+    { icon: 'identification', label: 'Identificación', value: userInfo.id || 'No disponible' },
+    { icon: 'user', label: 'Nombre de Usuario', value: userInfo.username || 'No disponible' },
+    { icon: 'email', label: 'Correo Institucional', value: userInfo.universityEmail || 'No disponible' },
+    { icon: 'user', label: 'Correo Personal', value: userInfo.backupEmail || 'No disponible' },
+    { icon: 'phone', label: 'Teléfono', value: formattedPhone },
+    { icon: 'clock', label: 'Último acceso', value: userInfo.lastLogin || 'Nunca' }
+  ];
+
+  const getStudentInfoItems = (): InfoItemConfig[] => [
     { icon: 'identification', label: 'Carnet de Identidad', value: userInfo.id || 'No disponible' },
     { icon: 'academic', label: 'Facultad/Carrera', value: `${userInfo.faculty} - ${userInfo.major}` },
     { icon: 'clock', label: 'Año Académico', value: userInfo.year || 'No disponible' },
@@ -275,9 +355,12 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
     { icon: 'email', label: 'Correo Institucional', value: userInfo.universityEmail || 'No disponible' },
     { icon: 'user', label: 'Nombre de Usuario', value: userInfo.username || 'No disponible' },
     { icon: 'clock', label: 'Último acceso', value: userInfo.lastLogin || 'Nunca' }
-  ], [userInfo, formattedPhone]);
+  ];
 
-  // Memoizar el contenido del perfil de usuario
+  const infoItems = useMemo((): InfoItemConfig[] => {
+    return userInfo.isEmployee ? getWorkerInfoItems() : getStudentInfoItems();
+  }, [userInfo, formattedPhone]);
+
   const profileContent = useMemo(() => (
     <div className="flex flex-col items-center mb-6">
       <div className="relative mb-4">
@@ -298,16 +381,22 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
       >
         {userInfo.name}
       </h1>
-      <span
-        className={`px-4 py-2 rounded-full text-base ${statusBgColor}`}
-        aria-label={`Título: ${userInfo.status}`}
-      >
-        {userInfo.status}
-      </span>
+      <div className="flex flex-col items-center gap-2">
+        <span
+          className={`px-4 py-2 rounded-full text-base ${statusBgColor}`}
+          aria-label={`Título: ${userInfo.status}`}
+        >
+          {getStatusText()} - {userInfo.status}
+        </span>
+        {loadingDual && (
+          <span className="text-xs text-gray-500 animate-pulse">
+            Verificando estado administrativo...
+          </span>
+        )}
+      </div>
     </div>
-  ), [userInfo.name, userInfo.status, avatarColor, nameColor, statusBgColor]);
+  ), [userInfo.name, userInfo.status, userInfo.isEmployee, isAlsoEmployee, loadingDual, avatarColor, nameColor, statusBgColor]);
 
-  // Memoizar la lista de información
   const infoList = useMemo(() => (
     <div className="space-y-4" role="list" aria-label="Información del usuario">
       {infoItems.map((item, index) => (

@@ -16,6 +16,7 @@ export interface UserInfo {
   passwordExpira?: string;
   diasHastaVencimiento?: number | null;
   tiempoHastaVencimiento?: string;
+  isEmployee?: boolean;
 }
   
   export interface Device {

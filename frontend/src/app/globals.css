@@ -38,3 +38,28 @@ body {
 code, pre, kbd, samp {
   font-family: var(--font-geist-mono);
 }
+
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.dark {
+  color-scheme: dark;
+}
+/* Scrollbar personalizado para modo oscuro */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
