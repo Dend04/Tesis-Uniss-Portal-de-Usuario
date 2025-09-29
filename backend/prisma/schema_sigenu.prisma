@@ -1,0 +1,10 @@
+// prisma/schema_sigenu.prisma
+generator client_sigenu {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client_sigenu"
+}
+
+datasource db_sigenu {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL_SIGENU")
+}

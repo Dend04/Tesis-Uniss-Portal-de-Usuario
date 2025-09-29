@@ -33,22 +33,7 @@ export default function SMSRecoveryPage() {
         throw new Error("Por favor ingrese un número telefónico cubano válido (ej: +53XXXXXXXX)");
       }
 
-      // Enviar código via Telegram API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/send-telegram-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          phoneNumber: phoneNumber.replace(/\s/g, ''),
-          method: "sms" // También puede ser "call" o "telegram"
-        }),
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al enviar el código");
-      }
 
       setStep("code");
     } catch (err) {
@@ -63,24 +48,6 @@ export default function SMSRecoveryPage() {
     setIsSubmitting(true);
     
     try {
-      // Verificar el código con el servidor
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-telegram-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          phoneNumber: phoneNumber.replace(/\s/g, ''),
-          code 
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Código inválido");
-      }
-
-      // Redirigir a la página de reset con el número telefónico
       router.push(`/forgot-password/reset?phone=${encodeURIComponent(phoneNumber)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al verificar el código.");
@@ -89,33 +56,6 @@ export default function SMSRecoveryPage() {
     }
   }, [code, phoneNumber, router]);
 
-  const handleResendCode = useCallback(async () => {
-    setIsSubmitting(true);
-    try {
-      // Reenviar código de verificación
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/resend-telegram-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          phoneNumber: phoneNumber.replace(/\s/g, ''),
-          method: "call" // Alternar a llamada de voz si el SMS falla
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al reenviar el código");
-      }
-
-      setError("Código reenviado correctamente");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al reenviar el código.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [phoneNumber]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -258,7 +198,6 @@ export default function SMSRecoveryPage() {
 
               <div className="mt-6 space-y-3">
                 <button
-                  onClick={handleResendCode}
                   disabled={isSubmitting}
                   className="text-uniss-blue hover:underline disabled:opacity-50 text-sm"
                 >
@@ -268,7 +207,6 @@ export default function SMSRecoveryPage() {
                 <button
                   onClick={() => {
                     // Alternar a método de llamada de voz
-                    handleResendCode();
                   }}
                   disabled={isSubmitting}
                   className="block text-uniss-blue hover:underline disabled:opacity-50 text-sm"

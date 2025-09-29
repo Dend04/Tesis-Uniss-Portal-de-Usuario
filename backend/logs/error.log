@@ -1056,3 +1056,43 @@ body
     at LDAPAccountRemovalService.removeAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\ldap-account-removal.services.ts:43:15)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
     at async deleteAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\controllers\account-removal.controller.ts:25:22)
+2025-09-29 14:07:50 [error]: Error al consultar datos de empleado para CI: 02010573126. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:124:57
+
+  121 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  122   try {
+  123     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 124     const employee = await this.prisma.empleados_Gral.findFirst(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:8
+   | 
+ 7 |   provider = "sqlserver"
+ 8 |   url      = env("DATABASE_URL")
+   | 
+
+Validation Error Count: 1
+2025-09-29 14:07:50 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-09-29 14:08:30 [error]: Error al consultar datos de empleado para CI: 88092118667. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:124:57
+
+  121 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  122   try {
+  123     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 124     const employee = await this.prisma.empleados_Gral.findFirst(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:8
+   | 
+ 7 |   provider = "sqlserver"
+ 8 |   url      = env("DATABASE_URL")
+   | 
+
+Validation Error Count: 1
+2025-09-29 14:08:30 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-09-29 14:20:46 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-09-29 14:27:25 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-09-29 14:49:29 [error]: No se pudo obtener el CI del token. Estructura del user:
+2025-09-29 14:54:04 [error]: Error al verificar estado dual: Do not know how to serialize a BigInt
+2025-09-29 15:16:56 [error]: Error verificando token: Token inválido o expirado
+2025-09-29 16:20:59 [error]: Error verificando token: Token inválido o expirado

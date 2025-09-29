@@ -194,13 +194,24 @@ const useDualVerification = () => {
 
         if (response.ok) {
           const data = await response.json();
-          setIsAlsoEmployee(data.isAlsoEmployee || false);
+          const employeeStatus = data.isAlsoEmployee || false;
+          setIsAlsoEmployee(employeeStatus);
+          
+          // ✅ GUARDAR EN LOCAL STORAGE SI ES TRABAJADOR
+          if (employeeStatus) {
+            localStorage.setItem('trabajador', 'true');
+          } else {
+            // Opcional: remover el campo si no es trabajador
+            localStorage.removeItem('trabajador');
+          }
         } else {
           throw new Error('Error en la respuesta del servidor');
         }
       } catch (error) {
         console.error('Error verificando estado dual:', error);
         setIsAlsoEmployee(false);
+        // En caso de error, asegurarse de que no se marque como trabajador
+        localStorage.removeItem('trabajador');
       } finally {
         setLoadingDual(false);
       }
@@ -239,6 +250,7 @@ const useUserProfile = () => {
         if (!response.ok) {
           if (response.status === 401) {
             localStorage.removeItem('authToken');
+            localStorage.removeItem('trabajador'); // Limpiar también trabajador
             throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
           }
           throw new Error(`Error en la petición: ${response.status}`);
@@ -334,7 +346,7 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
     if (userInfo.isEmployee) {
       return 'Trabajador';
     }
-    return isAlsoEmployee ? 'Estudiante/Administrador' : 'Estudiante';
+    return isAlsoEmployee ? 'Alumno/Ayudante' : 'Estudiante';
   };
 
   const getWorkerInfoItems = (): InfoItemConfig[] => [
