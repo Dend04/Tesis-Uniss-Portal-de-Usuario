@@ -3,25 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProgressBar from "@/app/components/ProgressBar";
-import {
-    UserCircleIcon,
-    IdentificationIcon,
-    CalendarIcon,
-    MapPinIcon,
-    PhoneIcon,
-    AcademicCapIcon,
-    BookOpenIcon,
-    CalendarDaysIcon,
-    ScaleIcon,
-    UserGroupIcon,
-    BriefcaseIcon,
-    TicketIcon,
-    BuildingOfficeIcon,
-    ClockIcon,
-    DocumentTextIcon,
-    AcademicCapIcon as GraduationCapIcon, // Nuevo icono para profesión
-    MapIcon // Nuevo icono para municipio
-} from "@heroicons/react/24/outline";
+import StudentProfile from "@/app/components/perfil/StudentProfile";
+import EmployeeProfile from "@/app/components/perfil/EmployeeProfile";
+
 
 interface StudentData {
     personalData: {
@@ -59,8 +43,8 @@ interface EmployeeData {
     Id_Profesion?: string;
     Id_Nivel_Escolaridad?: string;
     Ano_Alta?: number;
-    profesionDescription?: string; // ✅ Nuevo campo
-    municipioDescription?: string; // ✅ Nuevo campo
+    profesionDescription?: string;
+    municipioDescription?: string;
 }
 
 // Función para decodificar el token JWT
@@ -102,7 +86,6 @@ const getUserDataFromToken = () => {
 const formatDate = (date: any): string => {
     if (!date || typeof date !== 'object') return 'No disponible';
     try {
-        // Si es un objeto con propiedades de fecha
         if (date.year && date.month && date.day) {
             return `${date.day}/${date.month}/${date.year}`;
         }
@@ -112,19 +95,16 @@ const formatDate = (date: any): string => {
     }
 };
 
-// ✅ NUEVA FUNCIÓN: Obtener año de contratación
+// Función para obtener año de contratación
 const getAnoContratacion = (fechaContratacion: any, anoAlta?: number): string => {
-    // Primero intentar con la fecha de contratación
     const fechaFormateada = formatDate(fechaContratacion);
     if (fechaFormateada !== 'No disponible') {
-        // Extraer el año de la fecha formateada
         const yearMatch = fechaFormateada.match(/\d{4}/);
         if (yearMatch) {
             return yearMatch[0];
         }
     }
     
-    // Si no hay fecha de contratación, usar el año de alta
     if (anoAlta) {
         return anoAlta.toString();
     }
@@ -159,13 +139,12 @@ const formatRegimenSalarial = (regimen?: number): string => {
     return regimenes[regimen] || `Régimen ${regimen}`;
 };
 
-// ✅ NUEVA FUNCIÓN: Formatear descripción de profesión
+// Función para formatear descripción de profesión
 const formatProfesionDescription = (profesion?: string): string => {
     if (!profesion) return 'No disponible';
     
     const profesionLimpia = profesion.trim();
     
-    // Mapeo de abreviaturas a sus equivalentes completos
     const reemplazos: { [key: string]: string } = {
         'TM': 'Técnico Medio en',
         'Ing': 'Ingeniero',
@@ -186,20 +165,24 @@ const formatProfesionDescription = (profesion?: string): string => {
     
     let resultado = profesionLimpia;
     
-    // Reemplazar cada abreviatura encontrada
     Object.keys(reemplazos).forEach(abreviatura => {
-        // Buscar la abreviatura al inicio de la cadena o seguida de un espacio
         const regex = new RegExp(`^${abreviatura}\\s+`, 'i');
         if (regex.test(resultado)) {
             resultado = resultado.replace(regex, reemplazos[abreviatura] + ' ');
         }
         
-        // También buscar la abreviatura como palabra completa
         const regexPalabra = new RegExp(`\\b${abreviatura}\\b`, 'gi');
         resultado = resultado.replace(regexPalabra, reemplazos[abreviatura]);
     });
     
     return resultado || 'No disponible';
+};
+
+// Función para formatear número de teléfono
+const formatPhoneNumber = (phone: string) => {
+    if (!phone) return 'No disponible';
+    const cleaned = phone.replace(/\D/g, '');
+    return `+53 ${cleaned.slice(0, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`;
 };
 
 export default function ProfilePage() {
@@ -213,13 +196,11 @@ export default function ProfilePage() {
     const router = useRouter();
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-    // Verificar si es trabajador
     const isTrabajador = typeof window !== 'undefined' ? localStorage.getItem('trabajador') === 'true' : false;
 
     useEffect(() => {
         setIsMounted(true);
         
-        // Obtener datos del usuario desde el token
         const userDataFromToken = getUserDataFromToken();
         setUserData(userDataFromToken);
 
@@ -229,7 +210,6 @@ export default function ProfilePage() {
             return;
         }
 
-        // Verificar si tenemos employeeID
         if (!userDataFromToken?.employeeID) {
             setError("No se encontró el número de carnet (employeeID) en el token");
             return;
@@ -289,8 +269,8 @@ export default function ProfilePage() {
                                     Id_Profesion: empData.Id_Profesion,
                                     Id_Nivel_Escolaridad: empData.Id_Nivel_Escolaridad,
                                     Ano_Alta: empData.Ano_Alta,
-                                    profesionDescription: empData.profesionDescription, // ✅ Nuevo campo
-                                    municipioDescription: empData.municipioDescription // ✅ Nuevo campo
+                                    profesionDescription: empData.profesionDescription,
+                                    municipioDescription: empData.municipioDescription
                                 });
                             }
                         }
@@ -325,12 +305,6 @@ export default function ProfilePage() {
             fetchData();
         }
     }, [API_URL, router, isTrabajador]);
-
-    const formatPhoneNumber = (phone: string) => {
-        if (!phone) return 'No disponible';
-        const cleaned = phone.replace(/\D/g, '');
-        return `+53 ${cleaned.slice(0, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`;
-    };
 
     if (!isMounted) {
         return (
@@ -392,220 +366,26 @@ export default function ProfilePage() {
                     )}
                 </div>
             ) : (
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                    {/* Encabezado con foto */}
-                    <div className="bg-uniss-blue p-8 flex items-center gap-6">
-                        <div className="bg-white/10 p-4 rounded-full">
-                            <UserCircleIcon className="h-20 w-20 text-white/80" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-bold text-white">
-                                {student.personalData.fullName}
-                            </h1>
-                            <div className="flex items-center mt-2 gap-2">
-                                <AcademicCapIcon className="h-6 w-6 text-white/80" />
-                                <p className="text-xl text-white/90">
-                                    {student.academicData.career}
-                                </p>
-                            </div>
-                            <div className="mt-2 text-white/80">
-                                <strong>Carnet:</strong> {userData?.employeeID}
-                            </div>
-                            {isTrabajador && (
-                                <div className="mt-2 flex items-center gap-2">
-                                    <BriefcaseIcon className="h-5 w-5 text-green-300" />
-                                    <span className="text-green-300 font-medium">
-                                        Estudiante/Trabajador
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Cuerpo de datos */}
-                    <div className="p-8 grid gap-8 md:grid-cols-2">
-                        {/* Sección Datos Personales */}
-                        <div className="space-y-5">
-                            <h2 className="text-2xl font-semibold flex items-center gap-2 text-blue-600">
-                                <UserCircleIcon className="h-8 w-8" />
-                                Datos Personales
-                            </h2>
-
-                            <InfoItem
-                                icon={<IdentificationIcon className="h-6 w-6" />}
-                                label="Carné de Identidad"
-                                value={student.personalData.identification}
-                            />
-
-                            <InfoItem
-                                icon={<CalendarIcon className="h-6 w-6" />}
-                                label="Fecha de Nacimiento"
-                                value={student.personalData.birthDate}
-                            />
-
-                            <InfoItem
-                                icon={<MapPinIcon className="h-6 w-6" />}
-                                label="Dirección"
-                                value={student.personalData.address}
-                            />
-
-                            <InfoItem
-                                icon={<PhoneIcon className="h-6 w-6" />}
-                                label="Contacto"
-                                value={formatPhoneNumber(student.personalData.contact)}
-                            />
-
-                            <InfoItem
-                                icon={<MapPinIcon className="h-6 w-6" />}
-                                label="Lugar de Origen"
-                                value={student.personalData.origin}
-                            />
-                        </div>
-
-                        {/* Sección Académica */}
-                        <div className="space-y-5">
-                            <h2 className="text-2xl font-semibold flex items-center gap-2 text-blue-600">
-                                <AcademicCapIcon className="h-8 w-8" />
-                                Información Académica
-                            </h2>
-
-                            <InfoItem
-                                icon={<BookOpenIcon className="h-6 w-6" />}
-                                label="Facultad"
-                                value={student.academicData.faculty}
-                            />
-
-                            <InfoItem
-                                icon={<BookOpenIcon className="h-6 w-6" />}
-                                label="Carrera"
-                                value={student.academicData.career}
-                            />
-
-                            <InfoItem
-                                icon={<CalendarDaysIcon className="h-6 w-6" />}
-                                label="Año Académico"
-                                value={student.academicData.year}
-                            />
-
-                            <InfoItem
-                                icon={<ScaleIcon className="h-6 w-6" />}
-                                label="Estado"
-                                value={student.academicData.status}
-                            />
-
-                            <InfoItem
-                                icon={<ScaleIcon className="h-6 w-6" />}
-                                label="Índice Académico"
-                                value={student.academicData.academicIndex}
-                            />
-                        </div>
-
-                        {/* Sección de Datos del Trabajador - Solo si es trabajador */}
-                        {isTrabajador && (
-                            <div className="md:col-span-2 space-y-5">
-                                <h2 className="text-2xl font-semibold flex items-center gap-2 text-green-600">
-                                    <BriefcaseIcon className="h-8 w-8" />
-                                    Datos del Trabajador
-                                </h2>
-                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                                    {loadingEmployee ? (
-                                        <div className="md:col-span-3 flex justify-center items-center py-8">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
-                                            <span className="ml-3 text-gray-600">Cargando datos del trabajador...</span>
-                                        </div>
-                                    ) : employee ? (
-                                        <>
-                                            <InfoItem
-                                                icon={<TicketIcon className="h-6 w-6" />}
-                                                label="Código de Ticket"
-                                                value={employee.Id_Empleado}
-                                            />
-                                            <InfoItem
-                                                icon={<BriefcaseIcon className="h-6 w-6" />}
-                                                label="Cargo"
-                                                value={employee.cargoDescription || 'Cargo no disponible'}
-                                            />
-                                            <InfoItem
-                                                icon={<BuildingOfficeIcon className="h-6 w-6" />}
-                                                label="Departamento"
-                                                value={employee.department}
-                                            />
-                                            <InfoItem
-                                                icon={<DocumentTextIcon className="h-6 w-6" />}
-                                                label="Tipo de Contrato"
-                                                value={formatTipoContrato(employee.Id_Tipo_Contrato)}
-                                            />
-                                            <InfoItem
-                                                icon={<ScaleIcon className="h-6 w-6" />}
-                                                label="Régimen Salarial"
-                                                value={formatRegimenSalarial(employee.Regimen_Salarial)}
-                                            />
-                                            {/* ✅ CAMBIO: Año de Contratación en lugar de Fecha de Contratación */}
-                                            <InfoItem
-                                                icon={<CalendarDaysIcon className="h-6 w-6" />}
-                                                label="Año de Contratación"
-                                                value={getAnoContratacion(employee.Fecha_Contratacion, employee.Ano_Alta)}
-                                            />
-                                            {/* ✅ NUEVO CAMPO: Graduado de */}
-                                            <InfoItem
-                                                icon={<GraduationCapIcon className="h-6 w-6" />}
-                                                label="Graduado de"
-                                                value={formatProfesionDescription(employee.profesionDescription)}
-                                            />
-                                            {/* ✅ NUEVO CAMPO: Municipio */}
-                                            <InfoItem
-                                                icon={<MapIcon className="h-6 w-6" />}
-                                                label="Municipio"
-                                                value={employee.municipioDescription || 'No disponible'}
-                                            />
-                                        </>
-                                    ) : (
-                                        <div className="md:col-span-3 text-center py-4 text-gray-500">
-                                            No se pudieron cargar los datos del trabajador
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Sección Familiar */}
-                        <div className="md:col-span-2 space-y-5">
-                            <h2 className="text-2xl font-semibold flex items-center gap-2 text-blue-600">
-                                <UserGroupIcon className="h-8 w-8" />
-                                Datos Familiares
-                            </h2>
-                            <div className="grid md:grid-cols-2 gap-5">
-                                <InfoItem
-                                    icon={<UserCircleIcon className="h-6 w-6" />}
-                                    label="Madre"
-                                    value={student.familyData.mother}
-                                />
-                                <InfoItem
-                                    icon={<UserCircleIcon className="h-6 w-6" />}
-                                    label="Padre"
-                                    value={student.familyData.father}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <StudentProfile
+                        student={student}
+                        employeeID={userData?.employeeID || ''}
+                        isTrabajador={isTrabajador}
+                        formatPhoneNumber={formatPhoneNumber}
+                    />
+                    
+                    {isTrabajador && (
+                        <EmployeeProfile
+                            employee={employee}
+                            loadingEmployee={loadingEmployee}
+                            formatTipoContrato={formatTipoContrato}
+                            formatRegimenSalarial={formatRegimenSalarial}
+                            getAnoContratacion={getAnoContratacion}
+                            formatProfesionDescription={formatProfesionDescription}
+                        />
+                    )}
                 </div>
             )}
         </div>
     );
 }
-
-const InfoItem = ({ icon, label, value }: {
-    icon: React.ReactNode;
-    label: string;
-    value: string;
-}) => (
-    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-        <div className="text-blue-600">{icon}</div>
-        <div className="flex-1">
-            <dt className="text-lg font-medium text-gray-600 mb-1">{label}</dt>
-            <dd className="text-xl text-gray-900 font-semibold">
-                {value || 'No disponible'}
-            </dd>
-        </div>
-    </div>
-);
