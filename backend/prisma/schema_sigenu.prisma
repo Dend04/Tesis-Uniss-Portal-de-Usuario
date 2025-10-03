@@ -1,10 +1,1524 @@
-// prisma/schema_sigenu.prisma
 generator client_sigenu {
   provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client_sigenu"
 }
 
-datasource db_sigenu {
-  provider = "sqlserver"
+datasource uniss {
+  provider = "postgresql"
   url      = env("DATABASE_URL_SIGENU")
+}
+
+model academic_level {
+  id_academic_level                                                                      String                   @id(map: "pk_academic_level") @uniss.VarChar(1024)
+  name                                                                                   String?                  @uniss.VarChar(1024)
+  cancelled                                                                              Boolean
+  preinscription_student_preinscription_student_father_academic_level_fkToacademic_level preinscription_student[] @relation("preinscription_student_father_academic_level_fkToacademic_level")
+  preinscription_student_preinscription_student_mother_academic_level_fkToacademic_level preinscription_student[] @relation("preinscription_student_mother_academic_level_fkToacademic_level")
+}
+
+model academic_situation {
+  id_academic_situation String                 @id(map: "pk_academic_situation") @uniss.VarChar(1024)
+  name                  String?                @uniss.VarChar(1024)
+  cancelled             Boolean
+  student_status_fk     String?                @uniss.VarChar(1024)
+  matriculated_student  matriculated_student[]
+  student               student[]
+}
+
+model activity_type {
+  activity_type_id  String              @id(map: "pk_activity_type") @uniss.VarChar(1024)
+  name              String?             @uniss.VarChar(1024)
+  cancelled         Boolean?
+  sort              Int?
+  code              String?             @uniss.VarChar(1024)
+  assistance_record assistance_record[]
+}
+
+model activity_type_config {
+  activity_type_config_id  String  @id(map: "pk_activity_type_config") @uniss.VarChar(1024)
+  cant_hours               Int?
+  activity_type_fk         String? @uniss.VarChar(1024)
+  subject_configuration_fk String? @uniss.VarChar(1024)
+}
+
+model activity_types2group_plannings {
+  activity_types_fk  String @uniss.VarChar(1024)
+  group_plannings_fk String @uniss.VarChar(1024)
+
+  @@id([activity_types_fk, group_plannings_fk], map: "pk_activity_types2group_plannings")
+}
+
+model adjustment_subject {
+  adjustment_subject_id String   @id(map: "pk_adjustment_subject") @uniss.VarChar(1024)
+  real_time             Int
+  estimated_time        Int
+  cancelled             Boolean
+  subject_fk            String?  @uniss.VarChar(1024)
+  career_fk             String?  @uniss.VarChar(1024)
+  career                career?  @relation(fields: [career_fk], references: [id_career], onDelete: NoAction, onUpdate: NoAction, map: "fk_adjustment_subject_career_adjustmentsubjects")
+  subject               subject? @relation(fields: [subject_fk], references: [subject_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_adjustment_subject_subject")
+
+  @@unique([subject_fk, career_fk], map: "unq_subject_career")
+}
+
+model assign_study_program_motive {
+  assign_study_program_motive_id String                           @id(map: "pk_assign_study_program_motive") @uniss.VarChar(1024)
+  name                           String?                          @uniss.VarChar(1024)
+  cancelled                      Boolean
+  assigned_study_program_version assigned_study_program_version[]
+}
+
+model assigned_department {
+  assigned_department_id   String                 @id(map: "pk_assigned_department") @uniss.VarChar(1024)
+  department_fk            String?                @uniss.VarChar(1024)
+  discipline_fk            String?                @uniss.VarChar(1024)
+  study_program_version_fk String?                @uniss.VarChar(1024)
+  department               department?            @relation(fields: [department_fk], references: [department_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assigned_department_department")
+  discipline               discipline?            @relation(fields: [discipline_fk], references: [discipline_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assigned_department_discipline")
+  study_program_version    study_program_version? @relation(fields: [study_program_version_fk], references: [study_program_version_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assigned_department_studyprogramversion")
+}
+
+model assigned_study_program_version {
+  assigned_study_program_version_id String                       @id(map: "pk_assigned_study_program") @uniss.VarChar(1024)
+  date                              DateTime?                    @uniss.Date
+  cancelled                         Boolean                      @default(false)
+  study_program_version_fk          String?                      @uniss.VarChar(1024)
+  student_fk                        String?                      @uniss.VarChar(1024)
+  assign_study_program_motive_fk    String?                      @uniss.VarChar(1024)
+  assign_study_program_motive       assign_study_program_motive? @relation(fields: [assign_study_program_motive_fk], references: [assign_study_program_motive_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assigned_study_program_version_assignstudyprogrammotive")
+  student                           student?                     @relation(fields: [student_fk], references: [id_student], onDelete: NoAction, onUpdate: NoAction, map: "fk_assigned_study_program_version_student")
+  study_program_version             study_program_version?       @relation(fields: [study_program_version_fk], references: [study_program_version_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assigned_study_program_version_studyprogramversion")
+}
+
+model assigned_subject {
+  assigned_subject_id            String                           @id(map: "pk_assigned_subject") @uniss.VarChar(1024)
+  period                         Int
+  cancelled                      Boolean                          @default(false)
+  assigned_subject_fk            String?                          @uniss.VarChar(1024)
+  assigned_subject_type_fk       String?                          @uniss.VarChar(1024)
+  year                           Int?
+  averageable                    Boolean?                         @default(false)
+  name                           String?                          @uniss.VarChar(1024)
+  to_certification               Boolean?
+  assigned_subject               assigned_subject?                @relation("assigned_subjectToassigned_subject", fields: [assigned_subject_fk], references: [assigned_subject_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assigned_subject_assignedsubject_precedentssubjects")
+  other_assigned_subject         assigned_subject[]               @relation("assigned_subjectToassigned_subject")
+  assigned_subject_type          assigned_subject_type?           @relation(fields: [assigned_subject_type_fk], references: [assigned_subject_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assigned_subject_assignedsubjecttype")
+  assigned_subjects2study_progra assigned_subjects2study_progra[]
+  subject                        subject[]
+}
+
+model assigned_subject_group {
+  assigned_subject_group_id String         @id(map: "pk_assigned_subject_group") @uniss.VarChar
+  department_fk             String?        @uniss.VarChar
+  subject_group_fk          String?        @uniss.VarChar
+  department                department?    @relation(fields: [department_fk], references: [department_id], onDelete: Cascade, map: "fk_assigned_subject_group_department")
+  subject_group             subject_group? @relation(fields: [subject_group_fk], references: [id], onDelete: Cascade, map: "fk_assigned_subject_group_subjectgroup")
+}
+
+model assigned_subject_type {
+  assigned_subject_type_id String             @id(map: "pk_subject_type") @uniss.VarChar(1024)
+  name                     String?            @uniss.VarChar(1024)
+  cancelled                Boolean
+  assigned_subject         assigned_subject[]
+}
+
+model assigned_subjects2study_progra {
+  study_program_versions_fk String                @uniss.VarChar(1024)
+  assigned_subjects_fk      String                @uniss.VarChar(1024)
+  study_program_version     study_program_version @relation(fields: [study_program_versions_fk], references: [study_program_version_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assigned_subjects2study_progra_assignedsubjects")
+  assigned_subject          assigned_subject      @relation(fields: [assigned_subjects_fk], references: [assigned_subject_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assigned_subjects2study_progra_studyprogramversions")
+
+  @@id([study_program_versions_fk, assigned_subjects_fk], map: "pk_assigned_subjects2study_progra")
+}
+
+model assistance_record {
+  assistance_record_id String         @id(map: "pk_assistance_record") @uniss.VarChar(1024)
+  date                 DateTime?      @uniss.Date
+  week                 Int?
+  assistance           Boolean?
+  professor_name       String?        @uniss.VarChar(1024)
+  activity_type_fk     String?        @uniss.VarChar(1024)
+  student_fk           String?        @uniss.VarChar(1024)
+  group_fk             String?        @uniss.VarChar(1024)
+  professor_fk         String?        @uniss.VarChar(1024)
+  subject_fk           String?        @uniss.VarChar(1024)
+  activity_type        activity_type? @relation(fields: [activity_type_fk], references: [activity_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assistance_record_activitytype")
+  xgroup               xgroup?        @relation(fields: [group_fk], references: [id_group], onDelete: NoAction, onUpdate: NoAction, map: "fk_assistance_record_group")
+  professor            professor?     @relation(fields: [professor_fk], references: [professor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assistance_record_professor")
+  student              student?       @relation(fields: [student_fk], references: [id_student], onDelete: NoAction, onUpdate: NoAction, map: "fk_assistance_record_student")
+  subject              subject?       @relation(fields: [subject_fk], references: [subject_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_assistance_record_subject")
+}
+
+model assistant_student_file {
+  id_assistant_student_file   String                    @id(map: "pk_assistant_student_file") @uniss.VarChar(1024)
+  date                        DateTime?                 @uniss.Timestamp(6)
+  cancelled                   Boolean?
+  student_fk                  String?                   @uniss.VarChar(1024)
+  assistant_student_status_fk String?                   @uniss.VarChar(1024)
+  assistant_student_status    assistant_student_status? @relation(fields: [assistant_student_status_fk], references: [id_assistant_student_status], onDelete: NoAction, onUpdate: NoAction, map: "fk_assistant_student_file_assistantstudentstatus")
+  student                     student?                  @relation(fields: [student_fk], references: [id_student], onDelete: NoAction, onUpdate: NoAction, map: "fk_assistant_student_file_student")
+}
+
+model assistant_student_status {
+  id_assistant_student_status String                   @id(map: "pk_assistant_student_status") @uniss.VarChar(1024)
+  name                        String?                  @uniss.VarChar(1024)
+  cancelled                   Boolean?
+  assistant_student_file      assistant_student_file[]
+}
+
+model award {
+  id_award  String  @id(map: "pk_award") @uniss.VarChar(1024)
+  position  Int
+  increment Float   @uniss.Real
+  cancelled Boolean
+}
+
+model bonus {
+  id_bonus  String  @id(map: "pk_bonus") @uniss.VarChar(1024)
+  event     String? @uniss.VarChar(1024)
+  increment Float   @uniss.Real
+  cancelled Boolean
+}
+
+model career {
+  id_career                                  String                 @id(map: "pk_career") @uniss.VarChar(1024)
+  cancelled                                  Boolean                @default(false)
+  faculty_fk                                 String?                @uniss.VarChar(1024)
+  town_university_fk                         String?                @uniss.VarChar(1024)
+  national_career_fk                         String?                @uniss.VarChar(1024)
+  course_type_fk                             String?                @uniss.VarChar(1024)
+  adjustment_subject                         adjustment_subject[]
+  career_profile                             career_profile[]
+  matriculated_student                       matriculated_student[]
+  student                                    student[]
+  study_program                              study_program[]
+  transfer_transfer_source_career_fkTocareer transfer[]             @relation("transfer_source_career_fkTocareer")
+  transfer_transfer_target_career_fkTocareer transfer[]             @relation("transfer_target_career_fkTocareer")
+  xgroup                                     xgroup[]
+}
+
+model career_profile {
+  id                      String                    @id @uniss.VarChar
+  profile                 String?                   @uniss.VarChar
+  career_fk               String?                   @uniss.VarChar
+  career                  career?                   @relation(fields: [career_fk], references: [id_career], onDelete: NoAction, onUpdate: NoAction)
+  student2career_profiles student2career_profiles[]
+}
+
+model config_mailserver {
+  id          Int      @id(map: "pk_email_id") @default(autoincrement())
+  server      String?  @uniss.VarChar
+  account     String?  @uniss.VarChar
+  user_name   String?  @uniss.VarChar
+  password    String?  @uniss.VarChar
+  port        String?  @uniss.VarChar
+  ssl         Boolean?
+  sender_name String?  @uniss.VarChar
+}
+
+model country {
+  id_country             String                   @id(map: "pk_country") @uniss.VarChar(1024)
+  name                   String?                  @uniss.VarChar(1024)
+  cancelled              Boolean
+  code                   String?                  @uniss.VarChar
+  matriculated_student   matriculated_student[]
+  preinscription_student preinscription_student[]
+  student                student[]
+}
+
+model course {
+  id_course              String                   @id(map: "pk_course") @uniss.VarChar(1024)
+  name                   String?                  @uniss.VarChar(1024)
+  cancelled              Boolean
+  matriculate_course     Boolean?
+  matriculated_subject   matriculated_subject[]
+  student_status_history student_status_history[]
+  study_program          study_program[]
+  study_program_version  study_program_version[]
+  xdrop                  xdrop[]
+  xgroup                 xgroup[]
+}
+
+model course_type {
+  id_course_type            String                      @id(map: "pk_course_type") @uniss.VarChar(1024)
+  code                      String?                     @uniss.VarChar(1024)
+  name                      String?                     @uniss.VarChar(1024)
+  debts                     Int
+  cancelled                 Boolean
+  short_name                String?                     @uniss.VarChar(1024)
+  behavior                  String?                     @uniss.VarChar(1024)
+  modality                  String?                     @uniss.VarChar(1024)
+  course_types2drop_motives course_types2drop_motives[]
+  matriculated_student      matriculated_student[]
+  preinscription_student    preinscription_student[]
+  student                   student[]
+}
+
+model course_types2drop_motives {
+  drop_motives_fk String      @uniss.VarChar(1024)
+  course_types_fk String      @uniss.VarChar(1024)
+  drop_motive     drop_motive @relation(fields: [drop_motives_fk], references: [id_drop_motive], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_types2drop_motives_coursetypes")
+  course_type     course_type @relation(fields: [course_types_fk], references: [id_course_type], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_types2drop_motives_dropmotive_coursetypes")
+
+  @@id([drop_motives_fk, course_types_fk], map: "pk_course_types2drop_motives")
+}
+
+model cualitative_evaluation {
+  cualitative_evaluation_id String        @id(map: "pk_cualitative_evaluation") @uniss.VarChar(1024)
+  name                      String?       @uniss.VarChar(1024)
+  abbreviation              String?       @uniss.VarChar(1024)
+  cancelled                 Boolean?
+  priority                  Int
+  student_cut               student_cut[]
+}
+
+model d_s_s_report_trace {
+  trace_id    String    @id(map: "pk_d_s_s_report_trace") @uniss.VarChar(1024)
+  date_time   DateTime? @uniss.Timestamp(6)
+  access_code String?   @uniss.VarChar(1024)
+  user_fk     String?   @uniss.VarChar(1024)
+  report_fk   String?   @uniss.VarChar(1024)
+  report      report?   @relation(fields: [report_fk], references: [report_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_d_s_s_report_trace_report")
+  xuser       xuser?    @relation(fields: [user_fk], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_d_s_s_report_trace_user")
+}
+
+model deleted_student {
+  id                 String    @id(map: "pk_deleted_student") @uniss.VarChar(1024)
+  identification     String?   @uniss.VarChar(1024)
+  name               String?   @uniss.VarChar(1024)
+  middle_name        String?   @uniss.VarChar(1024)
+  last_name          String?   @uniss.VarChar(1024)
+  id_faculty         String?   @uniss.VarChar(1024)
+  idcareer           String?   @uniss.VarChar(1024)
+  id_course_type     String?   @uniss.VarChar(1024)
+  user_name          String?   @uniss.VarChar(1024)
+  date               DateTime? @uniss.Date
+  idcourse           String?   @uniss.VarChar(1024)
+  elimination_motive String?   @uniss.VarChar(1024)
+  host               String?   @uniss.VarChar(1024)
+}
+
+model department {
+  department_id          String                   @id(map: "pk_department") @uniss.VarChar(1024)
+  name                   String?                  @uniss.VarChar(1024)
+  cancelled              Boolean?
+  town_university_fk     String?                  @uniss.VarChar(1024)
+  faculty_fk             String?                  @uniss.VarChar(1024)
+  code                   String?                  @uniss.VarChar(1024)
+  assigned_department    assigned_department[]
+  assigned_subject_group assigned_subject_group[]
+}
+
+model discipline {
+  discipline_id       String                @id(map: "pk_discipline") @uniss.VarChar(1024)
+  objectives          String?               @uniss.VarChar(1024)
+  program             String?               @uniss.VarChar(1024)
+  cancelled           Boolean               @default(false)
+  code                String?               @uniss.VarChar(1024)
+  career_fk           String?               @uniss.VarChar(1024)
+  discipline_name_fk  String?               @uniss.VarChar(1024)
+  assigned_department assigned_department[]
+  subject             subject[]
+}
+
+model discipline_name {
+  discipline_name_id String  @id(map: "pk_discipline_name") @uniss.VarChar(1024)
+  name               String? @uniss.VarChar(1024)
+  code               String? @uniss.VarChar(1024)
+}
+
+model docent_charge {
+  docent_charge_id String   @id(map: "pk_docent_charge") @uniss.VarChar(1024)
+  course_fk        String?  @uniss.VarChar(1024)
+  professor_fk     String?  @uniss.VarChar(1024)
+  cancelled        Boolean?
+}
+
+model drop_motive {
+  id_drop_motive            String                      @id(map: "pk_drop_motive") @uniss.VarChar(1024)
+  name                      String?                     @uniss.VarChar(1024)
+  cancelled                 Boolean
+  temporal                  Boolean?
+  course_types2drop_motives course_types2drop_motives[]
+  xdrop                     xdrop[]
+}
+
+model entry_evaluation {
+  id_entry_evaluation     String                @id(map: "pk_entry_evaluation") @uniss.VarChar(1024)
+  mark                    Float                 @uniss.Real
+  entry_subject_fk        String?               @uniss.VarChar(1024)
+  student_fk              String?               @uniss.VarChar(1024)
+  matriculated_student_fk String?               @uniss.VarChar(1024)
+  entry_subject           entry_subject?        @relation(fields: [entry_subject_fk], references: [id_entry_subject], onDelete: NoAction, map: "fk_entry_evaluation_entrysubject")
+  matriculated_student    matriculated_student? @relation(fields: [matriculated_student_fk], references: [id_matriculated_student], onDelete: NoAction, map: "fk_entry_evaluation_matriculatedstudent_entryevaluations")
+  student                 student?              @relation(fields: [student_fk], references: [id_student], onDelete: Cascade, map: "fk_entry_evaluation_student_entryevaluations")
+}
+
+model entry_source {
+  id_entry_source        String                   @id(map: "pk_entry_source") @uniss.VarChar(1024)
+  name                   String?                  @uniss.VarChar(1024)
+  cancelled              Boolean
+  matriculated_student   matriculated_student[]
+  preinscription_student preinscription_student[]
+  student                student[]
+}
+
+model entry_subject {
+  id_entry_subject          String                      @id(map: "pk_entry_subject") @uniss.VarChar(1024)
+  name                      String?                     @uniss.VarChar(1024)
+  cancelled                 Boolean
+  entry_evaluation          entry_evaluation[]
+  preinscription_evaluation preinscription_evaluation[]
+}
+
+model evaluation {
+  id_evaluation           String                @id(map: "pk_evaluation") @uniss.VarChar(1024)
+  cancelled               Boolean               @default(false)
+  professor_name          String?               @uniss.VarChar(1024)
+  student_fk              String?               @uniss.VarChar(1024)
+  examination_type_fk     String?               @uniss.VarChar(1024)
+  evaluation_value_fk     String?               @uniss.VarChar(1024)
+  matriculated_subject_fk String?               @uniss.VarChar(1024)
+  user_name               String?               @uniss.VarChar(1024)
+  registration_date       DateTime?             @uniss.Timestamp(6)
+  evaluation_date         DateTime?             @uniss.Timestamp(6)
+  host                    String?               @uniss.VarChar(1024)
+  deleted                 Boolean               @default(false)
+  motive                  String?               @uniss.VarChar(1024)
+  validated               Boolean?
+  examination_acta_fk     String?               @uniss.VarChar(1024)
+  exam_mark_fk            String?               @uniss.VarChar(1024)
+  evaluation_value        evaluation_value?     @relation(fields: [evaluation_value_fk], references: [id_evaluation_value], onDelete: NoAction, onUpdate: NoAction, map: "fk_evaluation_evaluationvalue")
+  examination_type        examination_type?     @relation(fields: [examination_type_fk], references: [id_examination_type], onDelete: NoAction, onUpdate: NoAction, map: "fk_evaluation_examinationtype")
+  matriculated_subject    matriculated_subject? @relation(fields: [matriculated_subject_fk], references: [matriculated_subject_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_evaluation_matriculatedsubject")
+  student                 student?              @relation(fields: [student_fk], references: [id_student], onDelete: NoAction, onUpdate: NoAction, map: "fk_evaluation_student")
+
+  @@index([matriculated_subject_fk], map: "idx_ev_matriculated_subject")
+  @@index([student_fk], map: "idx_ev_student")
+}
+
+model evaluation_type {
+  evaluation_type_id String    @id(map: "pk_evaluation_type") @uniss.VarChar(1024)
+  name               String?   @uniss.VarChar(1024)
+  cancelled          Boolean
+  subject            subject[]
+}
+
+model evaluation_value {
+  id_evaluation_value String       @id(map: "pk_evaluation_value") @uniss.VarChar(1024)
+  value               String?      @uniss.VarChar(1024)
+  cancelled           Boolean
+  evaluation          evaluation[]
+}
+
+model evaluations_cuts {
+  evaluations_cuts_id     String                    @id(map: "pk_evaluations_cuts") @uniss.VarChar(1024)
+  name                    String?                   @uniss.VarChar(1024)
+  abbreviation            String?                   @uniss.VarChar(1024)
+  cancelled               Boolean?
+  priority                Int
+  evaluative_court_header evaluative_court_header[]
+  student_cut             student_cut[]
+}
+
+model evaluative_court_header {
+  evaluative_court_header_id String            @id(map: "pk_evaluative_court_header") @uniss.VarChar(1024)
+  registration_date          DateTime?         @uniss.Date
+  delivery_date              DateTime?         @uniss.Date
+  cancelled                  Boolean
+  delivered                  Boolean
+  group_planning_fk          String?           @uniss.VarChar(1024)
+  professor_fk               String?           @uniss.VarChar(1024)
+  evaluations_cuts_fk        String?           @uniss.VarChar(1024)
+  evaluations_cuts           evaluations_cuts? @relation(fields: [evaluations_cuts_fk], references: [evaluations_cuts_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_evaluative_court_header_evaluationscuts")
+  group_planning             group_planning?   @relation(fields: [group_planning_fk], references: [group_planning_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_evaluative_court_header_groupplanning")
+  professor                  professor?        @relation(fields: [professor_fk], references: [professor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_evaluative_court_header_professor")
+  student_cut                student_cut[]
+}
+
+model examination_acta {
+  id_examination_acta String    @id(map: "pk_examination_acta") @uniss.VarChar(1024)
+  professor_name      String?   @uniss.VarChar(1024)
+  examination_type_fk String?   @uniss.VarChar(1024)
+  group_fk            String?   @uniss.VarChar(1024)
+  course_type_fk      String?   @uniss.VarChar(1024)
+  subject_name_fk     String?   @uniss.VarChar(1024)
+  career_fk           String?   @uniss.VarChar(1024)
+  course_fk           String?   @uniss.VarChar(1024)
+  professor_fk        String?   @uniss.VarChar(1024)
+  subject_fk          String?   @uniss.VarChar(1024)
+  closed              Boolean?
+  validated           Boolean?
+  close_date          DateTime? @uniss.Date
+  validate_date       DateTime? @uniss.Date
+  examination_date    DateTime? @uniss.Date
+  secretary_name      String?   @uniss.VarChar(1024)
+}
+
+model examination_request {
+  examination_request_id  String  @id(map: "pk_examination_request") @uniss.VarChar(1024)
+  matriculated_subject_fk String? @uniss.VarChar(1024)
+  examination_type_fk     String? @uniss.VarChar(1024)
+}
+
+model examination_type {
+  id_examination_type String       @id(map: "pk_examination_type") @uniss.VarChar(1024)
+  name                String?      @uniss.VarChar(1024)
+  cancelled           Boolean
+  priority            Int?
+  sort                Int?
+  evaluation          evaluation[]
+}
+
+model faculties2users {
+  faculties_fk String  @uniss.VarChar(1024)
+  users_fk     String  @uniss.VarChar(1024)
+  xuser        xuser   @relation(fields: [users_fk], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_faculties2users_faculties")
+  faculty      faculty @relation(fields: [faculties_fk], references: [id_faculty], onDelete: NoAction, onUpdate: NoAction, map: "fk_faculties2users_user_faculties")
+
+  @@id([faculties_fk, users_fk], map: "pk_faculties2users")
+}
+
+model faculty {
+  id_faculty           String                 @id(map: "pk_faculty") @uniss.VarChar(1024)
+  name                 String?                @uniss.VarChar(1024)
+  address              String?                @uniss.VarChar(1024)
+  phone_number         String?                @uniss.VarChar(1024)
+  dean_name            String?                @uniss.VarChar(1024)
+  secretary_name       String?                @uniss.VarChar(1024)
+  cancelled            Boolean                @default(false)
+  town_fk              String?                @uniss.VarChar(1024)
+  university_fk        String?                @uniss.VarChar(1024)
+  code                 String?                @uniss.VarChar(1024)
+  dean_email           String?                @uniss.VarChar
+  faculties2users      faculties2users[]
+  i_p_access           i_p_access[]
+  matriculated_student matriculated_student[]
+  student              student[]
+}
+
+model father_information {
+  id_father_information   String                @id(map: "pk_father_information") @uniss.VarChar(1024)
+  name                    String?               @uniss.VarChar(1024)
+  salary                  Float?                @uniss.Real
+  dead                    Boolean               @default(false)
+  student_fk              String?               @unique @uniss.VarChar(1024)
+  academic_level_fk       String?               @uniss.VarChar(1024)
+  ocupation_fk            String?               @uniss.VarChar(1024)
+  politic_org_fk          String?               @uniss.VarChar(1024)
+  matriculated_student_fk String?               @uniss.VarChar(1024)
+  matriculated_student    matriculated_student? @relation(fields: [matriculated_student_fk], references: [id_matriculated_student], onDelete: Cascade, map: "fk_father_information_matriculatedstudent_fatherinformation")
+  student                 student?              @relation(fields: [student_fk], references: [id_student], onDelete: Cascade, map: "fk_father_information_student_fatherinformation")
+}
+
+model group_planning {
+  group_planning_id        String                    @id(map: "pk_group_planning") @uniss.VarChar(1024)
+  assign_end_mark          Boolean?
+  cancelled                Boolean?
+  subject_configuration_fk String?                   @uniss.VarChar(1024)
+  docent_charge_fk         String?                   @uniss.VarChar(1024)
+  group_fk                 String?                   @uniss.VarChar(1024)
+  evaluative_court_header  evaluative_court_header[]
+}
+
+model group_type {
+  id_group_type String   @id(map: "pk_group_type") @uniss.VarChar(1024)
+  kind          String?  @uniss.VarChar(1024)
+  cancelled     Boolean
+  xgroup        xgroup[]
+}
+
+model groups2matriculated_students {
+  matriculated_students_fk String               @uniss.VarChar(1024)
+  groups_fk                String               @uniss.VarChar(1024)
+  matriculated_student     matriculated_student @relation(fields: [matriculated_students_fk], references: [id_matriculated_student], onDelete: Cascade, map: "fk_groups2matriculated_students_groups")
+  xgroup                   xgroup               @relation(fields: [groups_fk], references: [id_group], onDelete: NoAction, map: "fk_groups2matriculated_students_matriculatedstudents")
+
+  @@id([matriculated_students_fk, groups_fk], map: "pk_groups2matriculated_students")
+}
+
+model groups2students {
+  students_fk           String?             @uniss.VarChar(1024)
+  groups_fk             String?             @uniss.VarChar(1024)
+  id                    String              @id(map: "pk_groups2students") @uniss.VarChar(1024)
+  consecutive           Int?
+  student_group_type_fk String?             @uniss.VarChar(1024)
+  xgroup                xgroup?             @relation(fields: [groups_fk], references: [id_group], onDelete: NoAction, onUpdate: NoAction, map: "fk_groups2students_groups")
+  student_group_type    student_group_type? @relation(fields: [student_group_type_fk], references: [student_group_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_groups2students_studentgrouptype")
+  student               student?            @relation(fields: [students_fk], references: [id_student], onDelete: NoAction, onUpdate: NoAction, map: "fk_groups2students_students")
+
+  @@unique([students_fk, groups_fk], map: "unq_group_student")
+  @@index([groups_fk], map: "idx_g2s_group")
+  @@index([students_fk], map: "idx_g2s_student")
+}
+
+model handicap {
+  id_handicap                    String                           @id(map: "pk_handicap") @uniss.VarChar(1024)
+  kind                           String?                          @uniss.VarChar(1024)
+  cancelled                      Boolean
+  handicaps2matriculated_student handicaps2matriculated_student[]
+  handicaps2students             handicaps2students[]
+}
+
+model handicaps2matriculated_student {
+  handicaps_fk             String               @uniss.VarChar(1024)
+  matriculated_students_fk String               @uniss.VarChar(1024)
+  matriculated_student     matriculated_student @relation(fields: [matriculated_students_fk], references: [id_matriculated_student], onDelete: Cascade, map: "fk_handicaps2matriculated_student_handicaps")
+  handicap                 handicap             @relation(fields: [handicaps_fk], references: [id_handicap], onDelete: NoAction, map: "fk_handicaps2matriculated_student_matriculatedstudents")
+
+  @@id([handicaps_fk, matriculated_students_fk], map: "pk_handicaps2matriculated_student")
+}
+
+model handicaps2students {
+  handicaps_fk String   @uniss.VarChar(1024)
+  students_fk  String   @uniss.VarChar(1024)
+  handicap     handicap @relation(fields: [handicaps_fk], references: [id_handicap], onDelete: NoAction, map: "fk_handicaps2students_students")
+
+  @@id([handicaps_fk, students_fk], map: "pk_handicaps2students")
+}
+
+model i_p_access {
+  id                 String           @id(map: "pk_i_p_access") @uniss.VarChar(1024)
+  ip                 String?          @uniss.VarChar(1024)
+  faculty_fk         String?          @uniss.VarChar(1024)
+  town_university_fk String?          @uniss.VarChar(1024)
+  faculty            faculty?         @relation(fields: [faculty_fk], references: [id_faculty], onDelete: NoAction, onUpdate: NoAction, map: "fk_i_p_access_faculty")
+  town_university    town_university? @relation(fields: [town_university_fk], references: [id_town_university], onDelete: NoAction, onUpdate: NoAction, map: "fk_i_p_access_townuniversity")
+}
+
+model laboral_information {
+  id_laboral_information  String                @id(map: "pk_laboral_information") @uniss.VarChar(1024)
+  center_name             String?               @uniss.VarChar(1024)
+  address                 String?               @uniss.VarChar(1024)
+  phone                   String?               @uniss.VarChar(1024)
+  salary                  Float?                @uniss.Real
+  boss_name               String?               @uniss.VarChar(1024)
+  matriculated_student_fk String?               @uniss.VarChar(1024)
+  ocupation_fk            String?               @uniss.VarChar(1024)
+  student_fk              String?               @unique @uniss.VarChar(1024)
+  town_fk                 String?               @uniss.VarChar(1024)
+  syndicate_fk            String?               @uniss.VarChar(1024)
+  organism_fk             String?               @uniss.VarChar(1024)
+  matriculated_student    matriculated_student? @relation(fields: [matriculated_student_fk], references: [id_matriculated_student], onDelete: Cascade, map: "fk_laboral_information_matriculatedstudent_laboralinformation")
+  student                 student?              @relation(fields: [student_fk], references: [id_student], onDelete: Cascade, map: "fk_laboral_information_student_laboralinformation")
+}
+
+model licence {
+  id_licence        String          @id(map: "pk_licence") @uniss.VarChar(1024)
+  end_date          DateTime?       @uniss.Timestamp(6)
+  drop_fk           String?         @uniss.VarChar(1024)
+  licence_motive_fk String?         @uniss.VarChar(1024)
+  licence_motive    licence_motive? @relation(fields: [licence_motive_fk], references: [id_licence_motive], onDelete: NoAction, onUpdate: NoAction, map: "fk_licence_licencemotive")
+}
+
+model licence_motive {
+  id_licence_motive String    @id(map: "pk_licence_motive") @uniss.VarChar(1024)
+  name              String?   @uniss.VarChar(1024)
+  cancelled         Boolean
+  licence           licence[]
+}
+
+model marital_status {
+  id_marital_status    String                 @id(map: "pk_marital_status") @uniss.VarChar(1024)
+  kind                 String?                @uniss.VarChar(1024)
+  cancelled            Boolean
+  matriculated_student matriculated_student[]
+  student              student[]
+}
+
+model matriculated_student {
+  id_matriculated_student        String                           @id(map: "pk_matriculated_student") @uniss.VarChar(1024)
+  identification                 String?                          @uniss.VarChar(1024)
+  name                           String?                          @uniss.VarChar(1024)
+  first_name                     String?                          @uniss.VarChar(1024)
+  second_name                    String?                          @uniss.VarChar(1024)
+  native_of                      String?                          @uniss.VarChar(1024)
+  birth_date                     DateTime?                        @uniss.Date
+  address                        String?                          @uniss.VarChar(1024)
+  child_number                   Int
+  phone                          String?                          @uniss.VarChar(1024)
+  email                          String?                          @uniss.VarChar(1024)
+  higher_education_in_date       DateTime?                        @uniss.Date
+  university_in_date             DateTime?                        @uniss.Date
+  inscription_date               DateTime?                        @uniss.Timestamp(6)
+  consecutive                    Int
+  scale                          Float?                           @uniss.Real
+  academic_index                 Float?                           @uniss.Real
+  update                         Boolean                          @default(false)
+  country_fk                     String?                          @uniss.VarChar(1024)
+  student_type_fk                String?                          @uniss.VarChar(1024)
+  marital_status_fk              String?                          @uniss.VarChar(1024)
+  study_regimen_fk               String?                          @uniss.VarChar(1024)
+  scholastic_origin_fk           String?                          @uniss.VarChar(1024)
+  town_fk                        String?                          @uniss.VarChar(1024)
+  faculty_fk                     String?                          @uniss.VarChar(1024)
+  town_university_fk             String?                          @uniss.VarChar(1024)
+  orphan_fk                      String?                          @uniss.VarChar(1024)
+  skin_color_fk                  String?                          @uniss.VarChar(1024)
+  academic_situation_fk          String?                          @uniss.VarChar(1024)
+  sex_fk                         String?                          @uniss.VarChar(1024)
+  course_type_fk                 String?                          @uniss.VarChar(1024)
+  career_fk                      String?                          @uniss.VarChar(1024)
+  politic_org_fk                 String?                          @uniss.VarChar(1024)
+  entry_source_fk                String?                          @uniss.VarChar(1024)
+  photo                          String?                          @uniss.VarChar(1024)
+  reoffer                        Boolean?                         @default(false)
+  option                         Int?
+  entry_evaluation               entry_evaluation[]
+  father_information             father_information[]
+  groups2matriculated_students   groups2matriculated_students[]
+  handicaps2matriculated_student handicaps2matriculated_student[]
+  laboral_information            laboral_information[]
+  academic_situation             academic_situation?              @relation(fields: [academic_situation_fk], references: [id_academic_situation], onDelete: NoAction, map: "fk_matriculated_student_academicsituation")
+  career                         career?                          @relation(fields: [career_fk], references: [id_career], onDelete: NoAction, onUpdate: NoAction, map: "fk_matriculated_student_career")
+  country                        country?                         @relation(fields: [country_fk], references: [id_country], onDelete: NoAction, map: "fk_matriculated_student_country")
+  course_type                    course_type?                     @relation(fields: [course_type_fk], references: [id_course_type], onDelete: NoAction, map: "fk_matriculated_student_coursetype")
+  entry_source                   entry_source?                    @relation(fields: [entry_source_fk], references: [id_entry_source], onDelete: NoAction, map: "fk_matriculated_student_entrysource")
+  faculty                        faculty?                         @relation(fields: [faculty_fk], references: [id_faculty], onDelete: NoAction, map: "fk_matriculated_student_faculty")
+  marital_status                 marital_status?                  @relation(fields: [marital_status_fk], references: [id_marital_status], onDelete: NoAction, map: "fk_matriculated_student_maritalstatus")
+  orphan                         orphan?                          @relation(fields: [orphan_fk], references: [id_orphan], onDelete: NoAction, map: "fk_matriculated_student_orphan")
+  politic_org                    politic_org?                     @relation(fields: [politic_org_fk], references: [id_politic_org], onDelete: NoAction, map: "fk_matriculated_student_politicorg")
+  scholastic_origin              scholastic_origin?               @relation(fields: [scholastic_origin_fk], references: [id_scholastic_origin], onDelete: NoAction, map: "fk_matriculated_student_scholasticorigin")
+  sex                            sex?                             @relation(fields: [sex_fk], references: [id_sex], onDelete: NoAction, map: "fk_matriculated_student_sex")
+  skin_color                     skin_color?                      @relation(fields: [skin_color_fk], references: [id_skin_color], onDelete: NoAction, map: "fk_matriculated_student_skincolor")
+  student_type                   student_type?                    @relation(fields: [student_type_fk], references: [id_student_class], onDelete: NoAction, map: "fk_matriculated_student_studenttype")
+  study_regimen                  study_regimen?                   @relation(fields: [study_regimen_fk], references: [id_study_regimen], onDelete: NoAction, map: "fk_matriculated_student_studyregimen")
+  town                           town?                            @relation(fields: [town_fk], references: [id_town], onDelete: NoAction, map: "fk_matriculated_student_town")
+  town_university                town_university?                 @relation(fields: [town_university_fk], references: [id_town_university], onDelete: NoAction, map: "fk_matriculated_student_townuniversity")
+  matriculated_students2o_n_gs   matriculated_students2o_n_gs[]
+  matriculated_students2popular_ matriculated_students2popular_[]
+  militar_service                militar_service[]
+  mother_information             mother_information[]
+}
+
+model matriculated_students2o_n_gs {
+  o_n_gs_fk                String               @uniss.VarChar(1024)
+  matriculated_students_fk String               @uniss.VarChar(1024)
+  o_n_g                    o_n_g                @relation(fields: [o_n_gs_fk], references: [id_o_n_g], onDelete: NoAction, map: "fk_matriculated_students2o_n_gs_matriculatedstudents")
+  matriculated_student     matriculated_student @relation(fields: [matriculated_students_fk], references: [id_matriculated_student], onDelete: Cascade, map: "fk_matriculated_students2o_n_gs_ongs")
+
+  @@id([o_n_gs_fk, matriculated_students_fk], map: "pk_matriculated_students2o_n_gs")
+}
+
+model matriculated_students2popular_ {
+  popular_orgs_fk          String               @uniss.VarChar(1024)
+  matriculated_students_fk String               @uniss.VarChar(1024)
+  popular_org              popular_org          @relation(fields: [popular_orgs_fk], references: [id_popular_org], onDelete: NoAction, map: "fk_matriculated_students2popular__matriculatedstudents")
+  matriculated_student     matriculated_student @relation(fields: [matriculated_students_fk], references: [id_matriculated_student], onDelete: Cascade, map: "fk_matriculated_students2popular__popularorgs")
+
+  @@id([popular_orgs_fk, matriculated_students_fk], map: "pk_matriculated_students2popular_")
+}
+
+model matriculated_subject {
+  matriculated_subject_id        String                          @id(map: "pk_matriculated_subject") @uniss.VarChar(1024)
+  period_number                  Int
+  approved                       Boolean                         @default(false)
+  evaluated                      Boolean                         @default(false)
+  cancelled                      Boolean                         @default(false)
+  course_fk                      String?                         @uniss.VarChar(1024)
+  student_fk                     String?                         @uniss.VarChar(1024)
+  subject_fk                     String?                         @uniss.VarChar(1024)
+  year                           Int?
+  plan_year                      Int?
+  averageable                    Boolean?                        @default(true)
+  matriculated_subject_type_fk   String?                         @uniss.VarChar(1024)
+  matriculated_subject_situat_fk String?                         @uniss.VarChar(1024)
+  matriculated_subject_reason_fk String?                         @uniss.VarChar(1024)
+  matriculated_student_fk        String?                         @uniss.VarChar(1024)
+  tocertification                Boolean?                        @default(true)
+  evaluation                     evaluation[]
+  course                         course?                         @relation(fields: [course_fk], references: [id_course], onDelete: NoAction, map: "fk_matriculated_subject_course")
+  matriculated_subject_reason    matriculated_subject_reason?    @relation(fields: [matriculated_subject_reason_fk], references: [matriculated_subject_reason_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_matriculated_subject_matriculatedsubjectreason")
+  matriculated_subject_situation matriculated_subject_situation? @relation(fields: [matriculated_subject_situat_fk], references: [matriculated_subject_situation], onDelete: NoAction, onUpdate: NoAction, map: "fk_matriculated_subject_matriculatedsubjectsituation")
+  matriculated_subject_type      matriculated_subject_type?      @relation(fields: [matriculated_subject_type_fk], references: [matriculated_subject_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_matriculated_subject_matriculatedsubjecttype")
+  student                        student?                        @relation(fields: [student_fk], references: [id_student], onDelete: NoAction, map: "fk_matriculated_subject_student")
+  subject                        subject?                        @relation(fields: [subject_fk], references: [subject_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_matriculated_subject_subject")
+
+  @@index([student_fk], map: "idx_ms_student")
+  @@index([subject_fk], map: "idx_ms_subject")
+}
+
+model matriculated_subject_reason {
+  matriculated_subject_reason_id String                 @id(map: "pk_evaluation_reason") @uniss.VarChar(1024)
+  name                           String?                @uniss.VarChar(1024)
+  cancelled                      Boolean
+  matriculated_subject           matriculated_subject[]
+}
+
+model matriculated_subject_situation {
+  matriculated_subject_situation String                 @id(map: "pk_subject_situation") @uniss.VarChar(1024)
+  situation                      String?                @uniss.VarChar(1024)
+  cancelled                      Boolean
+  evaluation                     Boolean
+  abbreviation                   String?                @uniss.VarChar(1024)
+  matriculated_subject           matriculated_subject[]
+}
+
+model matriculated_subject_type {
+  matriculated_subject_type_id String                 @id(map: "pk_matriculated_subject_type") @uniss.VarChar(1024)
+  name                         String?                @uniss.VarChar(1024)
+  cancelled                    Boolean
+  matriculated_subject         matriculated_subject[]
+  subject_group                subject_group[]
+}
+
+model militar_grade {
+  id_militar_grade String  @id(map: "pk_militar_grade") @uniss.VarChar(1024)
+  name             String? @uniss.VarChar(1024)
+  cancelled        Boolean
+}
+
+model militar_service {
+  id_militar_service      String                @id(map: "pk_militar_service") @uniss.VarChar(1024)
+  licence_date            DateTime?             @uniss.Date
+  militar_grade_fk        String?               @uniss.VarChar(1024)
+  militar_type_fk         String?               @uniss.VarChar(1024)
+  student_fk              String?               @unique @uniss.VarChar(1024)
+  militar_specialty_fk    String?               @uniss.VarChar(1024)
+  matriculated_student_fk String?               @uniss.VarChar(1024)
+  matriculated_student    matriculated_student? @relation(fields: [matriculated_student_fk], references: [id_matriculated_student], onDelete: Cascade, map: "fk_militar_service_matriculatedstudent_militarservice")
+  student                 student?              @relation(fields: [student_fk], references: [id_student], onDelete: Cascade, map: "fk_militar_service_student_militarservice")
+}
+
+model militar_specialty {
+  id_militar_specialty String  @id(map: "pk_militar_specialty") @uniss.VarChar(1024)
+  name                 String? @uniss.VarChar(1024)
+  cancelled            Boolean
+}
+
+model militar_type {
+  id_militar_type String  @id(map: "pk_militar_type") @uniss.VarChar(1024)
+  kind            String? @uniss.VarChar(1024)
+  cancelled       Boolean
+}
+
+model mother_information {
+  id_mother_information   String                @id(map: "pk_mother_information") @uniss.VarChar(1024)
+  name                    String?               @uniss.VarChar(1024)
+  salary                  Float?                @uniss.Real
+  dead                    Boolean               @default(false)
+  ocupation_fk            String?               @uniss.VarChar(1024)
+  matriculated_student_fk String?               @uniss.VarChar(1024)
+  politic_org_fk          String?               @uniss.VarChar(1024)
+  academic_level_fk       String?               @uniss.VarChar(1024)
+  student_fk              String?               @unique @uniss.VarChar(1024)
+  matriculated_student    matriculated_student? @relation(fields: [matriculated_student_fk], references: [id_matriculated_student], onDelete: Cascade, map: "fk_mother_information_matriculatedstudent_motherinformation")
+  student                 student?              @relation(fields: [student_fk], references: [id_student], onDelete: Cascade, map: "fk_mother_information_student_motherinformation")
+}
+
+model national_career {
+  id_national_career     String                   @id(map: "pk_national_career") @uniss.VarChar(1024)
+  code                   String?                  @uniss.VarChar(1024)
+  name                   String?                  @uniss.VarChar(1024)
+  diploma                String?                  @uniss.VarChar(1024)
+  cancelled              Boolean
+  scienc_especialty_fk   String?                  @uniss.VarChar(1024)
+  preinscription_student preinscription_student[]
+}
+
+model o_n_g {
+  id_o_n_g                     String                         @id(map: "pk_o_n_g") @uniss.VarChar(1024)
+  name                         String?                        @uniss.VarChar(1024)
+  cancelled                    Boolean
+  matriculated_students2o_n_gs matriculated_students2o_n_gs[]
+  o_n_gs2students              o_n_gs2students[]
+}
+
+model o_n_gs2students {
+  o_n_gs_fk   String  @uniss.VarChar(1024)
+  students_fk String  @uniss.VarChar(1024)
+  student     student @relation(fields: [students_fk], references: [id_student], onDelete: Cascade, map: "fk_o_n_gs2students_ongs")
+  o_n_g       o_n_g   @relation(fields: [o_n_gs_fk], references: [id_o_n_g], onDelete: NoAction, map: "fk_o_n_gs2students_students")
+
+  @@id([o_n_gs_fk, students_fk], map: "pk_o_n_gs2students")
+}
+
+model ocupation {
+  id_ocupation                                                                  String                   @id(map: "pk_ocupation") @uniss.VarChar(1024)
+  name                                                                          String?                  @uniss.VarChar(1024)
+  cancelled                                                                     Boolean
+  preinscription_student_preinscription_student_father_occupation_fkToocupation preinscription_student[] @relation("preinscription_student_father_occupation_fkToocupation")
+  preinscription_student_preinscription_student_mother_occupation_fkToocupation preinscription_student[] @relation("preinscription_student_mother_occupation_fkToocupation")
+}
+
+model optional_course {
+  optional_course_id String   @id(map: "pk_electivel_subject") @uniss.VarChar(1024)
+  real_time          Int
+  estimated_time     Int
+  cancelled          Boolean  @default(false)
+  subject_fk         String?  @uniss.VarChar(1024)
+  subject            subject? @relation(fields: [subject_fk], references: [subject_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_optional_course_subject")
+}
+
+model organism {
+  id_organism String  @id(map: "pk_organism") @uniss.VarChar(1024)
+  name        String? @uniss.VarChar(1024)
+  cancelled   Boolean
+  code        String? @uniss.VarChar
+  initials    String? @uniss.VarChar
+}
+
+model orphan {
+  id_orphan            String                 @id(map: "pk_orphan") @uniss.VarChar(1024)
+  kind                 String?                @uniss.VarChar(1024)
+  cancelled            Boolean
+  matriculated_student matriculated_student[]
+  student              student[]
+}
+
+model periodic_evaluation {
+  periodic_evaluation_id      String                    @id(map: "pk_periodic_evaluation") @uniss.VarChar(1024)
+  periodic_evaluation_type_fk String?                   @uniss.VarChar(1024)
+  user_name                   String?                   @uniss.VarChar(1024)
+  host                        String?                   @uniss.VarChar(1024)
+  cancelled                   Boolean?
+  subject_fk                  String?                   @uniss.VarChar(1024)
+  student_fk                  String?                   @uniss.VarChar(1024)
+  group_fk                    String?                   @uniss.VarChar(1024)
+  date                        DateTime?                 @uniss.Date
+  week                        Int?
+  professor_fk                String?                   @uniss.VarChar(1024)
+  evaluation_value_fk         String?                   @uniss.VarChar(1024)
+  professor_name              String?                   @uniss.VarChar(1024)
+  deleted                     Boolean?
+  periodic_evaluation_type    periodic_evaluation_type? @relation(fields: [periodic_evaluation_type_fk], references: [periodic_evaluation_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_periodic_evaluation_periodicevaluationtype")
+}
+
+model periodic_evaluation_type {
+  periodic_evaluation_type_id String                @id(map: "pk_periodic_evaluation_type") @uniss.VarChar(1024)
+  name                        String?               @uniss.VarChar(1024)
+  code                        String?               @uniss.VarChar(1024)
+  priority                    Int?
+  cancelled                   Boolean?
+  periodic_evaluation         periodic_evaluation[]
+}
+
+model planner_resource {
+  id            String  @id(map: "pk_planner_resource") @uniss.VarChar(1024)
+  resource_id   String? @uniss.VarChar(1024)
+  resource_type Int
+  user_fk       String? @uniss.VarChar(1024)
+  xuser         xuser?  @relation(fields: [user_fk], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_planner_resource_user_plannerresources")
+}
+
+model politic_org {
+  id_politic_org       String                 @id(map: "pk_politic_org") @uniss.VarChar(1024)
+  name                 String?                @uniss.VarChar(1024)
+  cancelled            Boolean
+  matriculated_student matriculated_student[]
+  student              student[]
+}
+
+model popular_org {
+  id_popular_org                 String                           @id(map: "pk_popular_org") @uniss.VarChar(1024)
+  name                           String?                          @uniss.VarChar(1024)
+  cancelled                      Boolean
+  matriculated_students2popular_ matriculated_students2popular_[]
+  popular_orgs2students          popular_orgs2students[]
+}
+
+model popular_orgs2students {
+  popular_orgs_fk String      @uniss.VarChar(1024)
+  students_fk     String      @uniss.VarChar(1024)
+  student         student     @relation(fields: [students_fk], references: [id_student], onDelete: Cascade, map: "fk_popular_orgs2students_popularorgs")
+  popular_org     popular_org @relation(fields: [popular_orgs_fk], references: [id_popular_org], onDelete: NoAction, map: "fk_popular_orgs2students_students")
+
+  @@id([popular_orgs_fk, students_fk], map: "pk_popular_orgs2students")
+}
+
+model preinscription_evaluation {
+  id_evaluation             String                  @id(map: "pk_preinscription_evaluation") @uniss.VarChar(1024)
+  evaluation                Float                   @uniss.Real
+  entry_subject_fk          String?                 @uniss.VarChar(1024)
+  preinscription_student_fk String?                 @uniss.VarChar(1024)
+  entry_subject             entry_subject?          @relation(fields: [entry_subject_fk], references: [id_entry_subject], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_evaluation_entrysubject")
+  preinscription_student    preinscription_student? @relation(fields: [preinscription_student_fk], references: [id_preinscription], onDelete: Cascade, onUpdate: NoAction, map: "fk_preinscription_evaluation_preinscriptionstudent_prei_1r9d4z")
+}
+
+model preinscription_student {
+  id_preinscription                                                              String                      @id(map: "pk_preinscription_student") @uniss.VarChar(1024)
+  identification                                                                 String?                     @uniss.VarChar(1024)
+  name                                                                           String?                     @uniss.VarChar(1024)
+  middle_name                                                                    String?                     @uniss.VarChar(1024)
+  last_name                                                                      String?                     @uniss.VarChar(1024)
+  address                                                                        String?                     @uniss.VarChar(1024)
+  academic_index                                                                 Float                       @uniss.Real
+  scale                                                                          Float                       @uniss.Real
+  option                                                                         Int                         @default(dbgenerated("(-1)"))
+  reoffer                                                                        Boolean                     @default(false)
+  deferred                                                                       Int
+  national_career_fk                                                             String?                     @uniss.VarChar(1024)
+  town_fk                                                                        String?                     @uniss.VarChar(1024)
+  entry_source_fk                                                                String?                     @uniss.VarChar(1024)
+  mother_occupation_fk                                                           String?                     @uniss.VarChar(1024)
+  country_fk                                                                     String?                     @uniss.VarChar(1024)
+  father_occupation_fk                                                           String?                     @uniss.VarChar(1024)
+  sex_fk                                                                         String?                     @uniss.VarChar(1024)
+  father_academic_level_fk                                                       String?                     @uniss.VarChar(1024)
+  skin_color_fk                                                                  String?                     @uniss.VarChar(1024)
+  course_type_fk                                                                 String?                     @uniss.VarChar(1024)
+  mother_academic_level_fk                                                       String?                     @uniss.VarChar(1024)
+  preinscription_evaluation                                                      preinscription_evaluation[]
+  country                                                                        country?                    @relation(fields: [country_fk], references: [id_country], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_country")
+  course_type                                                                    course_type?                @relation(fields: [course_type_fk], references: [id_course_type], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_coursetype")
+  entry_source                                                                   entry_source?               @relation(fields: [entry_source_fk], references: [id_entry_source], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_entrysource")
+  academic_level_preinscription_student_father_academic_level_fkToacademic_level academic_level?             @relation("preinscription_student_father_academic_level_fkToacademic_level", fields: [father_academic_level_fk], references: [id_academic_level], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_fatheracademiclevel")
+  ocupation_preinscription_student_father_occupation_fkToocupation               ocupation?                  @relation("preinscription_student_father_occupation_fkToocupation", fields: [father_occupation_fk], references: [id_ocupation], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_fatheroccupation")
+  academic_level_preinscription_student_mother_academic_level_fkToacademic_level academic_level?             @relation("preinscription_student_mother_academic_level_fkToacademic_level", fields: [mother_academic_level_fk], references: [id_academic_level], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_motheracademiclevel")
+  ocupation_preinscription_student_mother_occupation_fkToocupation               ocupation?                  @relation("preinscription_student_mother_occupation_fkToocupation", fields: [mother_occupation_fk], references: [id_ocupation], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_motheroccupation")
+  national_career                                                                national_career?            @relation(fields: [national_career_fk], references: [id_national_career], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_nationalcareer")
+  sex                                                                            sex?                        @relation(fields: [sex_fk], references: [id_sex], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_sex")
+  skin_color                                                                     skin_color?                 @relation(fields: [skin_color_fk], references: [id_skin_color], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_skincolor")
+  town                                                                           town?                       @relation(fields: [town_fk], references: [id_town], onDelete: NoAction, onUpdate: NoAction, map: "fk_preinscription_student_town")
+}
+
+model professor {
+  professor_id            String                    @id(map: "pk_professor") @uniss.VarChar(1024)
+  cancelled               Boolean?
+  user_fk                 String?                   @uniss.VarChar(1024)
+  department_fk           String?                   @uniss.VarChar(1024)
+  scientific_category     String?                   @uniss.VarChar(1024)
+  teaching_category       String?                   @uniss.VarChar(1024)
+  assistance_record       assistance_record[]
+  evaluative_court_header evaluative_court_header[]
+  student_cut             student_cut[]
+}
+
+model province {
+  id_province String  @id(map: "pk_province") @uniss.VarChar(1024)
+  name        String? @uniss.VarChar(1024)
+  cancelled   Boolean
+  code        String? @uniss.VarChar
+}
+
+model rematriculated {
+  rematriculated_id String  @id(map: "pk_rematriculated") @uniss.VarChar(1024)
+  student_fk        String? @uniss.VarChar(1024)
+  course_fk         String? @uniss.VarChar(1024)
+}
+
+model report {
+  report_id          String               @id(map: "pk_report") @uniss.VarChar(1024)
+  name               String?              @uniss.VarChar(1024)
+  description        String?              @uniss.VarChar(1024)
+  area               String?              @uniss.VarChar(1024)
+  type               String?              @uniss.VarChar(1024)
+  d_s_s_report_trace d_s_s_report_trace[]
+}
+
+model scholastic_origin {
+  id_scholastic_origin String                 @id(map: "pk_scholastic_origin") @uniss.VarChar(1024)
+  name                 String?                @uniss.VarChar(1024)
+  cancelled            Boolean
+  matriculated_student matriculated_student[]
+  student              student[]
+}
+
+model scienc_especialty {
+  id_scienc_especialty String  @id(map: "pk_scienc_especialty") @uniss.VarChar(1024)
+  name                 String? @uniss.VarChar(1024)
+  cancelled            Boolean
+}
+
+model security_level {
+  id          String  @id(map: "pk_security_level") @uniss.VarChar(1024)
+  name        String? @uniss.VarChar(1024)
+  cancelled   Boolean
+  description String? @uniss.VarChar(1024)
+  xuser       xuser[]
+}
+
+model security_role {
+  id                   String                 @id(map: "pk_security_role") @uniss.VarChar(1024)
+  role_name            String?                @uniss.VarChar(1024)
+  group_name           String?                @uniss.VarChar(1024)
+  description          String?                @uniss.VarChar(1024)
+  role_link            String?                @uniss.VarChar(1024)
+  cancelled            Boolean
+  security_roles2users security_roles2users[]
+}
+
+model security_roles2users {
+  security_roles_fk String        @uniss.VarChar(1024)
+  users_fk          String        @uniss.VarChar(1024)
+  xuser             xuser         @relation(fields: [users_fk], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_security_roles2users_securityroles")
+  security_role     security_role @relation(fields: [security_roles_fk], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_security_roles2users_user_securityroles")
+
+  @@id([security_roles_fk, users_fk], map: "pk_security_roles2users")
+}
+
+model sex {
+  id_sex                 String                   @id(map: "pk_sex") @uniss.VarChar(1024)
+  kind                   String?                  @uniss.VarChar(1024)
+  cancelled              Boolean
+  matriculated_student   matriculated_student[]
+  preinscription_student preinscription_student[]
+  student                student[]
+}
+
+model skin_color {
+  id_skin_color          String                   @id(map: "pk_skin_color") @uniss.VarChar(1024)
+  name                   String?                  @uniss.VarChar(1024)
+  cancelled              Boolean
+  matriculated_student   matriculated_student[]
+  preinscription_student preinscription_student[]
+  student                student[]
+}
+
+model student {
+  id_student                     String                           @id(map: "pk_student") @uniss.VarChar(1024)
+  identification                 String?                          @uniss.VarChar(1024)
+  name                           String?                          @uniss.VarChar(1024)
+  middle_name                    String?                          @uniss.VarChar(1024)
+  last_name                      String?                          @uniss.VarChar(1024)
+  native_of                      String?                          @uniss.VarChar(1024)
+  birth_date                     DateTime?                        @uniss.Date
+  address                        String?                          @uniss.VarChar(1024)
+  son_count                      Int?
+  phone                          String?                          @uniss.VarChar(1024)
+  email                          String?                          @uniss.VarChar(1024)
+  higher_education_in_date       DateTime?                        @uniss.Date
+  university_in_date             DateTime?                        @uniss.Date
+  register_date                  DateTime?                        @uniss.Timestamp(6)
+  scale                          Float?                           @uniss.Real
+  academic_index                 Float?                           @uniss.Real
+  country_fk                     String                           @uniss.VarChar(1024)
+  student_type_fk                String                           @uniss.VarChar(1024)
+  career_fk                      String?                          @uniss.VarChar(1024)
+  entry_source_fk                String                           @uniss.VarChar(1024)
+  course_type_fk                 String                           @uniss.VarChar(1024)
+  scholastic_origin_fk           String                           @uniss.VarChar(1024)
+  politic_org_fk                 String                           @uniss.VarChar(1024)
+  sex_fk                         String                           @uniss.VarChar(1024)
+  town_university_fk             String?                          @uniss.VarChar(1024)
+  marital_status_fk              String                           @uniss.VarChar(1024)
+  study_regimen_fk               String                           @uniss.VarChar(1024)
+  academic_situation_fk          String                           @uniss.VarChar(1024)
+  town_fk                        String?                          @uniss.VarChar(1024)
+  skin_color_fk                  String                           @uniss.VarChar(1024)
+  student_status_fk              String?                          @uniss.VarChar(1024)
+  faculty_fk                     String?                          @uniss.VarChar(1024)
+  orphan_fk                      String                           @uniss.VarChar(1024)
+  photo                          String?                          @uniss.VarChar(1024)
+  reoffer                        Boolean?                         @default(false)
+  option                         Int?
+  block                          Boolean?
+  assigned_study_program_version assigned_study_program_version[]
+  assistance_record              assistance_record[]
+  assistant_student_file         assistant_student_file[]
+  entry_evaluation               entry_evaluation[]
+  evaluation                     evaluation[]
+  father_information             father_information?
+  groups2students                groups2students[]
+  laboral_information            laboral_information?
+  matriculated_subject           matriculated_subject[]
+  militar_service                militar_service?
+  mother_information             mother_information?
+  o_n_gs2students                o_n_gs2students[]
+  popular_orgs2students          popular_orgs2students[]
+  academic_situation             academic_situation               @relation(fields: [academic_situation_fk], references: [id_academic_situation], onDelete: NoAction, map: "fk_student_academicsituation")
+  career                         career?                          @relation(fields: [career_fk], references: [id_career], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_career")
+  country                        country                          @relation(fields: [country_fk], references: [id_country], onDelete: NoAction, map: "fk_student_country")
+  course_type                    course_type                      @relation(fields: [course_type_fk], references: [id_course_type], onDelete: NoAction, map: "fk_student_coursetype")
+  entry_source                   entry_source                     @relation(fields: [entry_source_fk], references: [id_entry_source], onDelete: NoAction, map: "fk_student_entrysource")
+  faculty                        faculty?                         @relation(fields: [faculty_fk], references: [id_faculty], onDelete: NoAction, map: "fk_student_faculty")
+  marital_status                 marital_status                   @relation(fields: [marital_status_fk], references: [id_marital_status], onDelete: NoAction, map: "fk_student_maritalstatus")
+  orphan                         orphan                           @relation(fields: [orphan_fk], references: [id_orphan], onDelete: NoAction, map: "fk_student_orphan")
+  politic_org                    politic_org                      @relation(fields: [politic_org_fk], references: [id_politic_org], onDelete: NoAction, map: "fk_student_politicorg")
+  scholastic_origin              scholastic_origin                @relation(fields: [scholastic_origin_fk], references: [id_scholastic_origin], onDelete: NoAction, map: "fk_student_scholasticorigin")
+  sex                            sex                              @relation(fields: [sex_fk], references: [id_sex], onDelete: NoAction, map: "fk_student_sex")
+  skin_color                     skin_color                       @relation(fields: [skin_color_fk], references: [id_skin_color], onDelete: NoAction, map: "fk_student_skincolor")
+  student_status                 student_status?                  @relation(fields: [student_status_fk], references: [id_student_status], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_studentstatus")
+  student_type                   student_type                     @relation(fields: [student_type_fk], references: [id_student_class], onDelete: NoAction, map: "fk_student_studenttype")
+  study_regimen                  study_regimen                    @relation(fields: [study_regimen_fk], references: [id_study_regimen], onDelete: NoAction, map: "fk_student_studyregimen")
+  town                           town?                            @relation(fields: [town_fk], references: [id_town], onDelete: NoAction, map: "fk_student_town")
+  town_university                town_university?                 @relation(fields: [town_university_fk], references: [id_town_university], onDelete: NoAction, map: "fk_student_townuniversity")
+  student2career_profiles        student2career_profiles[]
+  student_cut                    student_cut[]
+  student_status_history         student_status_history[]
+  student_volume_folio           student_volume_folio[]
+}
+
+model student2career_profiles {
+  student_id        String         @uniss.VarChar
+  career_profile_id String         @uniss.VarChar
+  career_profile    career_profile @relation(fields: [career_profile_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  student           student        @relation(fields: [student_id], references: [id_student], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([student_id, career_profile_id])
+}
+
+model student_award {
+  id_award_student        String    @id(map: "pk_student_award") @uniss.VarChar(1024)
+  student_fk              String?   @uniss.VarChar(1024)
+  matriculated_subject_fk String?   @uniss.VarChar(1024)
+  award_fk                String?   @uniss.VarChar(1024)
+  create_date             DateTime? @uniss.Timestamp(6)
+  user_name               String?   @uniss.VarChar(1024)
+  host                    String?   @uniss.VarChar(1024)
+  course_fk               String?   @uniss.VarChar(1024)
+  assigned_date           DateTime? @uniss.Timestamp(6)
+}
+
+model student_bonus {
+  id_bonus_student String    @id(map: "pk_student_bonus") @uniss.VarChar(1024)
+  period           Int
+  create_date      DateTime? @uniss.Timestamp(6)
+  student_fk       String?   @uniss.VarChar(1024)
+  bonus_fk         String?   @uniss.VarChar(1024)
+  user_name        String?   @uniss.VarChar(1024)
+  host             String?   @uniss.VarChar(1024)
+  assigned_date    DateTime? @uniss.Timestamp(6)
+  course_fk        String?   @uniss.VarChar(1024)
+  description      String?   @uniss.VarChar(1024)
+}
+
+model student_cut {
+  student_cut_id             String                   @id(map: "pk_student_cut") @uniss.VarChar(1024)
+  cant_hours_ausent          Int
+  ausent_percent             Float                    @uniss.Real
+  date                       DateTime?                @uniss.Date
+  evaluations_cuts_fk        String?                  @uniss.VarChar(1024)
+  cualitative_evaluation_fk  String?                  @uniss.VarChar(1024)
+  professor_fk               String?                  @uniss.VarChar(1024)
+  subject_fk                 String?                  @uniss.VarChar(1024)
+  student_fk                 String?                  @uniss.VarChar(1024)
+  group_fk                   String?                  @uniss.VarChar(1024)
+  consecutive                Int?
+  evaluative_court_header_fk String?                  @uniss.VarChar(1024)
+  evaluative_court_header    evaluative_court_header? @relation(fields: [evaluative_court_header_fk], references: [evaluative_court_header_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_evaluative_court_header")
+  cualitative_evaluation     cualitative_evaluation?  @relation(fields: [cualitative_evaluation_fk], references: [cualitative_evaluation_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_cut_cualitativeevaluation")
+  evaluations_cuts           evaluations_cuts?        @relation(fields: [evaluations_cuts_fk], references: [evaluations_cuts_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_cut_evaluationscuts")
+  xgroup                     xgroup?                  @relation(fields: [group_fk], references: [id_group], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_cut_group")
+  professor                  professor?               @relation(fields: [professor_fk], references: [professor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_cut_professor")
+  student                    student?                 @relation(fields: [student_fk], references: [id_student], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_cut_student")
+  subject                    subject?                 @relation(fields: [subject_fk], references: [subject_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_cut_subject")
+}
+
+model student_group_type {
+  student_group_type_id String            @id(map: "pk_student_group_type") @uniss.VarChar(1024)
+  name                  String?           @uniss.VarChar(1024)
+  cancelled             Boolean
+  uniqued               Boolean
+  groups2students       groups2students[]
+}
+
+model student_status {
+  id_student_status      String                   @id(map: "pk_student_status") @uniss.VarChar(1024)
+  kind                   String?                  @uniss.VarChar(1024)
+  cancelled              Boolean
+  student                student[]
+  student_status_history student_status_history[]
+}
+
+model student_status_history {
+  id_student_status_history    String                   @id(map: "pk_student_status_history") @uniss.VarChar(1024)
+  date                         DateTime?                @uniss.Timestamp(6)
+  comment                      String?                  @uniss.VarChar(1024)
+  cancelled                    Boolean                  @default(false)
+  student_status_fk            String?                  @uniss.VarChar(1024)
+  student_fk                   String?                  @uniss.VarChar(1024)
+  end_date                     DateTime?                @uniss.Timestamp(6)
+  previous_history_fk          String?                  @uniss.VarChar(1024)
+  course_fk                    String?                  @uniss.VarChar(1024)
+  course                       course?                  @relation(fields: [course_fk], references: [id_course], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_status_history_course")
+  student_status_history       student_status_history?  @relation("student_status_historyTostudent_status_history", fields: [previous_history_fk], references: [id_student_status_history], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_status_history_previoushistory")
+  other_student_status_history student_status_history[] @relation("student_status_historyTostudent_status_history")
+  student                      student?                 @relation(fields: [student_fk], references: [id_student], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_status_history_student_studentstatushistories")
+  student_status               student_status?          @relation(fields: [student_status_fk], references: [id_student_status], onDelete: NoAction, onUpdate: NoAction, map: "fk_student_status_history_studentstatus")
+}
+
+model student_type {
+  id_student_class     String                 @id(map: "pk_student_type") @uniss.VarChar(1024)
+  kind                 String?                @uniss.VarChar(1024)
+  cancelled            Boolean
+  matriculated_student matriculated_student[]
+  student              student[]
+}
+
+model student_volume_folio {
+  id               Int      @id(map: "students_volume_folio_pkey") @default(autoincrement())
+  volume_faculty   Int?
+  volume_institute Int?
+  folio_faculty    Int?
+  folio_institute  Int?
+  student_fk       String?  @uniss.VarChar(1024)
+  student          student? @relation(fields: [student_fk], references: [id_student], onDelete: NoAction, onUpdate: NoAction, map: "fk_studentvolumefolio_student")
+}
+
+model study_program {
+  study_program_id      String                  @id(map: "pk_custom_study_program") @uniss.VarChar(1024)
+  name                  String?                 @uniss.VarChar(1024)
+  periods_amount        Int
+  description           String?                 @uniss.VarChar(1024)
+  cancelled             Boolean                 @default(false)
+  study_program_name_fk String?                 @uniss.VarChar(1024)
+  career_fk             String?                 @uniss.VarChar(1024)
+  course_fk             String?                 @uniss.VarChar(1024)
+  approved              Boolean                 @default(false)
+  years_amount          Int?
+  career                career?                 @relation(fields: [career_fk], references: [id_career], onDelete: NoAction, onUpdate: NoAction, map: "fk_study_program_career")
+  course                course?                 @relation(fields: [course_fk], references: [id_course], onDelete: NoAction, onUpdate: NoAction, map: "fk_study_program_course")
+  study_program_name    study_program_name?     @relation(fields: [study_program_name_fk], references: [study_program_name_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_study_program_studyprogramname")
+  study_program_version study_program_version[]
+}
+
+model study_program_name {
+  study_program_name_id String          @id(map: "pk_study_program_name") @uniss.VarChar(1024)
+  name                  String?         @uniss.VarChar(1024)
+  code                  String?         @uniss.VarChar(1024)
+  cancelled             Boolean
+  study_program         study_program[]
+}
+
+model study_program_version {
+  study_program_version_id       String                           @id(map: "pk_study_program_version") @uniss.VarChar(1024)
+  name                           String?                          @uniss.VarChar(1024)
+  cancelled                      Boolean                          @default(false)
+  study_program_fk               String?                          @uniss.VarChar(1024)
+  course_fk                      String?                          @uniss.VarChar(1024)
+  assigned_department            assigned_department[]
+  assigned_study_program_version assigned_study_program_version[]
+  assigned_subjects2study_progra assigned_subjects2study_progra[]
+  course                         course?                          @relation(fields: [course_fk], references: [id_course], onDelete: NoAction, onUpdate: NoAction, map: "fk_study_program_version_course")
+  study_program                  study_program?                   @relation(fields: [study_program_fk], references: [study_program_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_study_program_version_studyprogram")
+  xgroup                         xgroup[]
+}
+
+model study_regimen {
+  id_study_regimen     String                 @id(map: "pk_study_regimen") @uniss.VarChar(1024)
+  name                 String?                @uniss.VarChar(1024)
+  cancelled            Boolean
+  matriculated_student matriculated_student[]
+  student              student[]
+}
+
+model subject {
+  subject_id           String                 @id(map: "pk_subject") @uniss.VarChar(1024)
+  topics_program       String?
+  analytical_program   String?
+  period               Int?
+  hours                Int
+  cancelled            Boolean                @default(false)
+  basic                Boolean                @default(false)
+  year                 Int?
+  subject_name_fk      String?                @uniss.VarChar(1024)
+  discipline_fk        String?                @uniss.VarChar(1024)
+  evaluation_type_fk   String?                @uniss.VarChar(1024)
+  assigned_subject_fk  String?                @uniss.VarChar(1024)
+  adjustment_subject   adjustment_subject[]
+  assistance_record    assistance_record[]
+  matriculated_subject matriculated_subject[]
+  optional_course      optional_course[]
+  student_cut          student_cut[]
+  assigned_subject     assigned_subject?      @relation(fields: [assigned_subject_fk], references: [assigned_subject_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_subject_assignedsubject_subjects")
+  discipline           discipline?            @relation(fields: [discipline_fk], references: [discipline_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_subject_discipline")
+  evaluation_type      evaluation_type?       @relation(fields: [evaluation_type_fk], references: [evaluation_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_subject_evaluationtype")
+  subject_name         subject_name?          @relation(fields: [subject_name_fk], references: [subject_name_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_subject_subjectname")
+  subject_group        subject_group[]
+
+  @@index([assigned_subject_fk], map: "idx_s_asigned_subject")
+}
+
+model subject_configuration {
+  subject_configuration_id String   @id(map: "pk_subject_configuration") @uniss.VarChar(1024)
+  cancelled                Boolean?
+  course_fk                String?  @uniss.VarChar(1024)
+  subject_fk               String?  @uniss.VarChar(1024)
+}
+
+model subject_group {
+  id                           String                     @id(map: "pk_subject_group") @uniss.VarChar(1024)
+  averageable                  Boolean                    @default(true)
+  matriculated_subject_type_fk String?                    @uniss.VarChar(1024)
+  subject_fk                   String?                    @uniss.VarChar(1024)
+  group_fk                     String?                    @uniss.VarChar(1024)
+  assigned_subject_group       assigned_subject_group[]
+  xgroup                       xgroup?                    @relation(fields: [group_fk], references: [id_group], onDelete: NoAction, onUpdate: NoAction, map: "fk_subject_group_group_subjectgroups")
+  matriculated_subject_type    matriculated_subject_type? @relation(fields: [matriculated_subject_type_fk], references: [matriculated_subject_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_subject_group_matriculatedsubjecttype")
+  subject                      subject?                   @relation(fields: [subject_fk], references: [subject_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_subject_group_subject")
+
+  @@unique([subject_fk, group_fk], map: "unq_subject_group")
+}
+
+model subject_name {
+  subject_name_id String    @id(map: "pk_subject_name") @uniss.VarChar(1024)
+  code            String?   @uniss.VarChar(1024)
+  name            String?   @uniss.VarChar(1024)
+  abbreviation    String?   @uniss.VarChar(1024)
+  cancelled       Boolean   @default(false)
+  subject         subject[]
+}
+
+model syndicate {
+  id_syndicate String  @id(map: "pk_syndicate") @uniss.VarChar(1024)
+  name         String? @uniss.VarChar(1024)
+  cancelled    Boolean
+}
+
+model town {
+  id_town                String                   @id(map: "pk_town") @uniss.VarChar(1024)
+  name                   String?                  @uniss.VarChar(1024)
+  cancelled              Boolean
+  province_fk            String?                  @uniss.VarChar(1024)
+  code                   String?                  @uniss.VarChar
+  matriculated_student   matriculated_student[]
+  preinscription_student preinscription_student[]
+  student                student[]
+}
+
+model town_universities2users {
+  town_universities_fk String          @uniss.VarChar(1024)
+  users_fk             String          @uniss.VarChar(1024)
+  xuser                xuser           @relation(fields: [users_fk], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_town_universities2users_townuniversities")
+  town_university      town_university @relation(fields: [town_universities_fk], references: [id_town_university], onDelete: NoAction, onUpdate: NoAction, map: "fk_town_universities2users_user_townuniversities")
+
+  @@id([town_universities_fk, users_fk], map: "pk_town_universities2users")
+}
+
+model town_university {
+  id_town_university         String                    @id(map: "pk_town_university") @uniss.VarChar(1024)
+  name                       String?                   @uniss.VarChar(1024)
+  initial                    String?                   @uniss.VarChar(1024)
+  address                    String?                   @uniss.VarChar(1024)
+  phone_number               String?                   @uniss.VarChar(1024)
+  fax                        String?                   @uniss.VarChar(1024)
+  rector_name                String?                   @uniss.VarChar(1024)
+  general_secretary_name     String?                   @uniss.VarChar(1024)
+  graduation_date            DateTime?                 @uniss.Date
+  matriculation_end_date     DateTime?                 @uniss.Date
+  rematriculation_begin_date DateTime?                 @uniss.Date
+  rematriculation_end_date   DateTime?                 @uniss.Date
+  matriculation_begin_date   DateTime?                 @uniss.Date
+  activities                 String?                   @uniss.VarChar(1024)
+  logo                       String?                   @uniss.VarChar(1024)
+  bylaw                      String?                   @uniss.VarChar(1024)
+  cancelled                  Boolean                   @default(false)
+  town_fk                    String?                   @uniss.VarChar(1024)
+  university_fk              String?                   @uniss.VarChar(1024)
+  code                       String?                   @uniss.VarChar(1024)
+  i_p_access                 i_p_access[]
+  matriculated_student       matriculated_student[]
+  student                    student[]
+  town_universities2users    town_universities2users[]
+}
+
+model transfer {
+  id_transfer                              String  @id(map: "pk_transfer") @uniss.VarChar(1024)
+  target_career_fk                         String? @uniss.VarChar(1024)
+  source_career_fk                         String? @uniss.VarChar(1024)
+  drop_fk                                  String? @uniss.VarChar(1024)
+  xdrop                                    xdrop?  @relation(fields: [drop_fk], references: [id_drop], onDelete: NoAction, onUpdate: NoAction, map: "fk_transfer_drop")
+  career_transfer_source_career_fkTocareer career? @relation("transfer_source_career_fkTocareer", fields: [source_career_fk], references: [id_career], onDelete: NoAction, onUpdate: NoAction, map: "transfer_source_career_fk")
+  career_transfer_target_career_fkTocareer career? @relation("transfer_target_career_fkTocareer", fields: [target_career_fk], references: [id_career], onDelete: NoAction, onUpdate: NoAction, map: "transfer_target_career_fk")
+}
+
+model universities2users {
+  universities_fk String     @uniss.VarChar(1024)
+  users_fk        String     @uniss.VarChar(1024)
+  xuser           xuser      @relation(fields: [users_fk], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_universities2users_universities")
+  university      university @relation(fields: [universities_fk], references: [id_university], onDelete: NoAction, onUpdate: NoAction, map: "fk_universities2users_user_universities")
+
+  @@id([universities_fk, users_fk], map: "pk_universities2users")
+}
+
+model university {
+  id_university              String               @id(map: "pk_university") @uniss.VarChar(1024)
+  name                       String?              @uniss.VarChar(1024)
+  initial                    String?              @uniss.VarChar(1024)
+  address                    String?              @uniss.VarChar(1024)
+  phone_number               String?              @uniss.VarChar(1024)
+  fax                        String?              @uniss.VarChar(1024)
+  rector_name                String?              @uniss.VarChar(1024)
+  general_secretary_name     String?              @uniss.VarChar(1024)
+  graduation_date            DateTime?            @uniss.Date
+  matriculation_begin_date   DateTime?            @uniss.Date
+  matriculation_end_date     DateTime?            @uniss.Date
+  rematriculation_begin_date DateTime?            @uniss.Date
+  rematriculation_end_date   DateTime?            @uniss.Date
+  activities                 String?              @uniss.VarChar(1024)
+  logo                       String?              @uniss.VarChar(1024)
+  bylaw                      String?              @uniss.VarChar(1024)
+  cancelled                  Boolean
+  course_fk                  String?              @uniss.VarChar(1024)
+  town_fk                    String?              @uniss.VarChar(1024)
+  code                       String?              @uniss.VarChar(1024)
+  closure                    Boolean?
+  start                      Boolean?
+  promote                    Boolean?
+  universities2users         universities2users[]
+}
+
+model w_s_connection {
+  id       String  @id(map: "pk_w_s_connection") @uniss.VarChar(1024)
+  wsdl_url String? @uniss.VarChar(1024)
+  enabled  Boolean
+  secured  Boolean
+  username String? @uniss.VarChar(1024)
+  password String? @uniss.VarChar(1024)
+}
+
+model xdrop {
+  id_drop                   String       @id(map: "pk_drop") @uniss.VarChar(1024)
+  begin_date                DateTime?    @uniss.Timestamp(6)
+  drop_motive_fk            String?      @uniss.VarChar(1024)
+  student_status_history_fk String?      @uniss.VarChar(1024)
+  course_fk                 String?      @uniss.VarChar(1024)
+  comment                   String?      @uniss.VarChar(1024)
+  year                      String?      @uniss.VarChar(1024)
+  transfer                  transfer[]
+  course                    course?      @relation(fields: [course_fk], references: [id_course], onDelete: NoAction, onUpdate: NoAction, map: "fk_xdrop_course")
+  drop_motive               drop_motive? @relation(fields: [drop_motive_fk], references: [id_drop_motive], onDelete: NoAction, onUpdate: NoAction, map: "fk_xdrop_dropmotive")
+}
+
+model xgroup {
+  id_group                     String                         @id(map: "pk_group") @uniss.VarChar(1024)
+  name                         String?                        @uniss.VarChar(1024)
+  cancelled                    Boolean                        @default(false)
+  group_type_fk                String?                        @uniss.VarChar(1024)
+  career_fk                    String?                        @uniss.VarChar(1024)
+  group_fk                     String?                        @uniss.VarChar(1024)
+  course_fk                    String?                        @uniss.VarChar(1024)
+  study_program_version_fk     String?                        @uniss.VarChar(1024)
+  period_ini                   Int?
+  period_end                   Int?
+  year                         Int?
+  terminal                     Boolean?
+  assistance_record            assistance_record[]
+  groups2matriculated_students groups2matriculated_students[]
+  groups2students              groups2students[]
+  student_cut                  student_cut[]
+  subject_group                subject_group[]
+  career                       career?                        @relation(fields: [career_fk], references: [id_career], onDelete: NoAction, onUpdate: NoAction, map: "fk_xgroup_career")
+  course                       course?                        @relation(fields: [course_fk], references: [id_course], onDelete: NoAction, onUpdate: NoAction, map: "fk_xgroup_course")
+  xgroup                       xgroup?                        @relation("xgroupToxgroup", fields: [group_fk], references: [id_group], onDelete: NoAction, onUpdate: NoAction, map: "fk_xgroup_group_subgroups")
+  other_xgroup                 xgroup[]                       @relation("xgroupToxgroup")
+  group_type                   group_type?                    @relation(fields: [group_type_fk], references: [id_group_type], onDelete: NoAction, onUpdate: NoAction, map: "fk_xgroup_grouptype")
+  study_program_version        study_program_version?         @relation(fields: [study_program_version_fk], references: [study_program_version_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_xgroup_studyprogramversion")
+}
+
+model xuser {
+  id                      String                    @id(map: "pk_user") @uniss.VarChar(1024)
+  username                String?                   @uniss.VarChar(1024)
+  name                    String?                   @uniss.VarChar(1024)
+  password                String?                   @uniss.VarChar(1024)
+  description             String?                   @uniss.VarChar(1024)
+  security_level_fk       String?                   @uniss.VarChar(1024)
+  surname                 String?                   @uniss.VarChar(1024)
+  last_surname            String?                   @uniss.VarChar(1024)
+  identification          String?                   @uniss.VarChar(1024)
+  email                   String?                   @uniss.VarChar(1024)
+  cancelled               Boolean                   @default(false)
+  blocked                 Boolean                   @default(false)
+  remote_user             Boolean
+  last_login_ip           String?                   @uniss.VarChar(1024)
+  last_login_date         DateTime?                 @uniss.Timestamp(6)
+  question                String?                   @uniss.VarChar(1024)
+  d_s_s_report_trace      d_s_s_report_trace[]
+  faculties2users         faculties2users[]
+  planner_resource        planner_resource[]
+  security_roles2users    security_roles2users[]
+  town_universities2users town_universities2users[]
+  universities2users      universities2users[]
+  security_level          security_level?           @relation(fields: [security_level_fk], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_xuser_securitylevel")
 }

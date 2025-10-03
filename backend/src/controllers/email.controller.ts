@@ -19,14 +19,21 @@ const generateVerificationCode = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+
 export const sendWelcomeEmailToUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { email, userName, userType } = req.body;
+    const { 
+      to,           // ← correo de respaldo
+      username,      // ← nombre de usuario
+      userPrincipalName, // ← correo institucional
+      fullName,      // ← nombre completo
+      userType       // ← tipo de usuario
+    } = req.body;
 
-    if (!email) {
+    if (!to) {
       res.status(400).json({
         success: false,
         message: "El correo electrónico es requerido",
@@ -34,14 +41,20 @@ export const sendWelcomeEmailToUser = async (
       return;
     }
 
-    // Usar la plantilla actualizada con nombre y tipo de usuario
-    const info = await sendWelcomeEmail(email, userName, userType);
+    // Usa el nuevo servicio en lugar de sendWelcomeEmail
+    const info = await sendWelcomeEmail(
+      to,           // email destino
+      fullName,     // nombre para el saludo
+      userType,     // tipo de usuario
+      username,     // nombre de usuario
+      userPrincipalName // correo institucional
+    );
 
     res.status(200).json({
       success: true,
       message: "Correo de bienvenida enviado exitosamente",
-      email: email,
-      userName,
+      email: to,
+      userName: fullName,
       userType,
       response: info.response,
       emailStats: {

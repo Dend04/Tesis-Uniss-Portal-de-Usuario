@@ -226,19 +226,43 @@ export default function ActivationPage() {
 
   
 
-  // Función para cuando se completa el proceso
-  const onCompleteActivation = () => {
-    // Aquí puedes enviar todos los datos al backend para crear la cuenta
-    console.log("Datos completos:", {
-      userData: result,
-      username: selectedUsername,
-      email: verifiedEmail,
-      password: password
-    });
+  // Función para cuando se completa el proceso 
+const onCompleteActivation = async () => {
+  try {
+    console.log('Enviando correo de bienvenida a:', verifiedEmail);
     
-    // Redirigir al dashboard
-    window.location.href = "/dashboard";
-  };
+    const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/bienvenido`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: verifiedEmail,
+        username: selectedUsername,
+        userPrincipalName: userPrincipalName,
+        fullName: result?.fullName,
+        userType: result?.type
+      }),
+    });
+
+    const emailResult = await emailResponse.json();
+    
+    if (!emailResponse.ok) {
+      console.warn('Correo no enviado, pero continuando:', emailResult.message);
+      // NO lanzar error, solo loguear advertencia
+    } else {
+      console.log('Correo de bienvenida enviado exitosamente');
+    }
+
+    // Siempre redirigir al dashboard
+    window.location.href = '/dashboard';
+    
+  } catch (error) {
+    console.error('Error en el proceso final:', error);
+    // Aún con error, redirigir al dashboard
+    window.location.href = '/dashboard';
+  }
+};
 
   // Corrección para la animación del logo
   const logoAnimationProps = {

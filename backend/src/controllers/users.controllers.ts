@@ -167,7 +167,6 @@ function formatUserData(entry: any): any {
       : '';
   };
 
-  // ✅ Obtener información de expiración usando la nueva función
   const passwordInfo = getPasswordExpirationInfo(entry);
 
   return {
@@ -185,18 +184,19 @@ function formatUserData(entry: any): any {
     localidad: getAttributeValue('l'),
     provincia: getAttributeValue('st'),
     descripcion: getAttributeValue('description'),
-    titulo: getAttributeValue('title'),
+    titulo: getAttributeValue('title'),           // ✅ AGREGAR title
+    company: getAttributeValue('company'),        // ✅ AGREGAR company
     añoAcademico: getAttributeValue('departmentNumber'),
     tipoEmpleado: getAttributeValue('employeeType'),
     facultad: getAttributeValue('ou'),
     carrera: getAttributeValue('department'),
-    cuentaHabilitada: (parseInt(getAttributeValue('userAccountControl') || '0') & 2) === 0, // 2 = ACCOUNTDISABLE
+    cuentaHabilitada: (parseInt(getAttributeValue('userAccountControl') || '0') & 2) === 0,
     fechaCreacion: getAttributeValue('whenCreated'),
     fechaModificacion: getAttributeValue('whenChanged'),
     ultimoInicioSesion: formatLdapTimestamp(getAttributeValue('lastLogon')),
     ultimoCambioPassword: formatLdapTimestamp(getAttributeValue('pwdLastSet')),
     
-    // ✅ NUEVA INFORMACIÓN MEJORADA DE EXPIRACIÓN
+    // Información de expiración
     userAccountControl: parseInt(getAttributeValue('userAccountControl') || '0'),
     passwordExpira: passwordInfo.passwordExpira,
     diasHastaVencimiento: passwordInfo.diasHastaVencimiento,
@@ -340,7 +340,7 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
     const safeUsername = escapeLDAPValue(sAMAccountName);
     const filter = `(|(sAMAccountName=${safeUsername})(uid=${safeUsername}))`;
     
-    // ✅ INCLUIR EL NUEVO ATRIBUTO EN LA BÚSQUEDA DEL PERFIL
+    // ✅ INCLUIR company Y title EN LA BÚSQUEDA
     const attributes = [
       'cn',
       'sAMAccountName', 
@@ -356,7 +356,8 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
       'l',
       'st',
       'description',
-      'title',
+      'title',           // ✅ AGREGAR title
+      'company',         // ✅ AGREGAR company
       'departmentNumber',
       'employeeType',
       'ou',
@@ -366,7 +367,7 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
       'whenChanged',
       'lastLogon',
       'pwdLastSet',
-      'msDS-UserPasswordExpiryTimeComputed' // ✅ NUEVO ATRIBUTO CLAVE
+      'msDS-UserPasswordExpiryTimeComputed'
     ];
 
     const entries = await unifiedLDAPSearch(filter, attributes);

@@ -6,21 +6,21 @@ import { userDnCache } from "../utils/cache.utils";
 import { auditService } from './audit.services';
 import ldap from "ldapjs";
 
-// ✅ INTERFAZ EXPANDIDA CON TODOS LOS CAMPOS NECESARIOS
+// ✅ INTERFAZ EXPANDIDA CON company Y title
 export interface UserData {
   sAMAccountName: string;
   dn: string;
   nombreCompleto: string;
   email: string;
   employeeID: string;
-  // ✅ NUEVOS CAMPOS REQUERIDOS
   userPrincipalName: string;
   mail: string;
   displayName: string;
-  // ✅ CAMPOS OPCIONALES ADICIONALES
   givenName?: string;
   sn?: string;
   uid?: string;
+  company?: string; // ✅ AGREGAR company
+  title?: string;   // ✅ AGREGAR title
 }
 
 export const getUserProfile = async (username: string): Promise<any> => {
@@ -42,7 +42,16 @@ export const getUserProfile = async (username: string): Promise<any> => {
     const searchOptions: SearchOptions = {
       filter: `(uid=${username})`,
       scope: "sub",
-      attributes: ["cn", "uid", "mail", "givenName", "sn", "displayName"],
+      attributes: [
+        "cn", 
+        "uid", 
+        "mail", 
+        "givenName", 
+        "sn", 
+        "displayName",
+        "company", // ✅ AGREGAR company
+        "title"    // ✅ AGREGAR title
+      ],
     };
     const entries = await searchAsync(
       client,
@@ -61,7 +70,6 @@ export const getUserProfile = async (username: string): Promise<any> => {
       return String(attr.values[0]);
     };
     
-    // ✅ OBJETO COMPATIBLE CON LA INTERFAZ
     const userData = {
       username: getLdapAttribute(entries[0], "uid"),
       nombreCompleto: getLdapAttribute(entries[0], "cn"),
@@ -69,6 +77,8 @@ export const getUserProfile = async (username: string): Promise<any> => {
       nombre: getLdapAttribute(entries[0], "givenName"),
       apellido: getLdapAttribute(entries[0], "sn"),
       displayName: getLdapAttribute(entries[0], "displayName"),
+      company: getLdapAttribute(entries[0], "company"), // ✅ AGREGAR company
+      title: getLdapAttribute(entries[0], "title")      // ✅ AGREGAR title
     };
     
     await auditService.addLogEntry(username, "PROFILE_ACCESS", "Consulta de perfil exitosa");
@@ -84,7 +94,6 @@ export class UserService {
     const cacheKey = `userDn-${username}`;
     const cachedDn = userDnCache.get(cacheKey);
     
-    // ✅ CORRECCIÓN: VERIFICAR QUE EL OBJETO EN CACHÉ SEA UserData VÁLIDO
     if (cachedDn && this.isValidUserData(cachedDn)) {
       console.log('✅ Datos obtenidos desde caché');
       return cachedDn as UserData;
@@ -113,7 +122,9 @@ export class UserService {
           "dn",
           "givenName",
           "sn",
-          "uid"
+          "uid",
+          "company", // ✅ AGREGAR company
+          "title"    // ✅ AGREGAR title
         ],
       };
 
@@ -147,21 +158,21 @@ export class UserService {
         }
       };
 
-      // ✅ OBJETO COMPLETO QUE CUMPLE CON LA INTERFAZ UserData
+      // ✅ OBJETO COMPLETO CON company Y title
       const userData: UserData = {
         sAMAccountName: extractAttr('sAMAccountName') || username,
         dn: userDn,
         nombreCompleto: extractAttr('cn') || extractAttr('displayName') || username,
         email: extractAttr('mail') || extractAttr('userPrincipalName') || `${username}@uniss.edu.cu`,
         employeeID: extractAttr('employeeID') || '',
-        // ✅ NUEVOS CAMPOS REQUERIDOS
         userPrincipalName: extractAttr('userPrincipalName') || `${username}@uniss.edu.cu`,
         mail: extractAttr('mail') || extractAttr('userPrincipalName') || `${username}@uniss.edu.cu`,
         displayName: extractAttr('displayName') || extractAttr('cn') || username,
-        // ✅ CAMPOS OPCIONALES
         givenName: extractAttr('givenName') || '',
         sn: extractAttr('sn') || '',
-        uid: extractAttr('uid') || username
+        uid: extractAttr('uid') || username,
+        company: extractAttr('company') || '', // ✅ AGREGAR company
+        title: extractAttr('title') || ''      // ✅ AGREGAR title
       };
       
       userDnCache.set(cacheKey, userData);
@@ -177,7 +188,6 @@ export class UserService {
     }
   }
 
-  // ✅ MÉTODO PARA VALIDAR QUE EL OBJETO EN CACHÉ SEA UserData VÁLIDO
   private isValidUserData(obj: any): obj is UserData {
     return obj && 
            typeof obj === 'object' &&

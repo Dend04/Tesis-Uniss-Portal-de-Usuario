@@ -8,7 +8,6 @@ const iconMap = {
   identification: 'IdentificationIcon',
   academic: 'AcademicCapIcon',
   clock: 'ClockIcon',
-  phone: 'DevicePhoneMobileIcon',
   user: 'UserCircleIcon',
   email: 'EnvelopeIcon'
 } as const;
@@ -17,13 +16,7 @@ const iconMap = {
 interface InfoItemConfig {
   icon: keyof typeof iconMap;
   label: string;
-  value: FormattedPhone | string;
-}
-
-interface FormattedPhone {
-  countryCode: string;
-  countryFlag: string;
-  phone: string;
+  value: string;
 }
 
 interface BackendUserData {
@@ -43,38 +36,9 @@ interface BackendUserData {
   titulo?: string;
   userPrincipalName?: string;
   isEmployee?: boolean;
+  company?: string;
+  title?:string;
 }
-
-// Lista de códigos de país para teléfonos
-const countryCodes: Record<string, string> = {
-  CU: '+53',  // Cuba
-  US: '+1',   // Estados Unidos
-  ES: '+34',  // España
-  MX: '+52',  // México
-  FR: '+33',  // Francia
-  CA: '+1',   // Canadá (comparte código con US)
-  DE: '+49',  // Alemania
-  RU: '+7',   // Rusia
-  IT: '+39',  // Italia
-  PE: '+51',  // Perú
-  AR: '+54',  // Argentina
-  HT: '+509', // Haití
-};
-
-const countryFlags: Record<string, string> = {
-  CU: '🇨🇺', // Cuba
-  US: '🇺🇸', // Estados Unidos
-  ES: '🇪🇸', // España
-  MX: '🇲🇽', // México
-  FR: '🇫🇷', // Francia
-  CA: '🇨🇦', // Canadá
-  DE: '🇩🇪', // Alemania
-  RU: '🇷🇺', // Rusia
-  IT: '🇮🇹', // Italia
-  PE: '🇵🇪', // Perú
-  AR: '🇦🇷', // Argentina
-  HT: '🇭🇹', // Haití
-};
 
 // Mapeo de códigos de carrera a descripciones completas
 const carreraCodes: Record<string, string> = {
@@ -101,69 +65,17 @@ const expandCarreraCode = (carrera: string): string => {
   return carrera;
 };
 
-// Función para formatear número de teléfono con código de país
-const formatPhoneNumber = (phone: string): FormattedPhone | string => {
-  if (!phone || phone === 'Teléfono no disponible' || phone === 'No disponible') {
-    return 'No disponible';
-  }
-  
-  try {
-    if (phone.includes('+')) {
-      const plusIndex = phone.indexOf('+');
-      const spaceIndex = phone.indexOf(' ', plusIndex);
-      
-      if (spaceIndex !== -1) {
-        const countryCode = phone.substring(plusIndex, spaceIndex);
-        const nationalNumber = phone.substring(spaceIndex + 1);
-        
-        const country = Object.entries(countryCodes).find(
-          ([, code]) => code === countryCode
-        )?.[0] || 'UNKNOWN';
-        
-        const countryFlag = countryFlags[country] || '🌍';
-        
-        return {
-          countryCode: countryCode,
-          countryFlag: countryFlag,
-          phone: nationalNumber
-        };
-      }
-    }
-    
-    if (phone.startsWith('53') && phone.length > 2) {
-      return {
-        countryCode: '+53',
-        countryFlag: '🇨🇺',
-        phone: phone.substring(2)
-      };
-    }
-    
-    if (phone.replace(/\D/g, '').length >= 7 && phone.replace(/\D/g, '').length <= 8) {
-      return {
-        countryCode: '+53',
-        countryFlag: '🇨🇺',
-        phone: phone
-      };
-    }
-    
-    return phone;
-  } catch (e) {
-    console.error('Error formateando número de teléfono:', e);
-    return phone;
-  }
-};
-
 // Función de transformación de datos con valores por defecto
 const mapBackendToFrontend = (backendData: BackendUserData): UserInfo => ({
   name: backendData.displayName || backendData.nombreCompleto || 'Nombre no disponible',
   username: backendData.sAMAccountName || 'Usuario no disponible',
   universityEmail: backendData.userPrincipalName || backendData.mail || 'Correo no disponible',
-  backupEmail: backendData.email || backendData.mail || 'Correo personal no disponible',
+  backupEmail: backendData.company || 'Correo personal no disponible', // ← Ahora viene de company
   faculty: backendData.facultad || 'Facultad no disponible',
-  major: expandCarreraCode(backendData.carrera || 'Carrera no disponible'),
+  major: backendData.carrera || 'Carrera no disponible',
   year: backendData.añoAcademico || 'Año no disponible',
   phone: backendData.telefono || 'Teléfono no disponible',
-  status: backendData.titulo || (backendData.cuentaHabilitada ? 'Activo' : 'Inactivo'),
+  status: backendData.title || backendData.titulo || (backendData.cuentaHabilitada ? 'Activo' : 'Inactivo'), // ← title tiene prioridad
   lastLogin: backendData.ultimoInicioSesion || 'Nunca',
   id: backendData.employeeID || backendData.uid || 'ID no disponible',
   isEmployee: backendData.isEmployee || false
@@ -197,11 +109,9 @@ const useDualVerification = () => {
           const employeeStatus = data.isAlsoEmployee || false;
           setIsAlsoEmployee(employeeStatus);
           
-          // ✅ GUARDAR EN LOCAL STORAGE SI ES TRABAJADOR
           if (employeeStatus) {
             localStorage.setItem('trabajador', 'true');
           } else {
-            // Opcional: remover el campo si no es trabajador
             localStorage.removeItem('trabajador');
           }
         } else {
@@ -210,7 +120,6 @@ const useDualVerification = () => {
       } catch (error) {
         console.error('Error verificando estado dual:', error);
         setIsAlsoEmployee(false);
-        // En caso de error, asegurarse de que no se marque como trabajador
         localStorage.removeItem('trabajador');
       } finally {
         setLoadingDual(false);
@@ -250,7 +159,7 @@ const useUserProfile = () => {
         if (!response.ok) {
           if (response.status === 401) {
             localStorage.removeItem('authToken');
-            localStorage.removeItem('trabajador'); // Limpiar también trabajador
+            localStorage.removeItem('trabajador');
             throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
           }
           throw new Error(`Error en la petición: ${response.status}`);
@@ -279,32 +188,19 @@ const useUserProfile = () => {
 const InfoItem = memo(({ icon, label, value, darkMode }: { 
   icon?: keyof typeof iconMap; 
   label: string; 
-  value: string | FormattedPhone;
+  value: string;
   darkMode: boolean;
 }) => {
   const bgColor = darkMode ? "bg-gray-700" : "bg-gray-100";
   const textColor = darkMode ? "text-gray-100" : "text-gray-800";
   const labelColor = darkMode ? "text-gray-300" : "text-gray-600";
   const iconColor = darkMode ? "text-uniss-gold" : "text-uniss-blue";
-  
-  const formatValue = (val: string | FormattedPhone): React.ReactNode => {
-    if (typeof val === 'string') {
-      return val;
-    }
-    
-    return (
-      <span className="flex items-center gap-2">
-        <span className="text-2xl">{val.countryFlag}</span>
-        <span>{val.countryCode} {val.phone}</span>
-      </span>
-    );
-  };
 
   return (
     <div
       role="listitem"
       className={`flex items-start gap-4 p-4 rounded-xl ${bgColor} ${textColor}`}
-      aria-label={`${label}: ${typeof value === 'string' ? value : `${value.countryCode} ${value.phone}`}`}
+      aria-label={`${label}: ${value}`}
     >
       {icon && (
         <div className={iconColor}>
@@ -316,7 +212,7 @@ const InfoItem = memo(({ icon, label, value, darkMode }: {
           {label}
         </p>
         <div className="text-lg">
-          {formatValue(value)}
+          {value}
         </div>
       </div>
     </div>
@@ -340,8 +236,6 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
   const avatarColor = isDarkMode ? "text-gray-400" : "text-gray-600";
   const nameColor = isDarkMode ? "text-white" : "text-gray-900";
   
-  const formattedPhone = formatPhoneNumber(userInfo.phone);
-  
   const getStatusText = (): string => {
     if (userInfo.isEmployee) {
       return 'Trabajador';
@@ -354,15 +248,11 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
     { icon: 'user', label: 'Nombre de Usuario', value: userInfo.username || 'No disponible' },
     { icon: 'email', label: 'Correo Institucional', value: userInfo.universityEmail || 'No disponible' },
     { icon: 'user', label: 'Correo Personal', value: userInfo.backupEmail || 'No disponible' },
-    { icon: 'phone', label: 'Teléfono', value: formattedPhone },
     { icon: 'clock', label: 'Último acceso', value: userInfo.lastLogin || 'Nunca' }
   ];
 
   const getStudentInfoItems = (): InfoItemConfig[] => [
     { icon: 'identification', label: 'Carnet de Identidad', value: userInfo.id || 'No disponible' },
-    { icon: 'academic', label: 'Facultad/Carrera', value: `${userInfo.faculty} - ${userInfo.major}` },
-    { icon: 'clock', label: 'Año Académico', value: userInfo.year || 'No disponible' },
-    { icon: 'phone', label: 'Teléfono', value: formattedPhone },
     { icon: 'user', label: 'Correo Personal', value: userInfo.backupEmail || 'No disponible' },
     { icon: 'email', label: 'Correo Institucional', value: userInfo.universityEmail || 'No disponible' },
     { icon: 'user', label: 'Nombre de Usuario', value: userInfo.username || 'No disponible' },
@@ -371,7 +261,7 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
 
   const infoItems = useMemo((): InfoItemConfig[] => {
     return userInfo.isEmployee ? getWorkerInfoItems() : getStudentInfoItems();
-  }, [userInfo, formattedPhone]);
+  }, [userInfo]);
 
   const profileContent = useMemo(() => (
     <div className="flex flex-col items-center mb-6">

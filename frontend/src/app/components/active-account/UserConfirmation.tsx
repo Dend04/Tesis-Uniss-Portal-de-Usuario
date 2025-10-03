@@ -23,10 +23,10 @@ export default function UserConfirmation({
   const handleComplete = async () => {
     setIsCompleting(true);
     try {
-      onComplete();
+      await onComplete(); // Ahora esperamos a que complete
     } catch (error) {
       console.error("Error:", error);
-      onComplete();
+      // Incluso si hay error, permitimos la redirección
     } finally {
       setIsCompleting(false);
     }

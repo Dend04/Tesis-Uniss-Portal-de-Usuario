@@ -32,13 +32,14 @@ const createEmailTransport = (): Transporter => {
   } as SMTPTransport.Options);
 };
 
-export const sendWelcomeEmail = async (email: string, userName: string, userType: string) => {
+export const sendWelcomeEmail = async (email: string, userName: string, userType: string, username: string,
+  userPrincipalName: string) => {
   const transporter = createEmailTransport();
   const mailOptions = {
     from: process.env.SMTP_FROM,
     to: email,
     subject: "Bienvenido/a al Portal de Usuario de la UNISS",
-    html: getWelcomeEmailHTML(userName, userType),
+    html: getWelcomeEmailHTML(userName, userType, username, userPrincipalName),
   };
 
   return transporter.sendMail(mailOptions);

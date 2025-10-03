@@ -21,6 +21,7 @@ import { getLDAPPool } from './utils/ldap.utils'; // Importar el pool de conexio
 import { SigenuService } from './services/sigenu.services';
 import passwordRoutes from "./routes/password.routes";
 import dualVerificationRoutes from './routes/dual-verification.routes';
+import logRoutes from "./routes/log.routes";
 
 // Cargar variables de entorno desde el archivo .env
 dotenv.config();
@@ -77,6 +78,7 @@ app.use('/api/email', email);
 app.use('/api/usernameOptions', usernameOptions);
 app.use("/api/password", passwordRoutes);
 app.use('/api/verify', dualVerificationRoutes);
+app.use("/api/log",logRoutes);
 
 // Endpoint de health check para verificar que el servidor está funcionando
 app.get('/health', (_: Request, res: Response) => {
