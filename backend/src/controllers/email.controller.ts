@@ -7,6 +7,8 @@ import {
   sendEmailNew,
 } from "../services/emailService";
 import { verificationStorage } from "../services/verificationStorage";
+import { passwordExpiryService } from "../services/passwordExpiryService";
+import { cacheService } from "../utils/cache.utils";
 
 // Almacenamiento temporal de códigos de verificación
 const verificationCodes = new Map<
@@ -313,6 +315,157 @@ export const debugVerificationCodes = async (
     res.status(500).json({
       success: false,
       message: "Error al obtener códigos de verificación",
+      error: error.message,
+    });
+  }
+};
+
+export const generarReporteExpiración = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    console.log('📊 Generando reporte manual de expiración...');
+    
+    // ✅ AHORA TypeScript reconoce el tipo ReporteExpiración
+    const reporte = await passwordExpiryService.generarReporteExpiración();
+    
+    // Guardar en caché cada grupo de usuarios
+    cacheService.guardarUsuarios('rango7Dias', reporte.rango7Dias);
+    cacheService.guardarUsuarios('rango3Dias', reporte.rango3Dias);
+    cacheService.guardarUsuarios('rango1Dia', reporte.rango1Dia);
+    cacheService.guardarUsuarios('expirados', reporte.expirados);
+    
+    res.status(200).json({
+      success: true,
+      message: "Reporte de expiración generado exitosamente",
+      reporte: reporte.resumen,
+      detalles: {
+        rango7Dias: reporte.rango7Dias.length,
+        rango3Dias: reporte.rango3Dias.length,
+        rango1Dia: reporte.rango1Dia.length,
+        expirados: reporte.expirados.length
+      },
+      cacheEstado: cacheService.obtenerEstadoCache(),
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Error al generar reporte de expiración",
+      error: error.message,
+    });
+  }
+};
+
+export const verEstadoCache = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const estado = cacheService.obtenerEstadoCache();
+    const estadisticas = cacheService.obtenerEstadisticas();
+    
+    res.status(200).json({
+      success: true,
+      message: "Estado actual del cache",
+      cache: estado,
+      estadisticas,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener estado del cache",
+      error: error.message,
+    });
+  }
+};
+
+export const enviarAlertasManuales = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { grupos } = req.body; // ['rango7Dias', 'rango3Dias', 'rango1Dia', 'expirados']
+    const gruposAEnviar = grupos || ['rango7Dias', 'rango3Dias', 'rango1Dia', 'expirados'];
+    
+    console.log('📧 Iniciando envío manual de alertas...', gruposAEnviar);
+
+    let totalEnviados = 0;
+    let totalErrores = 0;
+    const resultados: any[] = [];
+
+    for (const grupo of gruposAEnviar) {
+      const usuarios = cacheService.obtenerUsuarios(grupo);
+      
+      if (!usuarios || usuarios.length === 0) {
+        resultados.push({ 
+          grupo, 
+          estado: 'sin_datos', 
+          enviados: 0,
+          mensaje: `No hay usuarios en caché para el grupo ${grupo}`
+        });
+        continue;
+      }
+
+      let enviadosGrupo = 0;
+      let erroresGrupo = 0;
+      const erroresDetallados: string[] = [];
+
+      for (const usuario of usuarios) {
+        try {
+          await sendPasswordExpiryAlert(
+            usuario.email,
+            usuario.userName,
+            usuario.daysLeft,
+            usuario.alertType
+          );
+          enviadosGrupo++;
+          totalEnviados++;
+          console.log(`✅ Correo enviado a ${usuario.email} (${usuario.daysLeft} días)`);
+        } catch (error: any) {
+          console.error(`❌ Error enviando a ${usuario.email}:`, error.message);
+          erroresGrupo++;
+          totalErrores++;
+          erroresDetallados.push(`${usuario.email}: ${error.message}`);
+        }
+      }
+
+      resultados.push({
+        grupo,
+        estado: erroresGrupo === 0 ? 'completado' : 'con_errores',
+        total: usuarios.length,
+        enviados: enviadosGrupo,
+        errores: erroresGrupo,
+        erroresDetallados: erroresDetallados.length > 0 ? erroresDetallados : undefined
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Envío manual completado. ${totalEnviados} correos enviados, ${totalErrores} errores.`,
+      resultados,
+      resumen: {
+        totalEnviados,
+        totalErrores,
+        gruposProcesados: gruposAEnviar.length
+      },
+      emailStats: {
+        count: emailCounter.getCount(),
+        remaining: emailCounter.getRemaining(),
+        dailyLimit: emailCounter.getRemaining() + emailCounter.getCount(),
+        usageMessage: emailCounter.getUsageMessage(),
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error en envío manual de alertas:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error en envío manual de alertas",
       error: error.message,
     });
   }

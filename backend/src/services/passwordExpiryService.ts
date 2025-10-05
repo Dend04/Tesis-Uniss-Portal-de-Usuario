@@ -2,6 +2,19 @@
 import { createLDAPClient, searchAsync, bindAsync, LDAPClient } from "../utils/ldap.utils"; // ✅ Agrega bindAsync y LDAPClient
 import { SearchOptions } from "ldapjs";
 
+export interface ReporteExpiración {
+  rango7Dias: UsuarioParaNotificar[];
+  rango3Dias: UsuarioParaNotificar[];
+  rango1Dia: UsuarioParaNotificar[];
+  expirados: UsuarioParaNotificar[];
+  resumen: {
+    total7Dias: number;
+    total3Dias: number;
+    total1Dia: number;
+    totalExpirados: number;
+    mensaje: string;
+  };
+}
 
 export interface UsuarioLDAP {
   dn: string;
@@ -9,6 +22,7 @@ export interface UsuarioLDAP {
   mail: string;
   pwdChangedTime: string;
   pwdPolicySubentry?: string;
+  sAMAccountName?: string; 
 }
 
 export interface UsuarioParaNotificar {
@@ -16,6 +30,7 @@ export interface UsuarioParaNotificar {
   userName: string;
   daysLeft: number;
   alertType: string;
+  sAMAccountName: string;
 }
 
 export class PasswordExpiryService {
@@ -33,7 +48,7 @@ export class PasswordExpiryService {
       const searchOptions: SearchOptions = {
         scope: "sub",
         filter: "(&(objectClass=inetOrgPerson)(company=*)(pwdChangedTime=*))", 
-        attributes: ['cn', 'company', 'pwdChangedTime', 'pwdPolicySubentry']   
+        attributes: ['cn', 'company', 'pwdChangedTime', 'pwdPolicySubentry', 'sAMAccountName']   
       };
 
       // Usar searchAsync de tus utils existentes
@@ -41,8 +56,8 @@ export class PasswordExpiryService {
       
       for (const entry of entries) {
         const usuario = this.mapLdapEntryToUsuario(entry);
-        
-        if (usuario) {
+
+        if (usuario && usuario.sAMAccountName) {
           const daysUntilExpiry = await this.calculateDaysUntilExpiry(usuario);
           
           if (thresholdDays.includes(daysUntilExpiry)) {
@@ -50,7 +65,8 @@ export class PasswordExpiryService {
               email: usuario.mail,
               userName: usuario.cn,
               daysLeft: daysUntilExpiry,
-              alertType: this.getAlertType(daysUntilExpiry)
+              alertType: this.getAlertType(daysUntilExpiry),
+              sAMAccountName: usuario.sAMAccountName
             });
           }
         }
@@ -64,6 +80,44 @@ export class PasswordExpiryService {
       }
     }
     return results;
+  }
+
+  async generarReporteExpiración(): Promise<ReporteExpiración> {
+    const todosUsuarios = await this.getUsersWithExpiringPasswords([7, 6, 5, 4, 3, 2, 1, 0]);
+    
+    const rango7Dias = todosUsuarios.filter(user => user.daysLeft >= 4 && user.daysLeft <= 7);
+    const rango3Dias = todosUsuarios.filter(user => user.daysLeft >= 2 && user.daysLeft <= 3);
+    const rango1Dia = todosUsuarios.filter(user => user.daysLeft === 1);
+    const expirados = todosUsuarios.filter(user => user.daysLeft === 0);
+
+    const resumen = {
+      total7Dias: rango7Dias.length,
+      total3Dias: rango3Dias.length,
+      total1Dia: rango1Dia.length,
+      totalExpirados: expirados.length,
+      mensaje: this.generarMensajeResumen(rango7Dias.length, rango3Dias.length, rango1Dia.length, expirados.length)
+    };
+
+    return {
+      rango7Dias,
+      rango3Dias,
+      rango1Dia,
+      expirados,
+      resumen
+    };
+  }
+
+  private generarMensajeResumen(total7: number, total3: number, total1: number, totalExp: number): string {
+    const partes = [];
+    
+    if (total7 > 0) partes.push(`existen ${total7} usuarios que su cuenta expirará en 7 o menos de 7 días`);
+    if (total3 > 0) partes.push(`existen ${total3} usuarios que su cuenta expirará en 3 días o menos`);
+    if (total1 > 0) partes.push(`existen ${total1} usuarios que su contraseña expirará en 1 día`);
+    if (totalExp > 0) partes.push(`existen ${totalExp} usuarios que su contraseña ya expiró`);
+    
+    return partes.length > 0 
+      ? partes.join(', ') + '.'
+      : 'No hay usuarios con contraseñas próximas a expirar.';
   }
 
   private mapLdapEntryToUsuario(entry: any): UsuarioLDAP | null {
@@ -93,7 +147,8 @@ export class PasswordExpiryService {
         cn: extractAttr('cn'),
         mail: extractAttr('company'),
         pwdChangedTime: extractAttr('pwdChangedTime'),
-        pwdPolicySubentry: extractAttr('pwdPolicySubentry')
+        pwdPolicySubentry: extractAttr('pwdPolicySubentry'),
+        sAMAccountName: extractAttr('sAMAccountName')
       };
     } catch (error) {
       console.error('❌ Error mapeando entrada LDAP:', error);

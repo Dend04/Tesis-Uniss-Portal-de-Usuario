@@ -1,5 +1,5 @@
 import express from 'express';
-import { debugVerificationCodes, getEmailStats, sendPasswordAlert, sendVerificationCodeChangeEmail, sendVerificationCodeEmailPassword, sendWelcomeEmailToUser, verifyCode } from '../controllers/email.controller';
+import { debugVerificationCodes, enviarAlertasManuales, generarReporteExpiración, getEmailStats, sendPasswordAlert, sendVerificationCodeChangeEmail, sendVerificationCodeEmailPassword, sendWelcomeEmailToUser, verEstadoCache, verifyCode } from '../controllers/email.controller';
 import { sendWelcomeEmail } from '../services/emailService';
 
 
@@ -13,4 +13,11 @@ router.get('/email-stats', getEmailStats);
 router.post('/cambioCorreo', sendVerificationCodeChangeEmail);
 router.post('/verify-code', verifyCode);
 router.get('/debug/verification-codes', debugVerificationCodes);
+
+// ✅ NUEVAS RUTAS PARA GESTIÓN MANUAL DE EXPIRACIÓN
+router.get('/expiración/reporte', generarReporteExpiración);
+router.post('/expiración/enviar-alertas', enviarAlertasManuales);
+router.get('/expiración/estado-cache', verEstadoCache);
+
+
 export default router;
