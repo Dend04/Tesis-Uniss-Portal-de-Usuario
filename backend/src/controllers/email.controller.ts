@@ -148,10 +148,23 @@ export const sendPasswordAlert = async (
       return;
     }
 
+    // ✅ AGREGAR: Determinar el tipo de alerta basado en daysLeft
+    const getAlertTypeFromDays = (days: number): string => {
+      if (days === 7) return 'primera-alerta';
+      if (days === 3) return 'alerta-urgente';
+      if (days === 1) return 'alerta-final';
+      if (days === 0) return 'cuenta-suspendida';
+      return 'primera-alerta'; // valor por defecto
+    };
+
+    const alertType = getAlertTypeFromDays(daysLeft || 5);
+
+    // ✅ CORREGIR: Pasar los 4 argumentos requeridos
     const info = await sendPasswordExpiryAlert(
       email,
       userName || "Usuario",
-      daysLeft || 5
+      daysLeft || 5,
+      alertType // ← ESTE ERA EL PARÁMETRO FALTANTE
     );
 
     res.status(200).json({
@@ -160,6 +173,7 @@ export const sendPasswordAlert = async (
       email: email,
       userName: userName || "Usuario",
       daysLeft: daysLeft || 5,
+      alertType: alertType, // ← También devolver en la respuesta
       emailStats: {
         count: emailCounter.getCount(),
         remaining: emailCounter.getRemaining(),
@@ -175,6 +189,15 @@ export const sendPasswordAlert = async (
     });
   }
 };
+
+// Función auxiliar para determinar el tipo de alerta
+function getAlertTypeFromDays(daysLeft: number): string {
+  if (daysLeft === 7) return 'primera-alerta';
+  if (daysLeft === 3) return 'alerta-urgente';
+  if (daysLeft === 1) return 'alerta-final';
+  if (daysLeft === 0) return 'cuenta-suspendida';
+  return 'primera-alerta'; // valor por defecto
+}
 
 export const sendVerificationCodeChangeEmail = async (
   req: Request,

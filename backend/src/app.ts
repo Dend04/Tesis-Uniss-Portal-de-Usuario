@@ -22,6 +22,7 @@ import { SigenuService } from './services/sigenu.services';
 import passwordRoutes from "./routes/password.routes";
 import dualVerificationRoutes from './routes/dual-verification.routes';
 import logRoutes from "./routes/log.routes";
+import './jobs/passwordExpiryCron';
 
 // Cargar variables de entorno desde el archivo .env
 dotenv.config();

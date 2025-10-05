@@ -1,11 +1,10 @@
 import nodemailer, { Transporter } from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
-
 import { emailCounter } from "./emailCounter";
 import { getWelcomeEmailHTML } from "../templates/welcome.email";
 import { getVerificationCodeHTML } from "../templates/verificationCode";
-import { getPasswordExpiryAlertHTML } from "../templates/passwordExpiryAlert";
 import { getNewEmailHTML } from "../templates/newEmail";
+import { getPasswordExpiryAlertHTML } from "../templates/alertTemplates";
 
 const validateEmail = (email: string): void => {
   if (!email || typeof email !== 'string' || !email.includes('@')) {
@@ -46,24 +45,21 @@ export const sendWelcomeEmail = async (email: string, userName: string, userType
 };
 
 export const sendPasswordExpiryAlert = async (
-  to: string,
-  userName: string,
-  daysLeft: number
-): Promise<SMTPTransport.SentMessageInfo> => {
+  to: string, 
+  userName: string, 
+  daysLeft: number, 
+  alertType: string
+): Promise<any> => {
   try {
     validateEmail(to);
     
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      throw new Error('Configuración de email incompleta');
-    }
-
     const transportador = createEmailTransport();
-    const contenidoHtml = getPasswordExpiryAlertHTML(userName, daysLeft);
+    const contenidoHtml = getPasswordExpiryAlertHTML(userName, daysLeft, alertType);
 
     const opcionesCorreo = {
       from: process.env.SMTP_FROM,
       to,
-      subject: `URGENTE: Cambio de contraseña requerido - ${daysLeft} días restantes`,
+      subject: `Alerta de contraseña - ${daysLeft} días restantes`,
       html: contenidoHtml,
     };
 
@@ -134,4 +130,7 @@ export const sendEmailNew = async (
     throw new Error(`Error al enviar correo de verificación: ${(error as Error).message}`);
   }
 };
+
+// Agregar esta función a tu archivo existente
+
  
