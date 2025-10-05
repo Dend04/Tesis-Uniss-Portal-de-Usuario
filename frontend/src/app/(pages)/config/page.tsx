@@ -19,6 +19,8 @@ import {
   LockClosedIcon,
   ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
+import { useConfirmation } from "@/app/hooks/useConfirmation";
+import ConfirmationModal from "@/app/components/modals/ConfirmationModal";
 
 // Carga perezosa optimizada con prefetch
 const PasswordForm = dynamic(
@@ -204,6 +206,7 @@ export default function ConfigPage() {
   const [currentEmail, setCurrentEmail] = useState("usuario@example.com");
   const { preloadComponent } = usePreload();
   const [isPending, startTransition] = useTransition();
+  const { isOpen, options, confirm, handleConfirm, handleCancel } = useConfirmation();
 
   const searchParams = useSearchParams();
 
@@ -246,18 +249,34 @@ export default function ConfigPage() {
   }, []);
 
   const handleTwoFAToggle = useCallback(
-    (enabled: boolean) => {
+    async (enabled: boolean) => {
       if (enabled) {
         startTransition(() => {
           setShowTwoFASetup(true);
           preloadComponent("twoFA");
         });
       } else {
-        setTwoFAEnabled(false);
+        // ✅ Usar el hook de confirmación en lugar del estado manual
+        const userConfirmed = await confirm({
+          title: "Desactivar Autenticación en Dos Pasos",
+          message: "¿Está seguro de que desea desactivar la autenticación en dos pasos? Tenga en cuenta que perderá una de sus opciones para poder restablecer su contraseña en caso de que se le olvide y perderá una capa de protección. ¿Desea continuar?",
+          confirmText: "Sí, Desactivar",
+          cancelText: "Cancelar",
+          variant: "danger"
+        });
+
+        if (userConfirmed) {
+          // ✅ Usuario confirmó - desactivar 2FA
+          setTwoFAEnabled(false);
+          // Aquí también deberías llamar a tu API para desactivar 2FA en el backend
+          console.log("2FA desactivado por el usuario");
+        }
+        // Si userConfirmed es false, no hacer nada (el usuario canceló)
       }
     },
-    [preloadComponent]
+    [preloadComponent, confirm] // ✅ Agrega confirm como dependencia
   );
+
 
   // Memoizar valores para evitar recálculos innecesarios
   const emailDescription = useMemo(() => currentEmail, [currentEmail]);
@@ -359,6 +378,14 @@ export default function ConfigPage() {
           </ConfigItem>
         </div>
       </div>
+      {/* Modal de confirmación para desactivar 2FA */}
+      <ConfirmationModal
+        isOpen={isOpen}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        isDarkMode={isDarkMode}
+        options={options!}
+      />
     </div>
   );
 }

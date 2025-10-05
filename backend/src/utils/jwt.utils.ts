@@ -3,13 +3,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// ✅ INTERFAZ ACTUALIZADA CON CAMPO title
 export interface TokenPayload {
   sAMAccountName: string;
   username: string;
   employeeID: string;
   displayName?: string;
   email?: string;
+  title?: string; // ✅ NUEVO CAMPO AGREGADO
 }
+
 const JWT_CONFIG = {
   secret: process.env.JWT_SECRET || 'default_secret',
   refreshSecret: process.env.JWT_REFRESH_SECRET || 'default_refresh_secret',
@@ -39,20 +42,21 @@ export const verifyToken = (token: string): TokenPayload => {
   }
 };
 
-// Función pura de generación de tokens
+// ✅ FUNCIÓN ACTUALIZADA - INCLUYE title EN LOS TOKENS
 export const generateTokens = (payload: TokenPayload) => {
   const accessToken = jwt.sign(
-    payload,
+    payload, // ✅ Ahora incluye el campo title
     JWT_CONFIG.secret,
     JWT_CONFIG.signOptions
   );
 
   const refreshToken = jwt.sign(
     {
-      // Para el refresh token, incluir solo los campos esenciales
+      // Para el refresh token, incluir campos esenciales + title
       username: payload.username,
       employeeID: payload.employeeID,
-      sAMAccountName: payload.sAMAccountName
+      sAMAccountName: payload.sAMAccountName,
+      title: payload.title // ✅ AGREGAR title AL REFRESH TOKEN
     },
     JWT_CONFIG.refreshSecret,
     JWT_CONFIG.refreshOptions
@@ -61,33 +65,38 @@ export const generateTokens = (payload: TokenPayload) => {
   return { accessToken, refreshToken };
 };
 
-// Función para verificar refresh token (opcional, pero recomendado)
-export const verifyRefreshToken = (token: string): { username: string; employeeID: string; sAMAccountName: string } => {
+// ✅ INTERFAZ ACTUALIZADA PARA REFRESH TOKEN
+export interface RefreshTokenPayload {
+  username: string;
+  employeeID: string;
+  sAMAccountName: string;
+  title?: string; // ✅ AGREGAR title
+}
+
+// ✅ FUNCIÓN ACTUALIZADA - VERIFICAR REFRESH TOKEN CON title
+export const verifyRefreshToken = (token: string): RefreshTokenPayload => {
   try {
     return jwt.verify(
       token,
       JWT_CONFIG.refreshSecret,
       JWT_CONFIG.verifyOptions
-    ) as { username: string; employeeID: string; sAMAccountName: string };
+    ) as RefreshTokenPayload;
   } catch (error) {
     throw new Error('Refresh token inválido o expirado');
   }
 };
 
-// Función para renovar tokens (opcional, pero útil)
+// ✅ FUNCIÓN ACTUALIZADA - RENOVAR TOKENS MANTENIENDO title
 export const refreshTokens = (refreshToken: string): { accessToken: string; refreshToken: string } => {
   try {
     const decoded = verifyRefreshToken(refreshToken);
     
-    // Aquí podrías validar contra la base de datos si el usuario aún existe
-    // y obtener datos actualizados si es necesario
-    
+    // Crear nuevo payload con todos los datos, incluyendo title
     const newPayload: TokenPayload = {
       sAMAccountName: decoded.sAMAccountName,
       username: decoded.username,
       employeeID: decoded.employeeID,
-      // Nota: nombreCompleto y email no están en el refresh token
-      // Podrías obtenerlos de la base de datos si son necesarios
+      title: decoded.title // ✅ MANTENER EL title EN LA RENOVACIÓN
     };
 
     return generateTokens(newPayload);

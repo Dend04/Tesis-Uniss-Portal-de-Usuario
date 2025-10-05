@@ -1,8 +1,8 @@
+// src/controllers/dual-verification.controller.ts
 import { Request, Response } from 'express';
 import logger from '../utils/logger';
 import { verifyToken } from '../utils/jwt.utils';
 import dualVerificationServices from '../services/dual-verification.services';
- // Ajusta la ruta de importación
 
 // Interfaz para tipar el request con usuario
 interface AuthenticatedRequest extends Request {
@@ -38,8 +38,8 @@ export const verifyDualStatus = async (req: AuthenticatedRequest, res: Response)
     // 3. Verificar y decodificar el token
     let decodedToken;
     try {
-      decodedToken = verifyToken(token); // Usa tu función de verificación
-      logger.info('Token decodificado:', decodedToken); // 👈 Añade este log para ver la estructura real
+      decodedToken = verifyToken(token);
+      logger.info('Token decodificado:', decodedToken);
     } catch (tokenError: any) {
       logger.error(`Error verificando token: ${tokenError.message}`);
       res.status(401).json({
@@ -61,15 +61,17 @@ export const verifyDualStatus = async (req: AuthenticatedRequest, res: Response)
     }
 
     const ci = decodedToken.employeeID;
-    logger.info(`Verificando estado dual para CI: ${ci} (extraído del token)`);
+    const userTitle = decodedToken.title; // ✅ OBTENER EL TÍTULO DEL TOKEN
+    
+    logger.info(`Verificando estado dual para CI: ${ci}, Título: ${userTitle || 'No especificado'}`);
 
-    // 5. Proceder con la verificación dual
-    const result = await dualVerificationServices.verifyDualStatus(ci);
+    // 5. Proceder con la verificación dual (ahora con título)
+    const result = await dualVerificationServices.verifyDualStatus(ci, userTitle);
 
     // Función replacer para BigInt
     const replacer = (key: string, value: any) => {
         if (typeof value === 'bigint') {
-            return value.toString(); // Convertir BigInt a string
+            return value.toString();
         }
         return value;
     };
@@ -77,6 +79,11 @@ export const verifyDualStatus = async (req: AuthenticatedRequest, res: Response)
     res.status(200).json({
       success: true,
       isAlsoEmployee: result.isEmployee,
+      userTitle: userTitle,
+      usedSigenu: userTitle && userTitle.toLowerCase() === 'estudiante',
+      isGraduated: result.isGraduated,
+      studentStatus: result.studentStatus,
+      hasDualOccupation: result.hasDualOccupation || false, // ✅ AGREGAR ESTA LÍNEA
       data: result
     });
 

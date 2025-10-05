@@ -4,31 +4,159 @@ import { PrismaClient } from "@prisma/client";
 export type DualStatus = {
   isEmployee: boolean;
   employeeData?: any;
+  studentData?: any;
+  isGraduated?: boolean; // ✅ Nuevo campo para indicar si es egresado
+  studentStatus?: string; // ✅ Estado del estudiante
+  hasDualOccupation?: boolean;
 };
 
 class DualVerificationService {
   private prisma: PrismaClient;
+  private sigenuBaseUrl: string;
 
   constructor() {
     this.prisma = new PrismaClient();
+    this.sigenuBaseUrl = process.env.API_BASE_URL_SIGENU || 'https://sigenu.uniss.edu.cu/sigenu-rest';
   }
 
-  async verifyDualStatus(ci: string): Promise<DualStatus> {
+// En dual-verification.service.ts - método verifyDualStatus
+async verifyDualStatus(ci: string, userTitle?: string): Promise<DualStatus> {
     const cleanCI = this.sanitizeCI(ci);
     
     try {
-      const employeeData = await this.checkEmployee(cleanCI);
-      const isEmployee = !!employeeData;
+        const userTitleLower = userTitle?.toLowerCase() || '';
+        const isEstudiante = userTitleLower === 'estudiante';
+        
+        // Verificar si es empleado (siempre verificar esto)
+        const employeeData = await this.checkEmployee(cleanCI);
+        const isEmployee = !!employeeData;
+        const serializedEmployeeData = employeeData ? this.serializeBigInts(employeeData) : null;
 
-      // Convertir BigInt a string/number antes de devolver
-      const serializedEmployeeData = employeeData ? this.serializeBigInts(employeeData) : null;
+        // Si NO es estudiante, solo devolver datos de empleado
+        if (!isEstudiante) {
+            console.log(`🔍 ${userTitle} - verificando si también es estudiante`);
+            
+            const { studentData, isGraduated, studentStatus } = await this.getStudentDataFromSigenu(cleanCI);
+            
+            // ✅ CRUCIAL: Si es egresado, NO es doble ocupación
+            const hasDualOccupation = !!studentData && !isGraduated;
+            
+            return {
+                isEmployee,
+                employeeData: serializedEmployeeData,
+                studentData,
+                isGraduated,
+                studentStatus,
+                hasDualOccupation
+            };
+        } else {
+            // Si ES estudiante, obtener datos completos de SIGENU
+            console.log(`🎓 Estudiante - verificando si también es empleado`);
+            
+            const { studentData, isGraduated, studentStatus } = await this.getStudentDataFromSigenu(cleanCI);
+            
+            // ✅ CRUCIAL: Si es egresado, NO es doble ocupación
+            const hasDualOccupation = isEmployee && !isGraduated;
+            
+            return {
+                isEmployee,
+                employeeData: serializedEmployeeData,
+                studentData,
+                isGraduated,
+                studentStatus,
+                hasDualOccupation
+            };
+        }
+    } finally {
+        await this.prisma.$disconnect();
+    }
+}
+
+  // ✅ NUEVO MÉTODO: Obtener datos del estudiante desde SIGENU
+  private async getStudentDataFromSigenu(ci: string): Promise<{ 
+    studentData: any; 
+    isGraduated: boolean; 
+    studentStatus: string 
+  }> {
+    try {
+      const url = `${this.sigenuBaseUrl}/student/fileStudent/getStudentAllData/${ci}`;
+      console.log(`🌐 Consultando SIGENU: ${url}`);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error SIGENU: ${response.status} ${response.statusText}`);
+      }
+
+      const studentData = await response.json();
+      console.log('✅ Datos obtenidos de SIGENU:', studentData);
+      
+      // ✅ VERIFICAR SI ES EGRESADO
+      const { isGraduated, studentStatus } = this.checkIfStudentIsGraduated(studentData);
+      
+      console.log(`📊 Estado del estudiante: ${studentStatus}, Egresado: ${isGraduated}`);
+      
+      return {
+        studentData,
+        isGraduated,
+        studentStatus
+      };
+    } catch (error) {
+      console.error('❌ Error obteniendo datos de SIGENU:', error);
+      
+      // Manejo específico para errores de timeout
+      if (error instanceof DOMException && error.name === 'TimeoutError') {
+        return {
+          studentData: {
+            error: 'La consulta a SIGENU tardó demasiado tiempo',
+            details: 'Timeout de 10 segundos excedido'
+          },
+          isGraduated: false,
+          studentStatus: 'Error: Timeout'
+        };
+      }
+      
+      return {
+        studentData: {
+          error: 'No se pudieron obtener los datos del estudiante',
+          details: error instanceof Error ? error.message : 'Error desconocido'
+        },
+        isGraduated: false,
+        studentStatus: 'Error: Datos no disponibles'
+      };
+    }
+  }
+  
+  private checkIfStudentIsGraduated(studentData: any): { isGraduated: boolean; studentStatus: string } {
+    try {
+      // Verificar si studentData es un array y tiene al menos un elemento
+      if (!Array.isArray(studentData) || studentData.length === 0) {
+        return { isGraduated: false, studentStatus: 'No hay datos' };
+      }
+
+      const firstStudent = studentData[0];
+      
+      // Verificar si existe docentData y studentStatus
+      if (!firstStudent.docentData || !firstStudent.docentData.studentStatus) {
+        return { isGraduated: false, studentStatus: 'Estado no disponible' };
+      }
+
+      const studentStatus = firstStudent.docentData.studentStatus;
+      const isGraduated = studentStatus.toLowerCase().includes('egresado');
 
       return {
-        isEmployee,
-        employeeData: serializedEmployeeData,
+        isGraduated,
+        studentStatus
       };
-    } finally {
-      await this.prisma.$disconnect();
+    } catch (error) {
+      console.error('Error verificando estado del estudiante:', error);
+      return { isGraduated: false, studentStatus: 'Error en verificación' };
     }
   }
 
@@ -80,18 +208,18 @@ class DualVerificationService {
       // ✅ Obtener la descripción del cargo
       const cargoDescription = await this.getCargoDescription(employee.Id_Cargo);
       
-      // ✅ NUEVO: Obtener la descripción de la profesión
+      // ✅ Obtener la descripción de la profesión
       const profesionDescription = await this.getProfesionDescription(employee.Id_Profesion);
       
-      // ✅ NUEVO: Obtener la descripción del municipio
+      // ✅ Obtener la descripción del municipio
       const municipioDescription = await this.getMunicipioDescription(employee.Id_Provincia, employee.Id_Municipio);
       
       return {
         ...employee,
         department: department?.Desc_Direccion || 'Sin departamento',
         cargoDescription: cargoDescription || 'Cargo no disponible',
-        profesionDescription: profesionDescription || 'Profesión no disponible', // ✅ Nuevo campo
-        municipioDescription: municipioDescription || 'Municipio no disponible' // ✅ Nuevo campo
+        profesionDescription: profesionDescription || 'Profesión no disponible',
+        municipioDescription: municipioDescription || 'Municipio no disponible'
       };
     } catch (error) {
       console.error('Error checking employee:', error);
@@ -138,7 +266,7 @@ class DualVerificationService {
     }
   }
 
-  // ✅ NUEVA FUNCIÓN: Obtener descripción de la profesión
+  // Obtener descripción de la profesión
   private async getProfesionDescription(idProfesion: string): Promise<string> {
     try {
       if (!idProfesion || idProfesion.trim() === '') {
@@ -161,7 +289,7 @@ class DualVerificationService {
     }
   }
 
-  // ✅ NUEVA FUNCIÓN: Obtener descripción del municipio
+  // Obtener descripción del municipio
   private async getMunicipioDescription(idProvincia: string, idMunicipio: string): Promise<string> {
     try {
       if (!idProvincia || !idMunicipio || idProvincia.trim() === '' || idMunicipio.trim() === '') {
