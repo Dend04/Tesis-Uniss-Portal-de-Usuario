@@ -35,28 +35,34 @@ export interface UsuarioParaNotificar {
 
 export class PasswordExpiryService {
   
-  async getUsersWithExpiringPasswords(thresholdDays: number[] = [7, 3, 1, 0]): Promise<UsuarioParaNotificar[]> {
+  async getUsersWithExpiringPasswords(
+    thresholdDays: number[] = [7, 3, 1, 0], 
+    baseDN?: string // ← AGREGAR ESTE PARÁMETRO OPCIONAL
+  ): Promise<UsuarioParaNotificar[]> {
     const results: UsuarioParaNotificar[] = [];
     let client: LDAPClient | null = null;
 
     try {
       client = createLDAPClient(process.env.LDAP_URL!);
-      
-      // Usar bindAsync desde tus utils
       await bindAsync(client, process.env.LDAP_ADMIN_DN!, process.env.LDAP_ADMIN_PASSWORD!);
 
       const searchOptions: SearchOptions = {
         scope: "sub",
-        filter: "(&(objectClass=inetOrgPerson)(company=*)(pwdChangedTime=*))", 
-        attributes: ['cn', 'company', 'pwdChangedTime', 'pwdPolicySubentry', 'sAMAccountName']   
+        filter: "(&(objectClass=inetOrgPerson)(company=*)(pwdChangedTime=*))",
+        attributes: ['cn', 'company', 'pwdChangedTime', 'pwdPolicySubentry', 'sAMAccountName']
       };
 
-      // Usar searchAsync de tus utils existentes
-      const entries = await searchAsync(client, process.env.LDAP_BASE_DN_Propio!, searchOptions);
+      // ✅ USAR el baseDN proporcionado o el por defecto
+      const baseDNUtilizada = baseDN || process.env.LDAP_BASE_DN_Propio!;
+      
+      console.log(`🔍 Buscando usuarios en: ${baseDNUtilizada}`);
+
+      // ✅ PASAR la base DN correcta
+      const entries = await searchAsync(client, baseDNUtilizada, searchOptions);
       
       for (const entry of entries) {
         const usuario = this.mapLdapEntryToUsuario(entry);
-
+        
         if (usuario && usuario.sAMAccountName) {
           const daysUntilExpiry = await this.calculateDaysUntilExpiry(usuario);
           
@@ -82,8 +88,24 @@ export class PasswordExpiryService {
     return results;
   }
 
-  async generarReporteExpiración(): Promise<ReporteExpiración> {
-    const todosUsuarios = await this.getUsersWithExpiringPasswords([7, 6, 5, 4, 3, 2, 1, 0]);
+  async generarReporteExpiración(baseDN?: string): Promise<ReporteExpiración> {
+    
+    // 1. Determinar qué Base DN usar
+    let baseDNUtilizada: string;
+    
+    if (baseDN === 'propio') {
+      baseDNUtilizada = process.env.LDAP_BASE_DN_Propio!;
+    } else {
+      // Por defecto, usa el LDAP_BASE_DN estándar, o podrías lanzar un error si el parámetro no es válido
+      baseDNUtilizada = process.env.LDAP_BASE_DN!;
+    }
+    
+    console.log(`🔍 Usando Base DN: ${baseDNUtilizada}`);
+
+    // 2. Pasar la base DN elegida a la búsqueda de usuarios
+    // NOTA: Necesitarás modificar 'getUsersWithExpiringPasswords' para que acepte la base DN como argumento.
+    const todosUsuarios = await this.getUsersWithExpiringPasswords([7, 6, 5, 4, 3, 2, 1, 0], baseDNUtilizada);
+    
     
     const rango7Dias = todosUsuarios.filter(user => user.daysLeft >= 4 && user.daysLeft <= 7);
     const rango3Dias = todosUsuarios.filter(user => user.daysLeft >= 2 && user.daysLeft <= 3);

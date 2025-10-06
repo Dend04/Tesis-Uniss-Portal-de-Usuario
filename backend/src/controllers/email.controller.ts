@@ -325,32 +325,28 @@ export const generarReporteExpiración = async (
   res: Response
 ): Promise<void> => {
   try {
-    console.log('📊 Generando reporte manual de expiración...');
+    // 1. Obtener el parámetro 'baseDN' de la consulta (ej: ?baseDN=propio)
+    const { baseDN } = req.query;
+    console.log(`📊 Generando reporte manual usando baseDN: ${baseDN}`);
     
-    // ✅ AHORA TypeScript reconoce el tipo ReporteExpiración
-    const reporte = await passwordExpiryService.generarReporteExpiración();
+    // 2. Pasar el parámetro al servicio. Asumiendo que modificaste tu servicio para aceptarlo.
+    const reporte = await passwordExpiryService.generarReporteExpiración(baseDN as string);
     
-    // Guardar en caché cada grupo de usuarios
+    // ... el resto de tu código (guardar en caché, enviar respuesta) ...
     cacheService.guardarUsuarios('rango7Dias', reporte.rango7Dias);
-    cacheService.guardarUsuarios('rango3Dias', reporte.rango3Dias);
-    cacheService.guardarUsuarios('rango1Dia', reporte.rango1Dia);
-    cacheService.guardarUsuarios('expirados', reporte.expirados);
-    
+    // ...
+
     res.status(200).json({
       success: true,
       message: "Reporte de expiración generado exitosamente",
+      baseDNUtilizada: baseDN, // Para confirmar en la respuesta cuál se usó
       reporte: reporte.resumen,
-      detalles: {
-        rango7Dias: reporte.rango7Dias.length,
-        rango3Dias: reporte.rango3Dias.length,
-        rango1Dia: reporte.rango1Dia.length,
-        expirados: reporte.expirados.length
-      },
       cacheEstado: cacheService.obtenerEstadoCache(),
       timestamp: new Date().toISOString()
     });
     
   } catch (error: any) {
+    console.error(`❌ Error generando reporte con baseDN ${req.query.baseDN}:`, error);
     res.status(500).json({
       success: false,
       message: "Error al generar reporte de expiración",

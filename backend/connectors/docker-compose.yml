@@ -1,0 +1,52 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: quay.io/debezium/zookeeper:2.4
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: quay.io/debezium/kafka:2.4
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      - ZOOKEEPER_CONNECT=zookeeper:2181
+
+  connect:
+    image: quay.io/debezium/connect:2.4
+    container_name: connect
+    ports:
+      - "8083:8083"
+    depends_on:
+      - kafka
+      - sqlserver  # Asegura que SQL Server esté listo
+    environment:
+      - BOOTSTRAP_SERVERS=kafka:9092
+      - GROUP_ID=1
+      - CONFIG_STORAGE_TOPIC=connect_configs
+      - OFFSET_STORAGE_TOPIC=connect_offsets
+      - STATUS_STORAGE_TOPIC=connect_statuses
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sqlserver
+    hostname: sqlserver  # Importante para que Debezium lo resuelva internamente
+    ports:
+      - "1433:1433"
+    env_file:
+      - .env  # Carga las variables desde el archivo .env
+    environment:
+      - ACCEPT_EULA=${ACCEPT_EULA}
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+      - MSSQL_PID=${MSSQL_PID}
+      - MSSQL_AGENT_ENABLED=${MSSQL_AGENT_ENABLED}  # Crucial para CDC
+    # Volúmenes para persistir datos (recomendado)
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+volumes:
+  sqlserver_data:

@@ -15,7 +15,7 @@ router.post('/verify-code', verifyCode);
 router.get('/debug/verification-codes', debugVerificationCodes);
 
 // ✅ NUEVAS RUTAS PARA GESTIÓN MANUAL DE EXPIRACIÓN
-router.get('/expiración/reporte', generarReporteExpiración);
+router.get('/expiracion/reporte', generarReporteExpiración);
 router.post('/expiración/enviar-alertas', enviarAlertasManuales);
 router.get('/expiración/estado-cache', verEstadoCache);
 
