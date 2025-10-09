@@ -40,6 +40,7 @@ interface StudentProfileProps {
     employeeID: string;
     isTrabajador: boolean;
     formatPhoneNumber: (phone: string) => string;
+    loadingStudent?: boolean;
 }
 
 const StudentProfile = ({ student, employeeID, isTrabajador, formatPhoneNumber }: StudentProfileProps) => {

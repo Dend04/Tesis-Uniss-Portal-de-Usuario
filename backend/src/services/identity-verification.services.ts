@@ -80,11 +80,11 @@ class IdentityVerificationService {
       const rawData = studentData.rawData;
   
       // Verificar si el estudiante está activo
-      const studentStatus = rawData.docentData?.studentStatus || 'Desconocido';
+     /*  const studentStatus = rawData.docentData?.studentStatus || 'Desconocido';
       if (studentStatus !== 'Activo') {
         logger.info(`Estudiante con CI ${ci} está ${studentStatus.toLowerCase()}. No se considera activo.`);
         return null;
-      }
+      } */
   
       // Obtener el nombre de la carrera usando el método estático
       const careerCode = rawData.docentData?.career || '00000';

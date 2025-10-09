@@ -1,6 +1,7 @@
 import express from 'express';
-import { debugVerificationCodes, enviarAlertasManuales, generarReporteExpiración, getEmailStats, sendPasswordAlert, sendVerificationCodeChangeEmail, sendVerificationCodeEmailPassword, sendWelcomeEmailToUser, verEstadoCache, verifyCode } from '../controllers/email.controller';
+import { debugVerificationCodes, enviarAlertasManuales, generarReporteExpiración, getEmailStats, sendChangeEmailVerificationCode, sendPasswordAlert, sendVerificationCodeChangeEmail, sendVerificationCodeEmailPassword, sendWelcomeEmailToUser, verEstadoCache, verifyAndUpdateEmail, verifyCode } from '../controllers/email.controller';
 import { sendWelcomeEmail } from '../services/emailService';
+import { verifyTokenMiddleware } from '../middlewares/auth.middleware';
 
 
 const router = express.Router();
@@ -13,6 +14,10 @@ router.get('/email-stats', getEmailStats);
 router.post('/cambioCorreo', sendVerificationCodeChangeEmail);
 router.post('/verify-code', verifyCode);
 router.get('/debug/verification-codes', debugVerificationCodes);
+
+// ✅ NUEVAS RUTAS PARA CAMBIO DE CORREO
+router.post('/change-email/send-code', sendChangeEmailVerificationCode);
+router.post('/change-email/verify-and-update', verifyTokenMiddleware, verifyAndUpdateEmail); // Protegida con autenticación
 
 // ✅ NUEVAS RUTAS PARA GESTIÓN MANUAL DE EXPIRACIÓN
 router.get('/expiracion/reporte', generarReporteExpiración);

@@ -5,6 +5,7 @@ import { getWelcomeEmailHTML } from "../templates/welcome.email";
 import { getVerificationCodeHTML } from "../templates/verificationCode";
 import { getNewEmailHTML } from "../templates/newEmail";
 import { getPasswordExpiryAlertHTML } from "../templates/alertTemplates";
+import { getChangeEmailHTML } from "../templates/changeEmail";
 
 const validateEmail = (email: string): void => {
   if (!email || typeof email !== 'string' || !email.includes('@')) {
@@ -131,6 +132,36 @@ export const sendEmailNew = async (
   }
 };
 
+export const sendChangeEmailVerification = async (
+  email: string,        // ✅ Ahora este es el NUEVO correo (destino)
+  userName: string,
+  verificationCode: string,
+  newEmail: string      // ✅ Este es el mismo nuevo correo (para mostrar en el template)
+): Promise<SMTPTransport.SentMessageInfo> => {
+  try {
+    validateEmail(email);
+    
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      throw new Error('Configuración de email incompleta');
+    }
+
+    const transportador = createEmailTransport();
+    const contenidoHtml = getChangeEmailHTML(userName, verificationCode, newEmail);
+
+    const opcionesCorreo = {
+      from: process.env.SMTP_FROM,
+      to: email,        // ✅ Se envía al NUEVO correo
+      subject: 'Código de Verificación - Cambio de Correo UNISS',
+      html: contenidoHtml,
+    };
+
+    const info = await transportador.sendMail(opcionesCorreo);
+    emailCounter.increment();
+    return info;
+  } catch (error) {
+    throw new Error(`Error al enviar código de verificación para cambio de correo: ${(error as Error).message}`);
+  }
+};
 // Agregar esta función a tu archivo existente
 
  

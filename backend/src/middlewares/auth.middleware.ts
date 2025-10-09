@@ -6,22 +6,37 @@ export const verifyTokenMiddleware = (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
+): any => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) throw new Error("Token no proporcionado");
-
-    const decoded = verifyToken(token) as TokenPayload; // Tipar correctamente
+    const authHeader = req.headers.authorization;
     
-    // Extraer sAMAccountName directamente del payload
-    (req as any).user = {
-      sAMAccountName: decoded.sAMAccountName // ← Campo correcto
-    };
+    if (!authHeader) {
+      return res.status(401).json({ message: "Token no proporcionado" });
+    }
 
-    console.log("Usuario autenticado:", (req as any).user); // Debug
+    if (!authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: "Formato de autorización incorrecto. Debe ser: Bearer <token>" });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ message: "Token no proporcionado" });
+    }
+
+
+    const decoded = verifyToken(token) as TokenPayload;
+    
+    (req as any).user = decoded;
+
+    console.log("=== MIDDLEWARE PASÓ ===");
     next();
-  } catch (error) {
-    console.error("Error en middleware:", error);
-    res.status(401).json({ message: "Token inválido o expirado" });
+    
+  } catch (error: any) { 
+    if (error.message === 'Token inválido o expirado') {
+      return res.status(401).json({ message: "Token inválido o expirado" });
+    }
+    
+    res.status(401).json({ message: "Error de autenticación" });
   }
 };

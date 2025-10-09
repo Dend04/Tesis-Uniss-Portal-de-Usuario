@@ -15,6 +15,9 @@ import {
   ArrowPathIcon,
   QuestionMarkCircleIcon,
   XMarkIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import { TOTP } from "otpauth";
 import Modal from "../Modal";
@@ -36,7 +39,7 @@ interface TwoFactorAuthProps {
   userEmail: string;
 }
 
-// Generar secreto para TOTP (formato base32) recordar poner esto desde el backend para seguridad
+// Generar secreto para TOTP (formato base32)
 const generateSecret = () => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   let secret = "";
@@ -67,7 +70,7 @@ const generateQRCode = async (
       margin: 1,
       color: {
         dark: isDarkMode ? "#ffffff" : "#000000",
-        light: isDarkMode ? "#374151" : "#ffffff",
+        light: isDarkMode ? "#1f2937" : "#ffffff",
       },
     });
   } catch (error) {
@@ -84,7 +87,7 @@ const generateFallbackQRCode = (text: string, isDarkMode: boolean): string => {
   const ctx = canvas.getContext("2d");
 
   if (ctx) {
-    ctx.fillStyle = isDarkMode ? "#374151" : "#ffffff";
+    ctx.fillStyle = isDarkMode ? "#1f2937" : "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = isDarkMode ? "#ffffff" : "#000000";
@@ -108,115 +111,67 @@ const generateFallbackQRCode = (text: string, isDarkMode: boolean): string => {
   return canvas.toDataURL();
 };
 
-// Modal de información
-const InfoModal = ({
-  isOpen,
-  onClose,
+// Componente de steps
+const SetupStep = ({
+  number,
+  title,
+  description,
+  icon,
+  isActive,
+  isCompleted,
   isDarkMode,
 }: {
-  isOpen: boolean;
-  onClose: () => void;
+  number: number;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  isActive: boolean;
+  isCompleted: boolean;
   isDarkMode: boolean;
-}) => {
-  if (!isOpen) return null;
-
-  const authApps = [
-    { name: "Google Authenticator", platforms: ["iOS", "Android"] },
-    { name: "Microsoft Authenticator", platforms: ["iOS", "Android"] },
-    { name: "Authy", platforms: ["iOS", "Android", "Desktop"] },
-    { name: "LastPass Authenticator", platforms: ["iOS", "Android"] },
-    { name: "Duo Mobile", platforms: ["iOS", "Android"] },
-    { name: "FreeOTP", platforms: ["iOS", "Android"] },
-    { name: "andOTP", platforms: ["Android"] },
-  ];
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div
-        className={`relative max-w-md w-full rounded-lg p-6 ${
-          isDarkMode ? "bg-gray-800" : "bg-white"
-        }`}
-      >
-        <button
-          onClick={onClose}
-          className={`absolute top-4 right-4 p-1 rounded-full ${
-            isDarkMode
-              ? "text-gray-400 hover:bg-gray-700"
-              : "text-gray-500 hover:bg-gray-200"
-          }`}
-        >
-          <XMarkIcon className="w-6 h-6" />
-        </button>
-
-        <h3
-          className={`text-xl font-bold mb-4 ${
-            isDarkMode ? "text-white" : "text-gray-800"
-          }`}
-        >
-          Autenticación en Dos Pasos
-        </h3>
-
-        <div
-          className={`text-sm mb-6 ${
-            isDarkMode ? "text-gray-300" : "text-gray-600"
-          }`}
-        >
-          <p className="mb-4">
-            La autenticación en dos pasos añade una capa adicional de seguridad
-            a tu cuenta. Además de tu contraseña, necesitarás un código de
-            verificación que cambia cada 30 segundos.
-          </p>
-
-          <p className="mb-4">
-            Para usar esta función, necesitarás una aplicación de autenticación
-            en tu dispositivo móvil.
-          </p>
-
-          <h4
-            className={`font-semibold mb-2 ${
-              isDarkMode ? "text-gray-200" : "text-gray-700"
-            }`}
-          >
-            Aplicaciones compatibles:
-          </h4>
-
-          <ul
-            className={`space-y-2 mb-4 ${
-              isDarkMode ? "text-gray-400" : "text-gray-600"
-            }`}
-          >
-            {authApps.map((app, index) => (
-              <li key={index} className="flex justify-between">
-                <span>{app.name}</span>
-                <span
-                  className={isDarkMode ? "text-gray-500" : "text-gray-500"}
-                >
-                  {app.platforms.join(", ")}
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          <p>
-            Escanea el código QR con cualquiera de estas aplicaciones para
-            configurar la autenticación en dos pasos.
-          </p>
-        </div>
-
-        <button
-          onClick={onClose}
-          className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-            isDarkMode
-              ? "bg-uniss-gold text-gray-900 hover:bg-yellow-600"
-              : "bg-uniss-blue text-white hover:bg-blue-700"
-          }`}
-        >
-          Entendido
-        </button>
-      </div>
+}) => (
+  <div
+    className={`flex gap-4 p-4 rounded-xl transition-all duration-300 ${
+      isActive
+        ? isDarkMode
+          ? "bg-gray-800 border-2 border-blue-500"
+          : "bg-blue-50 border-2 border-blue-500"
+        : isDarkMode
+        ? "bg-gray-800/50"
+        : "bg-gray-50"
+    }`}
+  >
+    <div
+      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
+        isCompleted
+          ? "bg-green-500 text-white"
+          : isActive
+          ? "bg-blue-500 text-white"
+          : isDarkMode
+          ? "bg-gray-700 text-gray-300"
+          : "bg-gray-200 text-gray-600"
+      }`}
+    >
+      {isCompleted ? <CheckCircleIcon className="w-5 h-5" /> : number}
     </div>
-  );
-};
+    <div className="flex-1">
+      <div className="flex items-center gap-2 mb-1">
+        {icon}
+        <h3
+          className={`font-semibold ${
+            isDarkMode ? "text-gray-100" : "text-gray-800"
+          }`}
+        >
+          {title}
+        </h3>
+      </div>
+      <p
+        className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
+      >
+        {description}
+      </p>
+    </div>
+  </div>
+);
 
 export default function TwoFactorAuth({
   isDarkMode,
@@ -232,22 +187,22 @@ export default function TwoFactorAuth({
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [animationStopped, setAnimationStopped] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [timeLeft, setTimeLeft] = useState(30);
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [retryCount, setRetryCount] = useState(0); // ✅ Nuevo estado para contar reintentos
-  const [lastAttemptCode, setLastAttemptCode] = useState(""); // ✅ Guardar el último código intentado
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastAttemptCode, setLastAttemptCode] = useState("");
+  const [copiedSecret, setCopiedSecret] = useState(false);
 
   const getUserIdentifier = () => {
     try {
-      // 1. Recupera el token del localStorage
-      const token = localStorage.getItem("token"); // Ajusta la clave según tu app
-      if (!token) return "usuario"; // Valor por defecto si no hay token
+      const token = localStorage.getItem("token");
+      if (!token) return "usuario";
 
-      // 2. Decodifica el token (sin verificar firma para el frontend)
       const base64Url = token.split(".")[1];
       const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
       const payload = JSON.parse(window.atob(base64));
 
-      // 3. Retorna el sAMAccountName, o el email como fallback, o un valor por defecto
       return payload.sAMAccountName || payload.email || "usuario";
     } catch (error) {
       console.error("Error decodificando el token:", error);
@@ -262,6 +217,15 @@ export default function TwoFactorAuth({
     setUserIdentifier(getUserIdentifier());
   }, []);
 
+  // Temporizador para el código TOTP
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev > 1 ? prev - 1 : 30));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   // Precargar el modal cuando el usuario haga hover sobre el botón de información
   const preloadModal = useCallback(() => {
     import("../modals/TwoFactorInfoModal");
@@ -273,19 +237,14 @@ export default function TwoFactorAuth({
 
     const startAnimation = () => {
       setIsShaking(true);
-
-      // Detener animación después de 2 segundos
       setTimeout(() => {
         setIsShaking(false);
-
-        // Reiniciar animación después de 4 segundos de descanso
         animationIntervalRef.current = setTimeout(() => {
           startAnimation();
         }, 4000);
       }, 2000);
     };
 
-    // Iniciar animación después de un breve retraso inicial
     const initialTimer = setTimeout(() => {
       startAnimation();
     }, 1000);
@@ -336,6 +295,18 @@ export default function TwoFactorAuth({
     generateQR();
   }, [secret, userIdentifier, isDarkMode]);
 
+  const copyToClipboard = async (text: string, type: "secret" | "code") => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (type === "secret") {
+        setCopiedSecret(true);
+        setTimeout(() => setCopiedSecret(false), 2000);
+      }
+    } catch (err) {
+      console.error("Error al copiar:", err);
+    }
+  };
+
   const handleSetupComplete = async () => {
     setIsLoading(true);
     setError("");
@@ -343,40 +314,35 @@ export default function TwoFactorAuth({
     setLastAttemptCode(verificationCode);
 
     try {
-      // Validar el código TOTP contra el secreto
       const totp = new TOTP({
-        issuer: "Credenciales Uniss",  
-        label: userIdentifier,         
+        issuer: "Credenciales Uniss",
+        label: userIdentifier,
         algorithm: "SHA1",
         digits: 6,
         period: 30,
         secret: secret,
       });
 
-      const validationWindow = retryCount > 0 ? 3 : 2;
-
       const isValid =
         totp.validate({ token: verificationCode, window: 2 }) !== null;
 
       if (isValid) {
-        onSetupComplete(secret, backupCodes);
+        // Mostrar éxito antes de completar
+        setCurrentStep(3);
+        setTimeout(() => {
+          onSetupComplete(secret, backupCodes);
+        }, 1500);
       } else {
-        // ✅ Manejar error con sugerencia de reintento
         if (retryCount < 2) {
           setError(
             `El código de verificación es incorrecto (Intento ${
               retryCount + 1
-            }/3). ` +
-              "Esto puede deberse a un desfase horario. " +
-              "Espera a que cambie el código en tu app y vuelve a intentarlo, " +
-              "o sincroniza la hora de tu dispositivo."
+            }/3). Verifica que la hora de tu dispositivo esté sincronizada correctamente.`
           );
           setRetryCount((prev) => prev + 1);
         } else {
           setError(
-            "Código incorrecto después de múltiples intentos. " +
-              "Verifica que la hora de tu dispositivo esté sincronizada correctamente " +
-              "o genera un nuevo código QR."
+            "Código incorrecto después de múltiples intentos. Verifica que la hora de tu dispositivo esté sincronizada correctamente."
           );
         }
       }
@@ -387,260 +353,451 @@ export default function TwoFactorAuth({
     }
   };
 
-  // ✅ Función para reintentar con el mismo código
   const handleRetryWithSameCode = () => {
     if (lastAttemptCode && lastAttemptCode.length === 6) {
       setVerificationCode(lastAttemptCode);
-      // Usar un pequeño delay para asegurar que el estado se actualice
       setTimeout(() => {
         handleSetupComplete();
       }, 100);
     }
   };
 
-  // ✅ Función para reintentar con nuevo código
   const handleRetryWithNewCode = () => {
     setRetryCount(0);
     setError("");
     setVerificationCode("");
-    // El usuario deberá ingresar el nuevo código que aparece en su app
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
+  const steps = [
+    {
+      number: 1,
+      title: "Escanea el código QR",
+      description:
+        "Usa tu aplicación de autenticación para escanear este código",
+      icon: <QrCodeIcon className="w-5 h-5" />,
+      completed: currentStep > 1,
+      active: currentStep === 1,
+    },
+    {
+      number: 2,
+      title: "Verifica el código",
+      description: "Ingresa el código de 6 dígitos de tu aplicación",
+      icon: <KeyIcon className="w-5 h-5" />,
+      completed: currentStep > 2,
+      active: currentStep === 2,
+    },
+    {
+      number: 3,
+      title: "Configuración completada",
+      description: "La autenticación en dos pasos está activa",
+      icon: <CheckCircleIcon className="w-5 h-5" />,
+      completed: currentStep === 3,
+      active: currentStep === 3,
+    },
+  ];
 
   return (
     <div className="mt-4">
       <div
-        className={`p-6 rounded-xl ${
-          isDarkMode ? "bg-gray-800" : "bg-white"
-        } space-y-6 transition-colors`}
+        className={`p-6 rounded-xl border ${
+          isDarkMode
+            ? "bg-gray-800 border-gray-700"
+            : "bg-white border-gray-200"
+        } space-y-6 transition-all duration-300`}
       >
-        <div className="flex items-center justify-between">
-          <h4
-            className={`font-semibold text-lg ${
-              isDarkMode ? "text-gray-100" : "text-gray-800"
-            }`}
-          >
-            Configurar autenticación en dos pasos
-          </h4>
+        {/* Header Mejorado */}
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h4
+                className={`font-bold text-xl ${
+                  isDarkMode ? "text-gray-100" : "text-gray-800"
+                }`}
+              >
+                Autenticación en Dos Pasos
+              </h4>
+              <span
+                className={`text-xs px-2 py-1 rounded-full ${
+                  isDarkMode
+                    ? "bg-gray-700 text-gray-300"
+                    : "bg-gray-200 text-gray-600"
+                }`}
+              >
+                Opcional
+              </span>
+            </div>
+            <p
+              className={`text-sm ${
+                isDarkMode ? "text-gray-400" : "text-gray-600"
+              }`}
+            >
+              Añade una capa adicional de seguridad a tu cuenta
+            </p>
+          </div>
 
           <button
-            onMouseEnter={preloadModal} // Precargar al hacer hover
-            onClick={handleInfoClick} // Manejar clic para mostrar modal
-            className={`p-1 rounded-full transition-colors ${
+            onMouseEnter={preloadModal}
+            onClick={handleInfoClick}
+            className={`p-2 rounded-lg transition-all duration-200 ${
               isDarkMode
                 ? "text-gray-400 hover:text-white hover:bg-gray-700"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-200"
             } ${isShaking ? "animate-bounce" : ""}`}
             title="¿Qué es la autenticación en dos pasos?"
           >
-            <QuestionMarkCircleIcon className="w-5 h-5" />
+            <QuestionMarkCircleIcon className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Paso 1: Escanear QR */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col items-center gap-4">
-            <div
-              className={`p-3 rounded-lg ${
-                isDarkMode ? "bg-gray-700" : "bg-gray-100"
-              }`}
-            >
-              <QrCodeIcon
-                className={`w-8 h-8 ${
-                  isDarkMode ? "text-gray-200" : "text-gray-600"
-                }`}
-              />
-            </div>
+        {/* Progress Steps */}
+        <div className="space-y-3">
+          {steps.map((step, index) => (
+            <SetupStep
+              key={step.number}
+              number={step.number}
+              title={step.title}
+              description={step.description}
+              icon={step.icon}
+              isActive={step.active}
+              isCompleted={step.completed}
+              isDarkMode={isDarkMode}
+            />
+          ))}
+        </div>
 
-            <p
-              className={`text-sm font-medium text-center ${
-                isDarkMode ? "text-gray-300" : "text-gray-600"
-              }`}
-            >
-              1. Escanea el código QR con una aplicación de autenticación
-            </p>
-
-            {/* Código QR centrado */}
-            <div className="flex flex-col items-center gap-4">
-              {qrDataUrl ? (
-                <img
-                  src={qrDataUrl}
-                  alt="Código QR para aplicaciones de autenticación"
-                  className="border rounded-lg w-48 h-48 mx-auto"
-                />
-              ) : (
+        {/* Step 1: QR Code */}
+        {currentStep === 1 && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="text-center">
+              <div className="flex flex-col items-center gap-4">
+                {/* QR Code Container */}
                 <div
-                  className={`w-48 h-48 border rounded-lg flex items-center justify-center mx-auto ${
-                    isDarkMode ? "border-gray-600" : "border-gray-300"
+                  className={`p-4 rounded-2xl ${
+                    isDarkMode ? "bg-gray-900" : "bg-gray-50"
+                  } border-2 ${
+                    isDarkMode ? "border-gray-700" : "border-gray-200"
                   }`}
                 >
-                  <ArrowPathIcon
-                    className={`w-8 h-8 animate-spin ${
-                      isDarkMode ? "text-gray-400" : "text-gray-500"
-                    }`}
-                  />
+                  {qrDataUrl ? (
+                    <img
+                      src={qrDataUrl}
+                      alt="Código QR para aplicaciones de autenticación"
+                      className="w-48 h-48 mx-auto"
+                    />
+                  ) : (
+                    <div
+                      className={`w-48 h-48 flex items-center justify-center ${
+                        isDarkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
+                      <ArrowPathIcon className="w-8 h-8 animate-spin" />
+                    </div>
+                  )}
                 </div>
-              )}
 
-              <div
-                className={`text-xs text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-500"
-                }`}
-              >
-                <p>
-                  Si no puedes escanear el código, ingresa esta clave
-                  manualmente:
-                </p>
-                <div className="flex items-center justify-center gap-2 mt-1">
-                  <code
-                    className={`px-2 py-1 rounded font-mono ${
-                      isDarkMode
-                        ? "bg-gray-700 text-gray-200"
-                        : "bg-gray-100 text-gray-800"
+                {/* Manual Setup Option */}
+                <div
+                  className={`p-4 rounded-xl w-full max-w-md ${
+                    isDarkMode ? "bg-gray-700" : "bg-blue-50"
+                  }`}
+                >
+                  <h5
+                    className={`font-semibold text-sm mb-2 ${
+                      isDarkMode ? "text-gray-200" : "text-blue-800"
                     }`}
                   >
-                    {secret}
-                  </code>
+                    Configuración manual
+                  </h5>
+                  <p
+                    className={`text-xs mb-3 ${
+                      isDarkMode ? "text-gray-400" : "text-blue-700"
+                    }`}
+                  >
+                    Si no puedes escanear el código QR, ingresa esta clave
+                    manualmente:
+                  </p>
+
+                  <div className="flex items-center gap-2">
+                    <code
+                      className={`flex-1 px-3 py-2 rounded-lg font-mono text-sm border ${
+                        isDarkMode
+                          ? "bg-gray-800 border-gray-600 text-gray-200"
+                          : "bg-white border-gray-300 text-gray-800"
+                      }`}
+                    >
+                      {secret}
+                    </code>
+                    <button
+                      onClick={() => copyToClipboard(secret, "secret")}
+                      className={`p-2 rounded-lg transition-all duration-200 ${
+                        copiedSecret
+                          ? "bg-green-500 text-white"
+                          : isDarkMode
+                          ? "bg-gray-600 text-gray-300 hover:bg-gray-500"
+                          : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                      }`}
+                      title="Copiar clave secreta"
+                    >
+                      {copiedSecret ? (
+                        <CheckCircleIcon className="w-5 h-5" />
+                      ) : (
+                        <DocumentDuplicateIcon className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Action Buttons con opción de omitir */}
+                <div className="flex flex-col gap-3 w-full max-w-md">
                   <button
-                    onClick={() => copyToClipboard(secret)}
-                    className={`p-1 rounded transition-colors ${
+                    onClick={() => setCurrentStep(2)}
+                    disabled={!qrDataUrl}
+                    className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
                       isDarkMode
-                        ? "hover:bg-gray-700 text-gray-400 hover:text-gray-200"
-                        : "hover:bg-gray-200 text-gray-500 hover:text-gray-700"
+                        ? "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-400"
+                        : "bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500"
                     }`}
-                    title="Copiar clave secreta"
                   >
-                    <DocumentDuplicateIcon className="w-4 h-4" />
+                    Continuar a verificación
+                  </button>
+
+                  {/* Nuevo botón "Omitir por ahora" */}
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 border ${
+                      isDarkMode
+                        ? "border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-gray-100"
+                        : "border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+                    }`}
+                  >
+                    Omitir por ahora
+                  </button>
+                </div>
+
+                {/* Información adicional sobre la opcionalidad */}
+                <div
+                  className={`text-xs text-center max-w-md ${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  <p>
+                    La autenticación en dos pasos es opcional pero recomendada
+                    para mayor seguridad.
+                  </p>
+                  <p>
+                    Puedes activarla en cualquier momento desde la
+                    configuración.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Verification */}
+        {currentStep === 2 && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="text-center">
+              <div className="flex flex-col items-center gap-6">
+                {/* Timer Indicator */}
+                <div
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+                    isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                  }`}
+                >
+                  <ClockIcon className="w-4 h-4" />
+                  <span
+                    className={`text-sm font-medium ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    El código cambia en: {timeLeft}s
+                  </span>
+                </div>
+
+                {/* Code Input */}
+                <div className="w-full max-w-md">
+                  <label
+                    className={`block text-sm font-medium mb-3 text-center ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Ingresa el código de 6 dígitos
+                  </label>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => {
+                        const value = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 6);
+                        setVerificationCode(value);
+                        setError("");
+                      }}
+                      placeholder="000000"
+                      className={`w-full p-4 text-center text-xl font-mono rounded-xl border-2 transition-all duration-200 ${
+                        isDarkMode
+                          ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                          : "bg-white border-gray-300 text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      } ${error ? "border-red-500 shake-animation" : ""}`}
+                      autoFocus
+                    />
+
+                    {/* Input helper */}
+                    <div
+                      className={`absolute -bottom-6 left-0 right-0 text-xs ${
+                        isDarkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
+                      {verificationCode.length === 6
+                        ? "✓ Código completo"
+                        : `${verificationCode.length}/6 dígitos`}
+                    </div>
+                  </div>
+
+                  {/* Error Message */}
+                  {error && (
+                    <div
+                      className={`mt-8 p-4 rounded-xl border ${
+                        isDarkMode
+                          ? "bg-red-900/20 border-red-800 text-red-400"
+                          : "bg-red-50 border-red-200 text-red-600"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <ExclamationTriangleIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                        <div className="text-left">
+                          <p className="font-medium text-sm">{error}</p>
+
+                          {error.includes("incorrecto") && retryCount > 0 && (
+                            <div className="flex gap-2 mt-3">
+                              <button
+                                type="button"
+                                onClick={handleRetryWithSameCode}
+                                disabled={isLoading}
+                                className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                                  isDarkMode
+                                    ? "bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-600"
+                                    : "bg-red-500 text-white hover:bg-red-600 disabled:bg-gray-400"
+                                }`}
+                              >
+                                {isLoading
+                                  ? "Verificando..."
+                                  : "Reintentar mismo código"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={handleRetryWithNewCode}
+                                disabled={isLoading}
+                                className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
+                                  isDarkMode
+                                    ? "border-gray-600 text-gray-300 hover:bg-gray-700 disabled:text-gray-500"
+                                    : "border-gray-400 text-gray-600 hover:bg-gray-200 disabled:text-gray-400"
+                                }`}
+                              >
+                                Ingresar nuevo código
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 w-full max-w-md">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(1)}
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                      isDarkMode
+                        ? "border border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-gray-100"
+                        : "border border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+                    }`}
+                  >
+                    Atrás
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSetupComplete}
+                    disabled={verificationCode.length !== 6 || isLoading}
+                    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
+                      isDarkMode
+                        ? "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-400"
+                        : "bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500"
+                    }`}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                        Verificando...
+                      </div>
+                    ) : (
+                      "Verificar y activar"
+                    )}
                   </button>
                 </div>
               </div>
             </div>
           </div>
-          {/* Paso 2: Ingresar código de verificación */}
-          <div className="flex items-start gap-4 mt-6">
-            <div
-              className={`p-3 rounded-lg ${
-                isDarkMode ? "bg-gray-700" : "bg-gray-100"
-              }`}
-            >
-              <KeyIcon
-                className={`w-8 h-8 ${
-                  isDarkMode ? "text-gray-200" : "text-gray-600"
-                }`}
-              />
-            </div>
-            <div className="flex-1">
-              <p
-                className={`text-sm font-medium ${
-                  isDarkMode ? "text-gray-300" : "text-gray-700"
-                }`}
-              >
-                2. Ingresa el código de verificación de 6 dígitos
-              </p>
-              <p
-                className={`text-xs mt-1 ${
-                  isDarkMode ? "text-gray-400" : "text-gray-500"
-                }`}
-              >
-                Abre tu aplicación de autenticación y copia el código de 6
-                dígitos que se muestra.
-              </p>
-              <input
-                type="text"
-                value={verificationCode}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, "").slice(0, 6);
-                  setVerificationCode(value);
-                }}
-                placeholder="123456"
-                className={`w-full p-3 mt-2 rounded-lg border transition-colors ${
-                  isDarkMode
-                    ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500 focus:border-uniss-gold focus:ring-1 focus:ring-uniss-gold"
-                    : "bg-white border-gray-300 text-gray-800 placeholder-gray-400 focus:border-uniss-blue focus:ring-1 focus:ring-uniss-blue"
-                }`}
-              />
+        )}
 
-              {error && (
-                <div
-                  className={`mt-2 ${
-                    isDarkMode ? "text-red-400" : "text-red-600"
+        {/* Step 3: Success */}
+        {currentStep === 3 && (
+          <div className="text-center space-y-6 animate-fadeIn">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+                <CheckCircleIcon className="w-8 h-8 text-white" />
+              </div>
+
+              <div>
+                <h5
+                  className={`font-bold text-lg ${
+                    isDarkMode ? "text-gray-100" : "text-gray-800"
                   }`}
                 >
-                  <p className="text-sm">{error}</p>
+                  ¡Configuración completada!
+                </h5>
+                <p
+                  className={`text-sm ${
+                    isDarkMode ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  La autenticación en dos pasos ha sido activada para tu cuenta.
+                </p>
+              </div>
 
-                  {/* ✅ Botones de reintento que aparecen solo cuando hay error */}
-                  {error.includes("incorrecto") && retryCount > 0 && (
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        type="button"
-                        onClick={handleRetryWithSameCode}
-                        disabled={isLoading}
-                        className={`text-xs px-3 py-1 rounded transition-colors ${
-                          isDarkMode
-                            ? "bg-uniss-gold text-gray-900 hover:bg-yellow-600 disabled:bg-gray-600"
-                            : "bg-uniss-blue text-white hover:bg-blue-600 disabled:bg-gray-400"
-                        }`}
-                      >
-                        {isLoading
-                          ? "Verificando..."
-                          : "Reintentar con mismo código"}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleRetryWithNewCode}
-                        disabled={isLoading}
-                        className={`text-xs px-3 py-1 rounded border transition-colors ${
-                          isDarkMode
-                            ? "border-gray-500 text-gray-300 hover:bg-gray-700 disabled:text-gray-500"
-                            : "border-gray-400 text-gray-600 hover:bg-gray-200 disabled:text-gray-400"
-                        }`}
-                      >
-                        Ingresar nuevo código
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>{" "}
-            {/* ✅ ESTE ES EL </div> QUE FALTABA */}
-          </div>{" "}
-          {/* ✅ Cierre del contenedor principal del Paso 2 */}
-          <div
-            className={`flex gap-4 pt-4 border-t ${
-              isDarkMode ? "border-gray-600" : "border-gray-300"
-            }`}
-          >
-            <button
-              type="button"
-              onClick={onCancel}
-              className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
-                isDarkMode
-                  ? "border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-gray-100"
-                  : "border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-              }`}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSetupComplete}
-              disabled={verificationCode.length !== 6 || isLoading}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                isDarkMode
-                  ? "bg-uniss-gold text-gray-900 hover:bg-yellow-600 disabled:bg-gray-600 disabled:text-gray-400"
-                  : "bg-uniss-blue text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:text-gray-200"
-              }`}
-            >
-              {isLoading ? "Verificando..." : "Completar configuración"}
-            </button>
+              <div
+                className={`p-4 rounded-xl w-full max-w-md ${
+                  isDarkMode ? "bg-gray-700" : "bg-yellow-50"
+                }`}
+              >
+                <h6
+                  className={`font-semibold text-sm mb-2 ${
+                    isDarkMode ? "text-yellow-400" : "text-yellow-800"
+                  }`}
+                >
+                  ⚠️ Guarda tus códigos de respaldo
+                </h6>
+                <p
+                  className={`text-xs ${
+                    isDarkMode ? "text-yellow-300" : "text-yellow-700"
+                  }`}
+                >
+                  Asegúrate de haber guardado los códigos de respaldo en un
+                  lugar seguro.
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Modal de información con lazy loading */}
+        {/* Modal de información */}
         <Modal
           isOpen={showInfoModal}
           onClose={() => setShowInfoModal(false)}
@@ -656,6 +813,38 @@ export default function TwoFactorAuth({
           </Suspense>
         </Modal>
       </div>
+
+      {/* Estilos de animación */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes shake {
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          25% {
+            transform: translateX(-5px);
+          }
+          75% {
+            transform: translateX(5px);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+        .shake-animation {
+          animation: shake 0.5s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 }

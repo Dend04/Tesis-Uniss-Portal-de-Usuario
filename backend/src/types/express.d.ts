@@ -9,4 +9,20 @@ declare global {
   }
 }
 
+export interface AuthenticatedRequest extends Request {
+  user?: {
+    employeeID: string;
+    id?: string;
+  };
+  body: {
+    newEmail?: string;
+    code?: string;
+    // Agrega otras propiedades del body que uses
+    email?: string;
+    userName?: string;
+    daysLeft?: number;
+    grupos?: string[];
+  };
+}
+
 export {};

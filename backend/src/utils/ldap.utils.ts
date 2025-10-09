@@ -458,6 +458,72 @@ export async function unifiedLDAPSearch(
   }
 }
 
+
+
+export async function searchLDAPUserForEmail(
+  filter: string, 
+  attributes: string[] = ['*'],
+  baseDN: string = process.env.LDAP_BASE_DN!
+): Promise<any[]> {
+  if (!process.env.LDAP_URL || !process.env.LDAP_ADMIN_DN || !process.env.LDAP_ADMIN_PASSWORD) {
+    throw new Error("Configuración LDAP incompleta");
+  }
+  
+  const pool = getLDAPPool();
+  let client: LDAPClient | null = null;
+  
+  try {
+    client = await pool.getConnection();
+    return new Promise((resolve, reject) => {
+      const entries: any[] = [];
+      client!.search(baseDN, {
+        scope: 'sub',
+        filter,
+        attributes: attributes
+      }, (err: Error | null, res: SearchCallbackResponse) => {
+        if (err) {
+          return reject(err);
+        }
+        
+        res.on('searchEntry', (entry: ldap.SearchEntry) => {
+          // ✅ Extraer correctamente los atributos
+          const userObject: any = {
+            dn: entry.dn.toString()
+          };
+          
+          // Extraer todos los atributos solicitados
+          if (entry.attributes) {
+            entry.attributes.forEach((attr: any) => {
+              if (attr.values && attr.values.length > 0) {
+                userObject[attr.type] = attr.values.length === 1 ? attr.values[0] : attr.values;
+              }
+            });
+          }
+          
+          console.log("🔍 Atributos extraídos del usuario:", userObject);
+          entries.push(userObject);
+        });
+        
+        res.on('error', (error: Error) => {
+          reject(error);
+        });
+        
+        res.on('end', () => {
+          console.log(`📊 Búsqueda LDAP completada. Encontrados: ${entries.length} usuarios`);
+          resolve(entries);
+        });
+      });
+    });
+  } finally {
+    if (client) {
+      try {
+        pool.releaseConnection(client);
+      } catch (e) {
+        console.error("Error al liberar conexión LDAP:", e);
+      }
+    }
+  }
+}
 /**
  * Interfaz para la configuración LDAP
  */

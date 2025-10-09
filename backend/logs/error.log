@@ -1096,3 +1096,15 @@ Validation Error Count: 1
 2025-09-29 14:54:04 [error]: Error al verificar estado dual: Do not know how to serialize a BigInt
 2025-09-29 15:16:56 [error]: Error verificando token: Token inválido o expirado
 2025-09-29 16:20:59 [error]: Error verificando token: Token inválido o expirado
+2025-10-07 13:16:09 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,email,title,iat,exp
+2025-10-07 13:16:09 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,email,title,iat,exp
+2025-10-07 16:06:47 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-10-07 16:07:15 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-10-07 16:20:09 [error]: Error global: Error: Error al eliminar cuenta: No se encontró usuario con employeeID o sAMAccountName: 02041673161
+    at LDAPAccountRemovalService.removeAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\ldap-account-removal.services.ts:43:15)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async deleteAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\controllers\account-removal.controller.ts:25:22)
+2025-10-07 16:20:20 [error]: Error global: Error: Error al eliminar cuenta: No se encontró usuario con employeeID o sAMAccountName: 02041673161
+    at LDAPAccountRemovalService.removeAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\ldap-account-removal.services.ts:43:15)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async deleteAccount (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\controllers\account-removal.controller.ts:25:22)

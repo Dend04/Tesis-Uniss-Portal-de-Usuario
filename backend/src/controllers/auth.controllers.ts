@@ -8,55 +8,68 @@ import { auditService } from "../services/audit.services";
 import { unifiedLDAPSearch } from "../utils/ldap.utils";
 import { passwordService } from "../services/password.services";
 
-export const loginController = async (req: Request, res: Response): Promise<void> => {
+export const loginController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { username, password } = req.body;
-    
+
     if (!username || !password) {
       res.status(400).json({
         success: false,
-        message: "Usuario y contraseña son requeridos"
+        message: "Usuario y contraseña son requeridos",
       });
       return;
     }
 
     await authService.authenticateUser(username, password);
     const ldapUser = await userService.getUserData(username);
-    
+
     if (!ldapUser.employeeID) {
-      console.warn('⚠️ Usuario sin employeeID asignado');
+      console.warn("⚠️ Usuario sin employeeID asignado");
     }
 
     const tokenPayload: TokenPayload = {
       sAMAccountName: ldapUser.sAMAccountName,
       username: username.trim() || ldapUser.sAMAccountName,
-      employeeID: ldapUser.employeeID || '',
+      employeeID: ldapUser.employeeID || "",
       displayName: ldapUser.nombreCompleto,
       email: ldapUser.email,
+      title: ldapUser.title,
     };
 
     const tokens = generateTokens(tokenPayload);
 
-    console.log('✅ Login exitoso');
+    console.log("✅ Login exitoso");
     res.json({
       success: true,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      user: { 
-        ...ldapUser, 
+      user: {
+        ...ldapUser,
         username: username.trim() || ldapUser.sAMAccountName,
-        employeeID: ldapUser.employeeID 
+        employeeID: ldapUser.employeeID,
       },
     });
   } catch (error: any) {
     console.error("❌ Error en login:", error.message);
-    
-    if (error.message.includes("no encontrado") || error.message.includes("no existe")) {
-      res.status(404).json({ success: false, message: "Usuario no encontrado" });
+
+    if (
+      error.message.includes("no encontrado") ||
+      error.message.includes("no existe")
+    ) {
+      res
+        .status(404)
+        .json({ success: false, message: "Usuario no encontrado" });
     } else if (error.message.includes("Credenciales inválidas")) {
-      res.status(401).json({ success: false, message: "Credenciales inválidas" });
+      res
+        .status(401)
+        .json({ success: false, message: "Credenciales inválidas" });
     } else {
-      res.status(500).json({ success: false, message: "Error interno del servidor" });
+      res
+        .status(500)
+        .json({ success: false, message: "Error interno del servidor" });
     }
   }
 };
@@ -91,41 +104,48 @@ export const checkAndUpdateEmployeeID = async (req: Request, res: Response) => {
   }
 };
 
-export const changePasswordController = async (req: Request, res: Response): Promise<void> => {
+export const changePasswordController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   // ✅ DECLARAR user FUERA DEL TRY PARA QUE ESTÉ DISPONIBLE EN EL CATCH
   let user: { sAMAccountName: string } | null = null;
-  
+
   try {
     user = (req as any).user as { sAMAccountName: string };
     const { currentPassword, newPassword } = req.body;
 
     if (!user?.sAMAccountName || !currentPassword || !newPassword) {
-      res.status(400).json({ error: "Usuario, contraseña actual y nueva contraseña son requeridos" });
+      res
+        .status(400)
+        .json({
+          error: "Usuario, contraseña actual y nueva contraseña son requeridos",
+        });
       return;
     }
 
     // ✅ VERIFICAR PRIMERO QUE LA CONTRASEÑA ACTUAL SEA CORRECTA
     try {
       await authService.authenticateUser(user.sAMAccountName, currentPassword);
-      console.log('✅ Contraseña actual verificada correctamente');
+      console.log("✅ Contraseña actual verificada correctamente");
     } catch (authError) {
-      console.error('❌ Contraseña actual incorrecta');
-      res.status(401).json({ 
-        error: "La contraseña actual es incorrecta" 
+      console.error("❌ Contraseña actual incorrecta");
+      res.status(401).json({
+        error: "La contraseña actual es incorrecta",
       });
       return;
     }
 
     const ldapUser = await userService.getUserData(user.sAMAccountName);
-    if (!ldapUser.dn || ldapUser.dn.includes('no-encontrado')) {
+    if (!ldapUser.dn || ldapUser.dn.includes("no-encontrado")) {
       res.status(400).json({ error: "Usuario no encontrado en el directorio" });
       return;
     }
 
     // ✅ Validar que la nueva contraseña sea diferente a la actual
     if (currentPassword === newPassword) {
-      res.status(400).json({ 
-        error: "La nueva contraseña debe ser diferente a la actual" 
+      res.status(400).json({
+        error: "La nueva contraseña debe ser diferente a la actual",
       });
       return;
     }
@@ -134,79 +154,90 @@ export const changePasswordController = async (req: Request, res: Response): Pro
 
     await auditService.logPasswordChange(user.sAMAccountName, true, {
       ip: req.ip,
-      userAgent: req.get('User-Agent'),
+      userAgent: req.get("User-Agent"),
       timestamp: new Date().toISOString(),
       passwordChanged: true,
-      currentPasswordVerified: true
-    });
-    
-    console.log('✅ Cambio de contraseña exitoso');
-    res.json({ 
-      success: true, 
-      message: "Contraseña cambiada correctamente" 
+      currentPasswordVerified: true,
     });
 
+    console.log("✅ Cambio de contraseña exitoso");
+    res.json({
+      success: true,
+      message: "Contraseña cambiada correctamente",
+    });
   } catch (error: any) {
-    console.error('💥 Error cambiando contraseña:', error.message);
+    console.error("💥 Error cambiando contraseña:", error.message);
 
     // ✅ USAR user SOLO SI ESTÁ DEFINIDO
-    const username = user?.sAMAccountName || 'unknown';
-    
+    const username = user?.sAMAccountName || "unknown";
+
     await auditService.logPasswordChange(username, false, {
       ip: req.ip,
-      userAgent: req.get('User-Agent'),
+      userAgent: req.get("User-Agent"),
       timestamp: new Date().toISOString(),
       error: error.message,
-      userAvailable: !!user // ✅ Indicar si user estaba disponible
+      userAvailable: !!user, // ✅ Indicar si user estaba disponible
     });
 
-    if (error.message.includes('historial') || error.message.includes('history')) {
+    if (
+      error.message.includes("historial") ||
+      error.message.includes("history")
+    ) {
       res.status(400).json({
-        error: "La contraseña ya ha sido utilizada anteriormente. Por favor, elija una diferente."
+        error:
+          "La contraseña ya ha sido utilizada anteriormente. Por favor, elija una diferente.",
       });
-    } else if (error.message.includes('políticas') || error.message.includes('policy')) {
+    } else if (
+      error.message.includes("políticas") ||
+      error.message.includes("policy")
+    ) {
       res.status(400).json({
-        error: "La contraseña no cumple con las políticas de seguridad"
+        error: "La contraseña no cumple con las políticas de seguridad",
       });
-    } else if (error.message.includes('Credenciales inválidas')) {
+    } else if (error.message.includes("Credenciales inválidas")) {
       res.status(401).json({
-        error: "Error de autenticación"
+        error: "Error de autenticación",
       });
     } else {
       res.status(500).json({
-        error: "Error interno del servidor"
+        error: "Error interno del servidor",
       });
     }
   }
 };
 
-export const checkPasswordHistoryController = async (req: Request, res: Response): Promise<void> => {
+export const checkPasswordHistoryController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { username, newPassword } = req.body;
 
     if (!username || !newPassword) {
-      res.status(400).json({ 
-        success: false, 
-        error: "Usuario y nueva contraseña son requeridos" 
+      res.status(400).json({
+        success: false,
+        error: "Usuario y nueva contraseña son requeridos",
       });
       return;
     }
 
-    const isInHistory = await passwordService.checkPasswordAgainstHistory(username, newPassword);
-    
-    res.json({ 
-      success: true, 
-      isInHistory,
-      message: isInHistory 
-        ? "Esta contraseña ha sido utilizada recientemente" 
-        : "Contraseña válida (no está en el historial)"
-    });
+    const isInHistory = await passwordService.checkPasswordAgainstHistory(
+      username,
+      newPassword
+    );
 
+    res.json({
+      success: true,
+      isInHistory,
+      message: isInHistory
+        ? "Esta contraseña ha sido utilizada recientemente"
+        : "Contraseña válida (no está en el historial)",
+    });
   } catch (error: any) {
     console.error("❌ Error verificando historial:", error);
-    res.status(500).json({ 
-      success: false, 
-      error: "Error al verificar historial de contraseñas"
+    res.status(500).json({
+      success: false,
+      error: "Error al verificar historial de contraseñas",
     });
   }
 };

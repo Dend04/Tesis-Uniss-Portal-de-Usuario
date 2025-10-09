@@ -68,19 +68,14 @@ export const verifyDualStatus = async (req: AuthenticatedRequest, res: Response)
     // 5. Proceder con la verificación dual (ahora con título)
     const result = await dualVerificationServices.verifyDualStatus(ci, userTitle);
 
-    // Función replacer para BigInt
-    const replacer = (key: string, value: any) => {
-        if (typeof value === 'bigint') {
-            return value.toString();
-        }
-        return value;
-    };
+    const usedSigenu = userTitle && userTitle.toLowerCase() !== 'estudiante';
+
 
     res.status(200).json({
       success: true,
       isAlsoEmployee: result.isEmployee,
       userTitle: userTitle,
-      usedSigenu: userTitle && userTitle.toLowerCase() === 'estudiante',
+      usedSigenu: usedSigenu,
       isGraduated: result.isGraduated,
       studentStatus: result.studentStatus,
       hasDualOccupation: result.hasDualOccupation || false, // ✅ AGREGAR ESTA LÍNEA

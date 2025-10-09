@@ -5,10 +5,14 @@ import {
   sendWelcomeEmail,
   sendVerificationCode as sendVerificationCodeService,
   sendEmailNew,
+  sendChangeEmailVerification,
 } from "../services/emailService";
 import { verificationStorage } from "../services/verificationStorage";
 import { passwordExpiryService } from "../services/passwordExpiryService";
 import { cacheService } from "../utils/cache.utils";
+import { AuthenticatedRequest } from "../types/express";
+import { LDAPEmailUpdateService } from "../services/ldap-email-update.services";
+import { searchLDAPUserForEmail } from "../utils/ldap.utils";
 
 // Almacenamiento temporal de códigos de verificación
 const verificationCodes = new Map<
@@ -462,6 +466,151 @@ export const enviarAlertasManuales = async (
     res.status(500).json({
       success: false,
       message: "Error en envío manual de alertas",
+      error: error.message,
+    });
+  }
+};
+
+export const sendChangeEmailVerificationCode = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email, userName, newEmail } = req.body;
+
+    if (!email || !newEmail) {
+      res.status(400).json({
+        success: false,
+        message: "El correo actual y el nuevo correo son requeridos",
+      });
+      return;
+    }
+
+    // Validar que el nuevo correo no sea institucional
+    if (newEmail.toLowerCase().endsWith('@uniss.edu.cu')) {
+      res.status(400).json({
+        success: false,
+        message: "No puedes utilizar un correo institucional @uniss. Por seguridad, usa un correo personal.",
+      });
+      return;
+    }
+
+    // Validar formato del nuevo correo
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      res.status(400).json({
+        success: false,
+        message: "El formato del nuevo correo electrónico no es válido",
+      });
+      return;
+    }
+
+    const verificationCode = generateVerificationCode();
+
+    // Guardar el código con fecha de expiración (10 minutos) usando el NUEVO correo como clave
+    verificationStorage.setCode(newEmail, verificationCode, 10 * 60 * 1000);
+
+    // ✅ CORRECCIÓN: Enviar el código al NUEVO correo, no al actual
+    const info = await sendChangeEmailVerification(
+      newEmail,           // ← Cambiado: enviar al NUEVO correo
+      userName || "Usuario", 
+      verificationCode,
+      newEmail         // ← Este parámetro se usa en el template para mostrar el correo que se está verificando
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Código de verificación enviado para cambio de correo",
+      email: email,
+      newEmail: newEmail,
+      userName: userName || "Usuario",
+      emailStats: {
+        count: emailCounter.getCount(),
+        remaining: emailCounter.getRemaining(),
+        dailyLimit: emailCounter.getRemaining() + emailCounter.getCount(),
+        usageMessage: emailCounter.getUsageMessage(),
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Error al enviar código de verificación para cambio de correo",
+      error: error.message,
+    });
+  }
+};
+
+// ✅ CONTROLADOR CORREGIDO: Verificar código y actualizar correo
+export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { newEmail, code } = req.body;
+
+
+    const userId = req.user?.sAMAccountName;
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Usuario no autenticado",
+      });
+      return;
+    }
+    
+    let ldapUsers;
+    try {
+      // Busca al usuario por su sAMAccountName
+      const filter = `(&(objectClass=user)(sAMAccountName=${userId}))`;
+      // Especifica los atributos que necesitas
+      const attributes = ['distinguishedName', 'sAMAccountName', 'mail', 'userPrincipalName'];
+      
+      ldapUsers = await searchLDAPUserForEmail(filter, attributes);
+      
+      console.log(`📊 Resultados de búsqueda LDAP: ${ldapUsers.length} usuarios encontrados`);
+      
+      if (ldapUsers.length === 0) {
+        res.status(404).json({
+          success: false,
+          message: "Usuario no encontrado en el directorio",
+        });
+        return;
+      }
+      
+      // Verifica qué atributos tiene el usuario
+      const user = ldapUsers[0];
+      
+    } catch (ldapError: any) {
+      res.status(500).json({
+        success: false,
+        message: "Error al buscar usuario en el directorio",
+        error: ldapError.message,
+      });
+      return;
+    }
+
+    // ✅ ACTUALIZAR EL CORREO EN LDAP
+    const ldapUpdateService = new LDAPEmailUpdateService();
+    const updateResult = await ldapUpdateService.updateUserEmail(userId, newEmail);
+
+    if (!updateResult.success) {
+      res.status(500).json({
+        success: false,
+        message: updateResult.message,
+      });
+      return;
+    }
+
+    verificationStorage.deleteCode(newEmail);
+
+    res.status(200).json({
+      success: true,
+      message: "Correo actualizado exitosamente",
+      newEmail: newEmail,
+    });
+
+  } catch (error: any) {
+    console.error("💥 Error en verifyAndUpdateEmail:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error al actualizar el correo",
       error: error.message,
     });
   }

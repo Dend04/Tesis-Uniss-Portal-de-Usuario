@@ -91,77 +91,85 @@ const useDualVerification = () => {
   const [hasDualOccupation, setHasDualOccupation] = useState<boolean>(false);
 
   useEffect(() => {
-      const verifyDualStatus = async () => {
-          setLoadingDual(true);
-          try {
-              const token = localStorage.getItem('authToken');
-              if (!token) return;
+    const verifyDualStatus = async () => {
+        setLoadingDual(true);
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
 
-              const response = await fetch(
-                  `${process.env.NEXT_PUBLIC_API_URL}/verify/dual-status`,
-                  {
-                      method: 'POST',
-                      headers: {
-                          'Authorization': `Bearer ${token}`,
-                          'Content-Type': 'application/json',
-                      },
-                  }
-              );
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/verify/dual-status`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
 
-              if (response.ok) {
-                  const data = await response.json();
-                  const employeeStatus = data.isAlsoEmployee || false;
-                  const sigenuUsed = data.usedSigenu || false;
-                  const graduatedStatus = data.isGraduated || false;
-                  const status = data.studentStatus || '';
-                  const dualOccupation = data.hasDualOccupation || false;
-                  
-                  setIsAlsoEmployee(employeeStatus);
-                  setUsedSigenu(sigenuUsed);
-                  setIsGraduated(graduatedStatus);
-                  setStudentStatus(status);
-                  setHasDualOccupation(dualOccupation);
-                  
-                  // ✅ CRUCIAL: Solo guardar 'dobleOcupacion' si NO es egresado y tiene doble ocupación
-                  if (dualOccupation && !graduatedStatus) {
-                      localStorage.setItem('dobleOcupacion', 'true');
-                      console.log('🔄 Guardado en localStorage: dobleOcupacion = true');
-                  } else {
-                      localStorage.removeItem('dobleOcupacion');
-                      console.log('🔄 Removido de localStorage: dobleOcupacion');
-                      
-                      // ✅ También limpiar el antiguo 'trabajador' para consistencia
-                      localStorage.removeItem('trabajador');
-                  }
+            if (response.ok) {
+                const data = await response.json();
+                const employeeStatus = data.isAlsoEmployee || false;
+                const sigenuUsed = data.usedSigenu || false;
+                const graduatedStatus = data.isGraduated || false;
+                const status = data.studentStatus || '';
+                const dualOccupation = data.hasDualOccupation || false;
+                
+                setIsAlsoEmployee(employeeStatus);
+                setUsedSigenu(sigenuUsed);
+                setIsGraduated(graduatedStatus);
+                setStudentStatus(status);
+                setHasDualOccupation(dualOccupation);
+                
+                // ✅ LÓGICA CORREGIDA PARA localStorage
+                const statusLower = status.toLowerCase();
+                const isBaja = statusLower.includes('baja');
+                
+                // SOLO guardar dobleOcupacion si:
+                // 1. Tiene doble ocupación
+                // 2. NO es egresado
+                // 3. NO está de baja
+                if (dualOccupation && !graduatedStatus && !isBaja) {
+                    localStorage.setItem('dobleOcupacion', 'true');
+                    console.log('🔄 Guardado en localStorage: dobleOcupacion = true');
+                } else {
+                    localStorage.removeItem('dobleOcupacion');
+                    console.log('🔄 Removido de localStorage: dobleOcupacion - Razón:', {
+                        dobleOcupacion: dualOccupation,
+                        esEgresado: graduatedStatus,
+                        esBaja: isBaja
+                    });
+                }
 
-                  console.log(`✅ Verificación dual completada:`, {
-                      esEmpleado: employeeStatus,
-                      usoSigenu: sigenuUsed,
-                      esEgresado: graduatedStatus,
-                      estadoEstudiante: status,
-                      dobleOcupacion: dualOccupation,
-                      tituloUsuario: data.userTitle
-                  });
-              } else {
-                  throw new Error('Error en la respuesta del servidor');
-              }
-          } catch (error) {
-              console.error('Error verificando estado dual:', error);
-              setIsAlsoEmployee(false);
-              setUsedSigenu(false);
-              setIsGraduated(false);
-              setStudentStatus('');
-              setHasDualOccupation(false);
-              // ✅ Limpiar ambos campos en caso de error
-              localStorage.removeItem('dobleOcupacion');
-              localStorage.removeItem('trabajador');
-          } finally {
-              setLoadingDual(false);
-          }
-      };
+                console.log(`✅ Verificación dual completada:`, {
+                    esEmpleado: employeeStatus,
+                    usoSigenu: sigenuUsed,
+                    esEgresado: graduatedStatus,
+                    estadoEstudiante: status,
+                    dobleOcupacion: dualOccupation,
+                    tituloUsuario: data.userTitle
+                });
+            } else {
+                throw new Error('Error en la respuesta del servidor');
+            }
+        } catch (error) {
+            console.error('Error verificando estado dual:', error);
+            setIsAlsoEmployee(false);
+            setUsedSigenu(false);
+            setIsGraduated(false);
+            setStudentStatus('');
+            setHasDualOccupation(false);
+            localStorage.removeItem('dobleOcupacion');
+            localStorage.removeItem('trabajador');
+        } finally {
+            setLoadingDual(false);
+        }
+    };
 
-      verifyDualStatus();
-  }, []);
+    verifyDualStatus();
+}, []);
+  
 
   return { isAlsoEmployee, loadingDual, usedSigenu, isGraduated, studentStatus, hasDualOccupation };
 };
@@ -277,7 +285,7 @@ const getStatusText = (): string => {
   
   // Caso 1: Si es egresado, mostrar "Egresado" (prioridad máxima)
   if (isGraduated) {
-      return 'Egresado';
+    return userTitle.charAt(0).toUpperCase() + userTitle.slice(1);
   }
   
   // Caso 2: Si el título es "estudiante"
@@ -378,7 +386,7 @@ const getStatusText = (): string => {
             {/* ✅ Indicador especial para egresados */}
             {isGraduated && (
                 <span className="text-xs text-orange-500">
-                    🎓 Estudiante graduado
+                    🎓 Graduado
                 </span>
             )}
             
