@@ -1,5 +1,5 @@
 'use client';
-import { memo, useMemo, useState, useEffect } from 'react';
+import { memo, useMemo, useState, useEffect, useCallback } from 'react';
 import { UserInfo } from '@/types';
 import IconLoader from '../IconLoader';
 
@@ -9,7 +9,8 @@ const iconMap = {
   academic: 'AcademicCapIcon',
   clock: 'ClockIcon',
   user: 'UserCircleIcon',
-  email: 'EnvelopeIcon'
+  email: 'EnvelopeIcon',
+  refresh: 'ArrowPathIcon'
 } as const;
 
 // Tipo para los items de información
@@ -81,6 +82,56 @@ const mapBackendToFrontend = (backendData: BackendUserData): UserInfo => ({
   isEmployee: backendData.isEmployee || false
 });
 
+// Constantes para el sistema de cache
+const DUAL_VERIFICATION_CACHE_KEY = 'dualVerificationCache';
+const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+interface DualVerificationCache {
+  data: {
+    isAlsoEmployee: boolean;
+    usedSigenu: boolean;
+    isGraduated: boolean;
+    studentStatus: string;
+    hasDualOccupation: boolean;
+  };
+  timestamp: number;
+}
+
+// Función para obtener cache de verificación dual
+const getDualVerificationCache = (): DualVerificationCache | null => {
+  try {
+    const cached = localStorage.getItem(DUAL_VERIFICATION_CACHE_KEY);
+    if (!cached) return null;
+
+    const cache: DualVerificationCache = JSON.parse(cached);
+    const now = Date.now();
+    
+    // Verificar si el cache está expirado
+    if (now - cache.timestamp > CACHE_DURATION_MS) {
+      localStorage.removeItem(DUAL_VERIFICATION_CACHE_KEY);
+      return null;
+    }
+    
+    return cache;
+  } catch (error) {
+    console.error('Error al leer cache de verificación dual:', error);
+    return null;
+  }
+};
+
+// Función para guardar cache de verificación dual
+const setDualVerificationCache = (data: DualVerificationCache['data']): void => {
+  try {
+    const cache: DualVerificationCache = {
+      data,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(DUAL_VERIFICATION_CACHE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.error('Error al guardar cache de verificación dual:', error);
+  }
+};
+
 // Hook personalizado para verificar el estado dual (estudiante/trabajador)
 const useDualVerification = () => {
   const [isAlsoEmployee, setIsAlsoEmployee] = useState<boolean>(false);
@@ -89,89 +140,142 @@ const useDualVerification = () => {
   const [isGraduated, setIsGraduated] = useState<boolean>(false);
   const [studentStatus, setStudentStatus] = useState<string>('');
   const [hasDualOccupation, setHasDualOccupation] = useState<boolean>(false);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+
+  const resetVerification = useCallback(() => {
+    // Limpiar cache
+    localStorage.removeItem(DUAL_VERIFICATION_CACHE_KEY);
+    localStorage.removeItem('dobleOcupacion');
+    console.log('🔄 Cache de verificación dual reseteado');
+    
+    // Forzar nueva verificación
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
 
   useEffect(() => {
     const verifyDualStatus = async () => {
-        setLoadingDual(true);
-        try {
-            const token = localStorage.getItem('authToken');
-            if (!token) return;
+      // ✅ PRIMERO VERIFICAR SI HAY DOBLE OCUPACIÓN EN LOCALSTORAGE
+      const existingDobleOcupacion = localStorage.getItem('dobleOcupacion');
+      if (existingDobleOcupacion === 'true' && refreshTrigger === 0) {
+        console.log('✅ Usando dobleOcupacion existente de localStorage');
+        setHasDualOccupation(true);
+        return; // No hacemos la verificación si ya existe (solo en primera carga)
+      }
 
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/verify/dual-status`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
+      // ✅ VERIFICAR CACHE DE VERIFICACIÓN DUAL (solo si no hay refresh)
+      const cachedData = getDualVerificationCache();
+      if (cachedData && refreshTrigger === 0) {
+        console.log('✅ Usando cache de verificación dual');
+        const { data } = cachedData;
+        setIsAlsoEmployee(data.isAlsoEmployee);
+        setUsedSigenu(data.usedSigenu);
+        setIsGraduated(data.isGraduated);
+        setStudentStatus(data.studentStatus);
+        setHasDualOccupation(data.hasDualOccupation);
+        updateDobleOcupacionStorage(data.hasDualOccupation, data.isGraduated, data.studentStatus);
+        return;
+      }
 
-            if (response.ok) {
-                const data = await response.json();
-                const employeeStatus = data.isAlsoEmployee || false;
-                const sigenuUsed = data.usedSigenu || false;
-                const graduatedStatus = data.isGraduated || false;
-                const status = data.studentStatus || '';
-                const dualOccupation = data.hasDualOccupation || false;
-                
-                setIsAlsoEmployee(employeeStatus);
-                setUsedSigenu(sigenuUsed);
-                setIsGraduated(graduatedStatus);
-                setStudentStatus(status);
-                setHasDualOccupation(dualOccupation);
-                
-                // ✅ LÓGICA CORREGIDA PARA localStorage
-                const statusLower = status.toLowerCase();
-                const isBaja = statusLower.includes('baja');
-                
-                // SOLO guardar dobleOcupacion si:
-                // 1. Tiene doble ocupación
-                // 2. NO es egresado
-                // 3. NO está de baja
-                if (dualOccupation && !graduatedStatus && !isBaja) {
-                    localStorage.setItem('dobleOcupacion', 'true');
-                    console.log('🔄 Guardado en localStorage: dobleOcupacion = true');
-                } else {
-                    localStorage.removeItem('dobleOcupacion');
-                    console.log('🔄 Removido de localStorage: dobleOcupacion - Razón:', {
-                        dobleOcupacion: dualOccupation,
-                        esEgresado: graduatedStatus,
-                        esBaja: isBaja
-                    });
-                }
-
-                console.log(`✅ Verificación dual completada:`, {
-                    esEmpleado: employeeStatus,
-                    usoSigenu: sigenuUsed,
-                    esEgresado: graduatedStatus,
-                    estadoEstudiante: status,
-                    dobleOcupacion: dualOccupation,
-                    tituloUsuario: data.userTitle
-                });
-            } else {
-                throw new Error('Error en la respuesta del servidor');
-            }
-        } catch (error) {
-            console.error('Error verificando estado dual:', error);
-            setIsAlsoEmployee(false);
-            setUsedSigenu(false);
-            setIsGraduated(false);
-            setStudentStatus('');
-            setHasDualOccupation(false);
-            localStorage.removeItem('dobleOcupacion');
-            localStorage.removeItem('trabajador');
-        } finally {
-            setLoadingDual(false);
+      // ✅ HACER LA PETICIÓN AL SERVIDOR
+      setLoadingDual(true);
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          console.warn('❌ No hay token de autenticación');
+          return;
         }
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/verify/dual-status`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const employeeStatus = data.isAlsoEmployee || false;
+          const sigenuUsed = data.usedSigenu || false;
+          const graduatedStatus = data.isGraduated || false;
+          const status = data.studentStatus || '';
+          const dualOccupation = data.hasDualOccupation || false;
+          
+          setIsAlsoEmployee(employeeStatus);
+          setUsedSigenu(sigenuUsed);
+          setIsGraduated(graduatedStatus);
+          setStudentStatus(status);
+          setHasDualOccupation(dualOccupation);
+          
+          // ✅ GUARDAR EN CACHE PARA PRÓXIMAS VECES
+          setDualVerificationCache({
+            isAlsoEmployee: employeeStatus,
+            usedSigenu: sigenuUsed,
+            isGraduated: graduatedStatus,
+            studentStatus: status,
+            hasDualOccupation: dualOccupation
+          });
+
+          // ✅ ACTUALIZAR LOCALSTORAGE SEGÚN LÓGICA
+          updateDobleOcupacionStorage(dualOccupation, graduatedStatus, status);
+
+          console.log('✅ Verificación dual completada y cacheada:', {
+            esEmpleado: employeeStatus,
+            usoSigenu: sigenuUsed,
+            esEgresado: graduatedStatus,
+            estadoEstudiante: status,
+            dobleOcupacion: dualOccupation
+          });
+        } else {
+          throw new Error('Error en la respuesta del servidor');
+        }
+      } catch (error) {
+        console.error('❌ Error verificando estado dual:', error);
+        // En caso de error, establecer valores por defecto
+        setIsAlsoEmployee(false);
+        setUsedSigenu(false);
+        setIsGraduated(false);
+        setStudentStatus('');
+        setHasDualOccupation(false);
+        localStorage.removeItem('dobleOcupacion');
+      } finally {
+        setLoadingDual(false);
+      }
+    };
+
+    // Función auxiliar para actualizar localStorage de dobleOcupacion
+    const updateDobleOcupacionStorage = (dualOccupation: boolean, graduated: boolean, status: string) => {
+      const statusLower = status.toLowerCase();
+      const isBaja = statusLower.includes('baja');
+      
+      if (dualOccupation && !graduated && !isBaja) {
+        localStorage.setItem('dobleOcupacion', 'true');
+        console.log('🔄 Guardado en localStorage: dobleOcupacion = true');
+      } else {
+        localStorage.removeItem('dobleOcupacion');
+        console.log('🔄 Removido de localStorage: dobleOcupacion - Razón:', {
+          dobleOcupacion: dualOccupation,
+          esEgresado: graduated,
+          esBaja: isBaja
+        });
+      }
     };
 
     verifyDualStatus();
-}, []);
-  
+  }, [refreshTrigger]);
 
-  return { isAlsoEmployee, loadingDual, usedSigenu, isGraduated, studentStatus, hasDualOccupation };
+  return { 
+    isAlsoEmployee, 
+    loadingDual, 
+    usedSigenu, 
+    isGraduated, 
+    studentStatus, 
+    hasDualOccupation,
+    resetVerification 
+  };
 };
 
 // Hook personalizado para obtener el perfil del usuario
@@ -241,19 +345,19 @@ const InfoItem = memo(({ icon, label, value, darkMode }: {
   return (
     <div
       role="listitem"
-      className={`flex items-start gap-4 p-4 rounded-xl ${bgColor} ${textColor}`}
+      className={`flex items-start gap-4 p-4 rounded-xl ${bgColor} ${textColor} transition-all duration-200 hover:shadow-md`}
       aria-label={`${label}: ${value}`}
     >
       {icon && (
-        <div className={iconColor}>
-          <IconLoader name={iconMap[icon]} className="w-7 h-7" />
+        <div className={`${iconColor} flex-shrink-0 mt-1`}>
+          <IconLoader name={iconMap[icon]} className="w-6 h-6" />
         </div>
       )}
-      <div className="flex-1">
-        <p className={`text-base font-medium ${labelColor}`}>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-semibold ${labelColor} mb-1`}>
           {label}
         </p>
-        <div className="text-lg">
+        <div className="text-base font-medium break-words">
           {value}
         </div>
       </div>
@@ -271,42 +375,53 @@ interface UserProfileProps {
 
 // Componente principal memoizado
 const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileProps) => {
-  // ✅ OBTENER TODOS LOS ESTADOS DEL HOOK
-  const { isAlsoEmployee, loadingDual, usedSigenu, isGraduated, studentStatus, hasDualOccupation  } = useDualVerification();
+  // ✅ OBTENER TODOS LOS ESTADOS DEL HOOK OPTIMIZADO
+  const { 
+    isAlsoEmployee, 
+    loadingDual, 
+    usedSigenu, 
+    isGraduated, 
+    studentStatus, 
+    hasDualOccupation,
+    resetVerification 
+  } = useDualVerification();
 
   const bgColor = isDarkMode ? "bg-gray-800" : "bg-white";
   const statusBgColor = isDarkMode ? "bg-gray-700 text-green-400" : "bg-green-100 text-green-800";
   const avatarColor = isDarkMode ? "text-gray-400" : "text-gray-600";
   const nameColor = isDarkMode ? "text-white" : "text-gray-900";
+  const buttonBgColor = isDarkMode 
+    ? "bg-gray-700 hover:bg-gray-600 text-gray-200" 
+    : "bg-gray-200 hover:bg-gray-300 text-gray-700";
   
-// ✅ NUEVA LÓGICA MEJORADA PARA DETERMINAR EL ESTADO
-const getStatusText = (): string => {
-  const userTitle = userInfo.status?.toLowerCase() || '';
-  
-  // Caso 1: Si es egresado, mostrar "Egresado" (prioridad máxima)
-  if (isGraduated) {
-    return userTitle.charAt(0).toUpperCase() + userTitle.slice(1);
-  }
-  
-  // Caso 2: Si el título es "estudiante"
-  if (userTitle === 'estudiante') {
-      // Si tiene doble ocupación → "Alumno/Ayudante"
-      if (hasDualOccupation) {
-          return 'Alumno/Ayudante';
-      }
-      // Solo estudiante → "Estudiante"
-      return 'Estudiante';
-  }
-  
-  // Caso 3: Si NO es estudiante (Docente, Investigador, Trabajador)
-  // Y tiene doble ocupación (también es estudiante)
-  if (hasDualOccupation) {
-      return `${userInfo.status} - Estudiante`;
-  }
-  
-  // Caso 4: Mostrar el título original (Docente, Investigador, etc.)
-  return userInfo.status || 'Usuario';
-};
+  // ✅ NUEVA LÓGICA MEJORADA PARA DETERMINAR EL ESTADO
+  const getStatusText = (): string => {
+    const userTitle = userInfo.status?.toLowerCase() || '';
+    
+    // Caso 1: Si es egresado, mostrar "Egresado" (prioridad máxima)
+    if (isGraduated) {
+      return userTitle.charAt(0).toUpperCase() + userTitle.slice(1);
+    }
+    
+    // Caso 2: Si el título es "estudiante"
+    if (userTitle === 'estudiante') {
+        // Si tiene doble ocupación → "Alumno/Ayudante"
+        if (hasDualOccupation) {
+            return 'Alumno/Ayudante';
+        }
+        // Solo estudiante → "Estudiante"
+        return 'Estudiante';
+    }
+    
+    // Caso 3: Si NO es estudiante (Docente, Investigador, Trabajador)
+    // Y tiene doble ocupación (también es estudiante)
+    if (hasDualOccupation) {
+        return `${userInfo.status} - Estudiante`;
+    }
+    
+    // Caso 4: Mostrar el título original (Docente, Investigador, etc.)
+    return userInfo.status || 'Usuario';
+  };
 
   const getWorkerInfoItems = (): InfoItemConfig[] => [
     { icon: 'identification', label: 'Identificación', value: userInfo.id || 'No disponible' },
@@ -335,10 +450,10 @@ const getStatusText = (): string => {
       <div className="relative mb-4">
         <IconLoader 
           name="UserCircleIcon" 
-          className={`w-24 h-24 ${avatarColor}`} 
+          className={`w-24 h-24 ${avatarColor} transition-colors duration-200`} 
         />
         <span 
-          className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 rounded-full border-2 border-white" 
+          className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-sm" 
           aria-label="Estado en línea"
           role="status"
         />
@@ -347,61 +462,84 @@ const getStatusText = (): string => {
       {/* NOMBRE DEL USUARIO */}
       <h1
         id="user-info-heading"
-        className={`text-2xl font-bold mb-2 text-center ${nameColor}`}
+        className={`text-2xl font-bold mb-3 text-center ${nameColor} transition-colors duration-200`}
         aria-label={`Usuario: ${userInfo.name}`}
       >
         {userInfo.name}
       </h1>
       
       {/* ESTADO Y INFORMACIÓN ADICIONAL */}
-      <div className="flex flex-col items-center gap-2">
-            <span
-                className={`px-4 py-2 rounded-full text-base ${statusBgColor}`}
-                aria-label={`Estado: ${getStatusText()}`}
-            >
-                {getStatusText()}
-            </span>
-            
-            {/* ✅ Mostrar información de SIGENU */}
-            {usedSigenu && (
-                <div className="flex flex-col items-center gap-1">
-                    <span className="text-xs text-blue-500">
-                        ✓ Datos verificados en SIGENU
-                    </span>
-                    {studentStatus && (
-                        <span className={`text-xs ${isGraduated ? 'text-orange-500' : 'text-green-500'}`}>
-                            Estado académico: {studentStatus}
-                        </span>
-                    )}
-                </div>
-            )}
-            
-            {/* ✅ Mostrar información de doble ocupación SOLO si no es egresado */}
-            {hasDualOccupation && !isGraduated && (
-                <span className="text-xs text-purple-500">
-                    ⚡ Doble ocupación verificada
-                </span>
-            )}
-            
-            {/* ✅ Indicador especial para egresados */}
-            {isGraduated && (
-                <span className="text-xs text-orange-500">
-                    🎓 Graduado
-                </span>
-            )}
-            
-            {loadingDual && (
-                <span className="text-xs text-gray-500 animate-pulse">
-                    Verificando estado administrativo...
-                </span>
-            )}
+      <div className="flex flex-col items-center gap-3 w-full">
+        <div className="flex items-center gap-3">
+          <span
+            className={`px-4 py-2 rounded-full text-base font-medium ${statusBgColor} transition-colors duration-200`}
+            aria-label={`Estado: ${getStatusText()}`}
+          >
+            {getStatusText()}
+          </span>
+          
+          {/* BOTÓN DE RESET */}
+          <button
+            onClick={resetVerification}
+            disabled={loadingDual}
+            className={`p-2 rounded-full transition-all duration-200 ${buttonBgColor} ${
+              loadingDual ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'
+            }`}
+            aria-label="Actualizar verificación de estado"
+            title="Actualizar verificación de estado"
+          >
+            <IconLoader 
+              name="ArrowPathIcon" 
+              className={`w-5 h-5 ${loadingDual ? 'animate-spin' : ''}`} 
+            />
+          </button>
         </div>
+            
+        {/* ✅ Mostrar información de SIGENU */}
+        {usedSigenu && (
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-sm font-medium text-blue-500 flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              Datos verificados en SIGENU
+            </span>
+            {studentStatus && (
+              <span className={`text-xs ${isGraduated ? 'text-orange-500' : 'text-green-500'} font-medium`}>
+                Estado académico: {studentStatus}
+              </span>
+            )}
+          </div>
+        )}
+            
+        {/* ✅ Mostrar información de doble ocupación SOLO si no es egresado */}
+        {hasDualOccupation && !isGraduated && (
+          <span className="text-sm font-medium text-purple-500 flex items-center gap-1">
+            <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+            Doble ocupación verificada
+          </span>
+        )}
+            
+        {/* ✅ Indicador especial para egresados */}
+        {isGraduated && (
+          <span className="text-sm font-medium text-orange-500 flex items-center gap-1">
+            <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+            Graduado
+          </span>
+        )}
+            
+        {loadingDual && (
+          <span className="text-sm text-gray-500 animate-pulse flex items-center gap-2">
+            <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></div>
+            Verificando estado administrativo...
+          </span>
+        )}
+      </div>
     </div>
-), [
-    userInfo.name, userInfo.status, userInfo.isEmployee, 
+  ), [
+    userInfo.name, userInfo.status, 
     isAlsoEmployee, loadingDual, usedSigenu, isGraduated, 
-    studentStatus, hasDualOccupation, avatarColor, nameColor, statusBgColor
-]);
+    studentStatus, hasDualOccupation, avatarColor, nameColor, 
+    statusBgColor, buttonBgColor, resetVerification, getStatusText
+  ]);
 
   const infoList = useMemo(() => (
     <div className="space-y-4" role="list" aria-label="Información del usuario">
@@ -419,7 +557,7 @@ const getStatusText = (): string => {
 
   return (
     <section
-      className={`lg:w-2/5 rounded-xl shadow-lg p-6 transition-colors ${bgColor} ${className}`}
+      className={`lg:w-2/5 rounded-xl shadow-lg p-6 transition-colors ${bgColor} ${className} relative`}
       aria-labelledby="user-info-heading"
     >
       {profileContent}
@@ -444,15 +582,19 @@ const UserProfileContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
 
   if (error) {
     return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-        <strong>Error:</strong> {error}
+      <div className={`rounded-xl p-6 ${
+        isDarkMode ? 'bg-red-900/30 text-red-200 border border-red-800' : 'bg-red-50 text-red-700 border border-red-200'
+      }`}>
+        <strong className="font-semibold">Error:</strong> {error}
       </div>
     );
   }
 
   if (!userData) {
     return (
-      <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+      <div className={`rounded-xl p-6 ${
+        isDarkMode ? 'bg-yellow-900/30 text-yellow-200 border border-yellow-800' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+      }`}>
         No se encontraron datos de usuario.
       </div>
     );

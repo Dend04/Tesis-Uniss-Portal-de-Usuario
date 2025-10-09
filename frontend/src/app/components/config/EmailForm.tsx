@@ -14,8 +14,8 @@ import {
   EnvelopeIcon,
   ArrowLeftIcon,
   QuestionMarkCircleIcon,
-  XMarkIcon,
   CheckCircleIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import Modal from "../Modal";
 
@@ -47,9 +47,8 @@ export default function EmailForm({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [step, setStep] = useState<"email" | "verification">("email");
-  const [countdown, setCountdown] = useState(0); // en segundos
+  const [countdown, setCountdown] = useState(0);
   const [showHelpModal, setShowHelpModal] = useState(false);
-  const [isShaking, setIsShaking] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -66,18 +65,14 @@ export default function EmailForm({
     }
   };
 
-  // Usar useRef para los intervalos y timeouts
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
-  const animationRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
-      if (animationRef.current) clearTimeout(animationRef.current);
     };
   }, []);
 
-  // Efecto optimizado para el contador
   useEffect(() => {
     if (countdown > 0) {
       countdownRef.current = setInterval(() => {
@@ -95,31 +90,11 @@ export default function EmailForm({
     };
   }, [countdown]);
 
-  // Efecto optimizado para la animación
-  useEffect(() => {
-    animationRef.current = setTimeout(() => {
-      setIsShaking(true);
-
-      animationRef.current = setTimeout(() => {
-        setIsShaking(false);
-      }, 2000);
-    }, 1000);
-
-    return () => {
-      if (animationRef.current) {
-        clearTimeout(animationRef.current);
-        animationRef.current = null;
-      }
-    };
-  }, []);
-
-  // Función para validar email
   const validateEmail = useCallback((email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }, []);
 
-  // Función para manejar el envío de verificación
   const handleSendVerification = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -150,9 +125,9 @@ export default function EmailForm({
               "Authorization": `Bearer ${localStorage.getItem('authToken')}`
             },
             body: JSON.stringify({ 
-              email: currentEmail,    // Correo actual (para registro)
-              newEmail: newEmail,     // Nuevo correo (donde se enviará el código)
-              userName: "Usuario"     // Nombre del usuario
+              email: currentEmail,
+              newEmail: newEmail,
+              userName: "Usuario"
             }),
           }
         );
@@ -180,73 +155,68 @@ export default function EmailForm({
     [newEmail, currentEmail, validateEmail]
   );
 
-  // Función para verificar y cambiar el email
- // Función para verificar y cambiar el email
-const handleVerifyAndChange = useCallback(
-  async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setErrorMessage("");
+  const handleVerifyAndChange = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsLoading(true);
+      setErrorMessage("");
 
-    try {
-      const token = localStorage.getItem('authToken');
+      try {
+        const token = localStorage.getItem('authToken');
 
-      if (!token) {
-        setErrorMessage("No estás autenticado");
-        return;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/email/change-email/verify-and-update`,
-        {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ 
-            newEmail: newEmail, 
-            code: verificationCode 
-          }),
+        if (!token) {
+          setErrorMessage("No estás autenticado");
+          return;
         }
-      );
 
-      if (response.status === 401) {
-        const errorText = await response.text();
-        localStorage.removeItem('authToken');
-        setErrorMessage("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
-        return;
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/email/change-email/verify-and-update`,
+          {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+              newEmail: newEmail, 
+              code: verificationCode 
+            }),
+          }
+        );
+
+        if (response.status === 401) {
+          const errorText = await response.text();
+          localStorage.removeItem('authToken');
+          setErrorMessage("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Error al verificar el código");
+        }
+
+        setSuccessMessage("¡Correo actualizado exitosamente! Redirigiendo...");
+        
+        setTimeout(() => {
+          setSuccessMessage("");
+          setStep("email");
+          setVerificationCode("");
+          setNewEmail("");
+          setCountdown(0);
+          onSuccess(newEmail);
+        }, 2000);
+
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Error al verificar el código");
+      } finally {
+        setIsLoading(false);
       }
+    },
+    [verificationCode, newEmail, onSuccess]
+  );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Error al verificar el código");
-      }
-
-      // ✅ CORREO ACTUALIZADO EXITOSAMENTE
-      setSuccessMessage("¡Correo actualizado exitosamente! Redirigiendo...");
-      
-      // Esperar 2 segundos para mostrar el mensaje y luego resetear
-      setTimeout(() => {
-        setSuccessMessage("");
-        setStep("email"); // Volver al formulario inicial
-        setVerificationCode(""); // Limpiar el código
-        setNewEmail(""); // Limpiar el nuevo email
-        setCountdown(0); // Resetear contador
-        onSuccess(newEmail); // Notificar al componente padre
-      }, 2000);
-
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Error al verificar el código");
-    } finally {
-      setIsLoading(false);
-    }
-  },
-  [verificationCode, newEmail, onSuccess]
-);
-
-  // Función para reenviar el código
   const handleResendCode = useCallback(async () => {
     if (countdown > 0) return;
 
@@ -263,8 +233,8 @@ const handleVerifyAndChange = useCallback(
             "Authorization": `Bearer ${localStorage.getItem('authToken')}`
           },
           body: JSON.stringify({ 
-            email: currentEmail,    // Correo actual
-            newEmail: newEmail,     // Nuevo correo (destino del código)
+            email: currentEmail,
+            newEmail: newEmail,
             userName: "Usuario"
           }),
         }
@@ -286,7 +256,6 @@ const handleVerifyAndChange = useCallback(
     }
   }, [countdown, newEmail]);
 
-  // Función para volver al formulario de email
   const handleBackToEmail = useCallback(() => {
     setStep("email");
     setVerificationCode("");
@@ -294,7 +263,6 @@ const handleVerifyAndChange = useCallback(
     setCountdown(0);
   }, []);
 
-  // Función para formatear el tiempo
   const formatTime = useCallback((seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -308,123 +276,126 @@ const handleVerifyAndChange = useCallback(
   return (
     <div className="mt-4">
       {step === "email" ? (
-        <form onSubmit={handleSendVerification} className="space-y-4">
+        <form onSubmit={handleSendVerification} className="space-y-6">
+          {/* Header */}
+          <div className="text-center mb-2">
+            <div className="mx-auto w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-3">
+              <EnvelopeIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className={`text-lg font-semibold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
+              Cambiar correo electrónico
+            </h3>
+            <p className={`text-sm mt-1 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+              Actualiza tu correo de respaldo para notificaciones y recuperación de cuenta
+            </p>
+          </div>
+
           {errorMessage && (
-            <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-lg flex items-center gap-2">
-              <ExclamationTriangleIcon className="w-5 h-5" />
-              {errorMessage}
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <p className="text-red-700 dark:text-red-300 text-sm">{errorMessage}</p>
             </div>
           )}
-  
-          <div>
-            <label
-              className={`block mb-2 ${
-                isDarkMode ? "text-gray-300" : "text-gray-600"
-              }`}
-            >
-              Correo electrónico actual
-            </label>
-            <input
-              type="email"
-              value={currentEmail}
-              disabled
-              className={`w-full p-3 rounded-lg border ${
-                isDarkMode
-                  ? "bg-gray-700 border-gray-600 text-gray-400"
-                  : "bg-gray-100 border-gray-300 text-gray-500"
-              }`}
-            />
+
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                Correo electrónico actual
+              </label>
+              <div className={`w-full p-3 rounded-xl border ${isDarkMode ? "bg-gray-800 border-gray-700 text-gray-400" : "bg-gray-50 border-gray-300 text-gray-500"}`}>
+                {currentEmail}
+              </div>
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                Nuevo correo electrónico
+              </label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={handleEmailChange}
+                className={`w-full p-3 rounded-xl border transition-colors ${
+                  emailError
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : isDarkMode
+                    ? "bg-gray-800 border-gray-700 text-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    : "bg-white border-gray-300 text-gray-800 focus:border-blue-500 focus:ring-blue-500"
+                } focus:ring-1 focus:outline-none`}
+                required
+                placeholder="ejemplo@gmail.com"
+              />
+              {emailError && (
+                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                  <ExclamationTriangleIcon className="w-4 h-4" />
+                  {emailError}
+                </p>
+              )}
+            </div>
           </div>
-  
-          <div>
-            <label
-              className={`block mb-2 ${
-                isDarkMode ? "text-gray-300" : "text-gray-600"
-              }`}
-            >
-              Nuevo correo electrónico
-            </label>
-            <input
-              type="email"
-              value={newEmail}
-              onChange={handleEmailChange}
-              className={`w-full p-3 rounded-lg border ${
-                emailError
-                  ? "border-red-500"
-                  : isDarkMode
-                  ? "bg-gray-700 border-gray-600 text-gray-200"
-                  : "bg-white border-gray-300 text-gray-800"
-              }`}
-              required
-              placeholder="nuevo@gmail.com"
-            />
-            {emailError && (
-              <p className="text-red-500 text-sm mt-1">{emailError}</p>
-            )}
-          </div>
-  
-          <div className="flex gap-4">
+
+          <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
+              className={`flex-1 px-4 py-3 rounded-xl border transition-all ${
+                isDarkMode 
+                  ? "border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500" 
+                  : "border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+              } font-medium`}
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isLoading || !!emailError || !newEmail}
-              className="flex-1 px-4 py-2 bg-uniss-blue text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
             >
-              {isLoading ? "Enviando código..." : "Continuar"}
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Enviando código...
+                </div>
+              ) : (
+                "Continuar"
+              )}
             </button>
           </div>
         </form>
       ) : (
-        <form onSubmit={handleVerifyAndChange} className="space-y-4">
-          {/* Mensaje de éxito */}
+        <form onSubmit={handleVerifyAndChange} className="space-y-6">
           {successMessage && (
-            <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-lg flex items-center gap-2">
-              <CheckCircleIcon className="w-5 h-5" />
-              {successMessage}
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-start gap-3">
+              <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <p className="text-green-700 dark:text-green-300 text-sm">{successMessage}</p>
             </div>
           )}
-  
-          {/* Mostrar el formulario de verificación solo si no hay éxito */}
+
           {!successMessage && (
             <>
-              {errorMessage && (
-                <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-lg flex items-center gap-2">
-                  <ExclamationTriangleIcon className="w-5 h-5" />
-                  {errorMessage}
+              {/* Header de verificación */}
+              <div className="text-center mb-2">
+                <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4">
+                  <EnvelopeIcon className="w-7 h-7 text-blue-600 dark:text-blue-400" />
                 </div>
-              )}
-  
-              <div className="text-center mb-6">
-                <EnvelopeIcon className="w-12 h-12 text-blue-500 mx-auto mb-2" />
-                <h3
-                  className={`text-lg font-medium ${
-                    isDarkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
+                <h3 className={`text-lg font-semibold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
                   Verifica tu nuevo correo
                 </h3>
-                <p
-                  className={`text-sm ${
-                    isDarkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  Hemos enviado un código de verificación a{" "}
-                  <strong>{newEmail}</strong>
+                <p className={`text-sm mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+                  Hemos enviado un código de verificación a
                 </p>
+                <p className="font-medium text-blue-600 dark:text-blue-400 mt-1">{newEmail}</p>
               </div>
-  
+
+              {errorMessage && (
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-red-700 dark:text-red-300 text-sm">{errorMessage}</p>
+                </div>
+              )}
+
               <div>
-                <label
-                  className={`block mb-2 ${
-                    isDarkMode ? "text-gray-300" : "text-gray-600"
-                  }`}
-                >
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
                   Código de verificación
                 </label>
                 <input
@@ -435,29 +406,27 @@ const handleVerifyAndChange = useCallback(
                     setVerificationCode(value);
                   }}
                   placeholder="123456"
-                  aria-describedby="code-help"
-                  className={`w-full p-3 rounded-lg border ${
+                  className={`w-full p-3 text-center text-lg font-semibold rounded-xl border transition-colors ${
                     isDarkMode
-                      ? "bg-gray-700 border-gray-600 text-gray-200"
-                      : "bg-white border-gray-300 text-gray-800"
-                  }`}
+                      ? "bg-gray-800 border-gray-700 text-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                      : "bg-white border-gray-300 text-gray-800 focus:border-blue-500 focus:ring-blue-500"
+                  } focus:ring-1 focus:outline-none`}
                   required
                 />
-                <small
-                  id="code-help"
-                  className={`text-xs ${
-                    isDarkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
+                <p className={`text-xs mt-2 text-center ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
                   Ingresa el código de 6 dígitos que enviamos a tu correo
-                </small>
+                </p>
               </div>
-  
-              <div className="flex gap-4">
+
+              <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={handleBackToEmail}
-                  className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-2"
+                  className={`flex-1 px-4 py-3 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+                    isDarkMode 
+                      ? "border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500" 
+                      : "border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+                  } font-medium`}
                 >
                   <ArrowLeftIcon className="w-4 h-4" />
                   Atrás
@@ -465,62 +434,73 @@ const handleVerifyAndChange = useCallback(
                 <button
                   type="submit"
                   disabled={isLoading || verificationCode.length !== 6}
-                  className="flex-1 px-4 py-2 bg-uniss-blue text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
                 >
-                  {isLoading ? "Verificando..." : "Confirmar cambio"}
+                  {isLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Verificando...
+                    </div>
+                  ) : (
+                    "Confirmar cambio"
+                  )}
                 </button>
               </div>
-  
-              <div
-                className={`text-center mt-4 ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                <p className="text-sm">¿No recibiste el código?</p>
-                <div className="flex items-center justify-center gap-2 mt-1">
+
+              <div className={`text-center pt-4 border-t ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
+                <p className={`text-sm mb-3 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+                  ¿No recibiste el código?
+                </p>
+                <div className="flex items-center justify-center gap-3">
                   <button
                     type="button"
                     onClick={handleResendCode}
                     disabled={countdown > 0 || isLoading}
-                    className={`text-blue-500 hover:text-blue-700 text-sm ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                       countdown > 0
-                        ? "line-through opacity-50 cursor-not-allowed"
-                        : ""
+                        ? "text-gray-400 cursor-not-allowed"
+                        : isDarkMode
+                        ? "text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
+                        : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     }`}
                   >
+                    <ArrowPathIcon className={`w-4 h-4 ${countdown > 0 || isLoading ? "animate-spin" : ""}`} />
                     Reenviar código {countdown > 0 && `(${formatTime(countdown)})`}
                   </button>
                   <button
                     onMouseEnter={preloadModal}
                     onClick={() => setShowHelpModal(true)}
-                    className={`p-1 rounded-full ${
+                    className={`p-2 rounded-lg transition-colors ${
                       isDarkMode
-                        ? "text-gray-200 hover:text-white hover:bg-gray-600"
-                        : "text-blue-600 hover:text-blue-800 hover:bg-uniss-blue"
-                    } ${isShaking ? "animate-bounce" : ""}`}
-                    title="¿Qué es la autenticación en dos pasos?"
+                        ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                    }`}
+                    title="Obtener ayuda"
                   >
                     <QuestionMarkCircleIcon className="w-5 h-5" />
                   </button>
                 </div>
               </div>
-  
-              <div className="text-center mt-2">
+
+              <div className="text-center">
                 <button
                   type="button"
                   onClick={handleBackToEmail}
-                  className="text-blue-500 hover:text-blue-700 text-sm"
+                  className={`text-sm transition-colors ${
+                    isDarkMode 
+                      ? "text-blue-400 hover:text-blue-300" 
+                      : "text-blue-600 hover:text-blue-700"
+                  }`}
                 >
-                  ¿Te equivocaste al suministrar el correo? Haz clic aquí para
-                  corregirlo
+                  ¿Te equivocaste al suministrar el correo? Haz clic aquí para corregirlo
                 </button>
               </div>
             </>
           )}
         </form>
       )}
-  
-      {/* Modal de ayuda con lazy loading */}
+
+      {/* Modal de ayuda */}
       <Modal
         isOpen={showHelpModal}
         onClose={() => setShowHelpModal(false)}

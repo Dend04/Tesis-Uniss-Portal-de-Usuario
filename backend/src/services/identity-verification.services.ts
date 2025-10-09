@@ -15,6 +15,7 @@ export type StudentData = {
   academicYear: number;
   status: 'active' | 'inactive';
   ci: string;
+   isThesisExtension?: boolean;
 };
 
 export type EmployeeWithDepartment = {
@@ -62,60 +63,69 @@ class IdentityVerificationService {
     return sanitizedCI;
   }
 
-  private async checkStudent(ci: string): Promise<StudentData | null> {
-    try {
-      logger.info(`Consultando datos de estudiante para CI: ${ci}`);
-  
-      // Usar métodos estáticos de SigenuService
-      const response = await SigenuService.getStudentData(ci);
-  
-      // Manejar el caso de error explícitamente
-      if (!response.success) {
-        logger.error(`No se encontraron datos válidos para el CI: ${ci}. Error: ${response.error}`);
-        return null;
-      }
-  
-      // Si llegamos aquí, TypeScript sabe que response.success es true y response.data existe
-      const studentData = response.data.mainData;
-      const rawData = studentData.rawData;
-  
-      // Verificar si el estudiante está activo
-     /*  const studentStatus = rawData.docentData?.studentStatus || 'Desconocido';
-      if (studentStatus !== 'Activo') {
-        logger.info(`Estudiante con CI ${ci} está ${studentStatus.toLowerCase()}. No se considera activo.`);
-        return null;
-      } */
-  
-      // Obtener el nombre de la carrera usando el método estático
-      const careerCode = rawData.docentData?.career || '00000';
-      const careerName = await SigenuService.getNationalCareerName(careerCode);
-  
-      // Extraer el año académico
-      let academicYear = 1;
-      if (rawData.docentData?.year) {
-        academicYear = parseInt(rawData.docentData.year);
-      } else if (typeof rawData.docentData?.academicSituation === 'string') {
-        const yearMatch = rawData.docentData.academicSituation.match(/\d+/);
-        academicYear = yearMatch ? parseInt(yearMatch[0]) : 1;
-      }
-  
-      return {
-        fullName: studentData.personalData.fullName,
-        career: careerName,
-        faculty: studentData.academicData.faculty,
-        academicYear: academicYear,
-        status: 'active',
-        ci: studentData.personalData.identification,
-      };
-  
-    } catch (error: any) {
-      logger.error(`Error al consultar estudiante con CI ${ci}: ${error.message}`);
+private async checkStudent(ci: string): Promise<StudentData | null> {
+  try {
+    logger.info(`Consultando datos de estudiante para CI: ${ci}`);
+
+    // Usar métodos estáticos de SigenuService
+    const response = await SigenuService.getStudentData(ci);
+
+    // Manejar el caso de error explícitamente
+    if (!response.success) {
+      logger.error(`No se encontraron datos válidos para el CI: ${ci}. Error: ${response.error}`);
       return null;
     }
-  }
-  
 
-  
+    // Si llegamos aquí, TypeScript sabe que response.success es true y response.data existe
+    const studentData = response.data.mainData;
+    const rawData = studentData.rawData;
+
+    // Verificar si el estudiante está activo - INCLUYENDO PRÓRROGA DE TESIS
+    const studentStatus = rawData.docentData?.studentStatus || 'Desconocido';
+    const academicSituation = rawData.docentData?.academicSituation || '';
+    
+    // Considerar activos tanto "Activo" como "Prórroga de Tesis"
+    const isActive = studentStatus === 'Activo' || 
+                    academicSituation === 'Prórroga de Tesis' ||
+                    studentStatus === 'Prórroga de Tesis';
+    
+    if (!isActive) {
+      logger.info(`Estudiante con CI ${ci} está ${studentStatus.toLowerCase()}. No se considera activo.`);
+      return null;
+    }
+
+    // Determinar el tipo de situación académica
+    const isThesisExtension = academicSituation === 'Prórroga de Tesis' || 
+                             studentStatus === 'Prórroga de Tesis';
+
+    // Obtener el nombre de la carrera usando el método estático
+    const careerCode = rawData.docentData?.career || '00000';
+    const careerName = await SigenuService.getNationalCareerName(careerCode);
+
+    // Extraer el año académico - manejar caso de prórroga de tesis
+    let academicYear = 1;
+    if (!isThesisExtension && rawData.docentData?.year) {
+      academicYear = parseInt(rawData.docentData.year);
+    } else if (!isThesisExtension && typeof rawData.docentData?.academicSituation === 'string') {
+      const yearMatch = rawData.docentData.academicSituation.match(/\d+/);
+      academicYear = yearMatch ? parseInt(yearMatch[0]) : 1;
+    }
+
+    return {
+      fullName: studentData.personalData.fullName,
+      career: careerName,
+      faculty: studentData.academicData.faculty,
+      academicYear: isThesisExtension ? 0 : academicYear, // 0 para prórroga de tesis
+      status: 'active',
+      ci: studentData.personalData.identification,
+      // Agregar campo adicional para identificar prórroga de tesis
+      isThesisExtension: isThesisExtension
+    };
+  } catch (error: any) {
+    logger.error(`Error al consultar estudiante con CI ${ci}: ${error.message}`);
+    return null;
+  }
+}
   
 
   private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {

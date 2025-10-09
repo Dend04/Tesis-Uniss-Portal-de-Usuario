@@ -1,3 +1,4 @@
+// src/services/ldap-account.services.ts
 import { Client, SearchOptions, SearchEntry, Change } from "ldapjs";
 import {
   createLDAPClient,
@@ -6,7 +7,7 @@ import {
 } from "../utils/ldap.utils";
 import { LDAPStructureBuilder } from "../utils/ldap.structure";
 import dotenv from "dotenv";
-import { userService } from "./user.services"; // Ajusta la ruta según tu estructura
+import { userService } from "./user.services";
 dotenv.config();
 
 interface LDAPError extends Error {
@@ -15,10 +16,6 @@ interface LDAPError extends Error {
   stack?: string;
   lde_message?: string;
   lde_dn?: string | null;
-}
-
-interface PostalCodeEntry {
-  ou: string;
 }
 
 interface LdapAttribute {
@@ -36,105 +33,150 @@ export class LDAPAccountService {
     this.structureBuilder = new LDAPStructureBuilder();
   }
 
-  async createStudentAccount(studentData: any, password: string) {
-    try {
-      await this.authenticate();
-      const yearDN = await this.getYearOUPath(studentData);
-      const userCN = `Estudiante ${this.escapeLDAPValue(studentData.personalData.fullName)}`;
-      const userDN = `CN=${userCN},${yearDN}`;
-      const username = await this.generateUniqueUsername(
-        this.generateBaseUsername(studentData)
-      );
-
-      // Usar la contraseña y email proporcionados por el usuario
-      await this.createUserEntry(userDN, studentData, username, password, studentData.backupEmail);
-
-      return {
-        success: true,
-        dn: userDN,
-        username,
-        message: "Cuenta creada exitosamente",
-      };
-    } catch (error: unknown) {
-      const ldapError = error as LDAPError;
-      console.error("Error al crear cuenta:", ldapError);
-      return {
-        success: false,
-        error: ldapError.message,
-        code: "LDAP_ACCOUNT_CREATION_FAILED",
-        details: {
-          code: ldapError.code,
-          dn: ldapError.dn,
-          lde_message: ldapError.lde_message,
-        },
-      };
-    } finally {
-      this.safeUnbind();
-    }
-  }
-
-  
-
-
-  private async getYearOUPath(studentData: any): Promise<string> {
-    const baseDN = process.env.LDAP_BASE_DN_Propio!;
-    const normalized = this.normalizeAcademicData(studentData);
-    console.log("Normalized Data:", normalized);
-    const facultyDN = `OU=${normalized.faculty},OU=SIGENU,${baseDN}`;
-    console.log("Faculty DN:", facultyDN);
-    const careerDN = await this.findOUByName(facultyDN, normalized.career);
-    console.log("Career DN:", careerDN);
-    const courseTypeCode = this.sanitizeOUName(studentData.rawData.docentData.courseType);
-    console.log("Course Type Code:", courseTypeCode);
-    const courseTypeDN = await this.findOUByName(careerDN, courseTypeCode);
-    console.log("Course Type DN:", courseTypeDN);
-    const academicYear = studentData.rawData.docentData.year.replace(/\D/g, "");
-    console.log("Academic Year:", academicYear);
-    return this.handleYearOU(courseTypeDN, academicYear);
-  }
-
-/**
-   * Obtiene la cuenta de estudiante desde LDAP por employeeID (CI)
-   */
-async getStudentAccount(employeeID: string): Promise<any> {
+async createStudentAccount(studentData: any, password: string, selectedUsername?: string) {
   try {
-    // Usar la función existente getUserData que ya tienes implementada
-    const userData = await userService.getUserData(employeeID);
+    console.log("🔧 Iniciando creación de cuenta LDAP...");
+    console.log("👤 Username seleccionado:", selectedUsername);
+    console.log("📧 Email backup:", studentData.backupEmail);
+    console.log("🎓 Tipo estudiante:", studentData.rawData?.docentData?.academicSituation);
+
+    
+    await this.authenticate();
+    await this.verifyBaseStructure();
+    
+    const yearDN = await this.getYearOUPath(studentData);
+    const userCN = `Estudiante ${this.escapeCN(studentData.personalData.fullName)}`;
+    const userDN = `CN=${userCN},${yearDN}`;
+    
+    // Usar el username seleccionado o generar uno automáticamente
+    const username = selectedUsername 
+      ? await this.verifyAndUseSelectedUsername(selectedUsername)
+      : await this.generateUniqueUsername(this.generateBaseUsername(studentData));
+
+    await this.createUserEntry(userDN, studentData, username, password, studentData.backupEmail);
+
+    console.log(`✅ Cuenta creada exitosamente para: ${username}`);
+    console.log(`📍 DN: ${userDN}`);
     
     return {
-      sAMAccountName: userData.sAMAccountName || '',
-      userPrincipalName: userData.userPrincipalName || '',
-      mail: userData.email || userData.mail || '',
-      cuentaHabilitada: true, // Esto deberías obtenerlo de LDAP si está disponible
-      ultimoInicioSesion: 'Nunca', // Esto también deberías obtenerlo de LDAP
-      displayName: userData.displayName || userData.nombreCompleto || '',
-      email: userData.email || ''
+      success: true,
+      dn: userDN,
+      username,
+      message: "Cuenta creada exitosamente",
     };
-    
-  } catch (error) {
-    console.error("Error obteniendo datos LDAP:", error);
-    // En caso de error, devolver objeto con valores por defecto
+  } catch (error: unknown) {
+    const ldapError = error as LDAPError;
+    console.error("Error al crear cuenta:", ldapError);
     return {
-      sAMAccountName: '',
-      userPrincipalName: '',
-      mail: '',
-      cuentaHabilitada: true,
-      ultimoInicioSesion: 'Nunca',
-      displayName: '',
-      email: ''
+      success: false,
+      error: ldapError.message,
+      code: "LDAP_ACCOUNT_CREATION_FAILED",
+      details: {
+        code: ldapError.code,
+        dn: ldapError.dn,
+        lde_message: ldapError.lde_message,
+      },
     };
+  } finally {
+    this.safeUnbind();
   }
 }
 
+// Nuevo método para verificar y usar el username seleccionado
+private async verifyAndUseSelectedUsername(username: string): Promise<string> {
+  const sanitizedUsername = this.sanitizeUsername(username);
+  
+  if (!(await this.usernameExists(sanitizedUsername))) {
+    return sanitizedUsername;
+  } else {
+    throw new Error(`El nombre de usuario "${username}" no está disponible`);
+  }
+}
+
+  async getStudentAccount(employeeID: string): Promise<any> {
+    try {
+      const userData = await userService.getUserData(employeeID);
+      
+      return {
+        sAMAccountName: userData.sAMAccountName || '',
+        userPrincipalName: userData.userPrincipalName || '',
+        mail: userData.email || userData.mail || '',
+        cuentaHabilitada: true,
+        ultimoInicioSesion: 'Nunca',
+        displayName: userData.displayName || userData.nombreCompleto || '',
+        email: userData.email || ''
+      };
+      
+    } catch (error) {
+      console.error("Error obteniendo datos LDAP:", error);
+      return {
+        sAMAccountName: '',
+        userPrincipalName: '',
+        mail: '',
+        cuentaHabilitada: true,
+        ultimoInicioSesion: 'Nunca',
+        displayName: '',
+        email: ''
+      };
+    }
+  }
+
+  private async getYearOUPath(studentData: any): Promise<string> {
+    const baseDN = process.env.LDAP_BASE_DN_Propio!;
+    
+    const isThesisExtension = studentData.rawData.docentData.academicSituation === 'Prórroga de Tesis' || 
+                             studentData.rawData.docentData.studentStatus === 'Prórroga de Tesis';
+    
+    if (isThesisExtension) {
+      return this.handleThesisExtensionOU(baseDN);
+    } else {
+      const normalized = this.normalizeAcademicData(studentData);
+      
+      const facultyDN = await this.createOrVerifyOU(
+        `OU=SIGENU,${baseDN}`, 
+        normalized.faculty
+      );
+      
+      const careerDN = await this.createOrVerifyOU(
+        facultyDN, 
+        normalized.career
+      );
+      
+      const courseTypeCode = studentData.rawData.docentData.courseType;
+      const courseTypeDN = await this.createOrVerifyOU(
+        careerDN, 
+        courseTypeCode
+      );
+
+      const academicYear = studentData.rawData.docentData.year.replace(/\D/g, "");
+      return this.handleYearOU(courseTypeDN, academicYear);
+    }
+  }
+
+  private async handleThesisExtensionOU(baseDN: string): Promise<string> {
+    const originalOUName = "Prórroga de Tesis";
+    const safeOUName = this.sanitizeOUName(originalOUName);
+    const thesisDN = `OU=${safeOUName},${baseDN}`;
+
+    try {
+      await this.searchOU(thesisDN);
+      return thesisDN;
+    } catch (error) {
+      await this.createSimpleOU(thesisDN, safeOUName, {
+        description: `Estudiantes en ${originalOUName}`,
+        postalCode: `THESIS-EXTENSION`,
+        objectClass: ["top", "organizationalUnit"],
+      });
+      return thesisDN;
+    }
+  }
 
   private async handleYearOU(parentDN: string, academicYear: string): Promise<string> {
     const yearOU = `OU=${academicYear},${parentDN}`;
     try {
       await this.searchOU(yearOU);
-      console.log(`✅ OU del año ${academicYear} ya existe: ${yearOU}`);
       return yearOU;
     } catch (error) {
-      console.log(`🆕 Creando OU del año académico: ${academicYear}`);
       await this.createSimpleOU(yearOU, academicYear, {
         description: `Estudiantes de ${academicYear} año`,
         postalCode: `YEAR-${academicYear}`,
@@ -144,19 +186,38 @@ async getStudentAccount(employeeID: string): Promise<any> {
     }
   }
 
-  private async createSimpleOU(dn: string, ouName: string, attributes: any): Promise<void> {
+  private async createOrVerifyOU(parentDN: string, ouName: string): Promise<string> {
     const safeOU = this.sanitizeOUName(ouName);
+    const targetDN = `OU=${safeOU},${parentDN}`;
+    
+    try {
+      await this.searchOU(targetDN);
+      return targetDN;
+    } catch (error) {
+      await this.createSimpleOU(targetDN, safeOU, {
+        description: `OU creada automáticamente para ${ouName}`,
+        objectClass: ["top", "organizationalUnit"],
+      });
+      return targetDN;
+    }
+  }
+
+  private async createSimpleOU(dn: string, ouName: string, attributes: any): Promise<void> {
     await new Promise((resolve, reject) => {
-      console.log("Atributos a agregar:", attributes);
       this.client.add(
         dn,
         {
           objectClass: ["top", "organizationalUnit"],
-          ou: safeOU,
+          ou: ouName,
           ...attributes,
         },
         (err) => {
-          err ? reject(err) : resolve(true);
+          if (err) {
+            console.error(`Error creando OU ${dn}:`, err.message);
+            reject(err);
+          } else {
+            resolve(true);
+          }
         }
       );
     });
@@ -174,48 +235,62 @@ async getStudentAccount(employeeID: string): Promise<any> {
     });
   }
 
+  private async verifyBaseStructure(): Promise<void> {
+    const baseDN = process.env.LDAP_BASE_DN_Propio!;
+    
+    try {
+      await this.searchOU(baseDN);
+    } catch (error) {
+      console.error(`Estructura base no existe: ${baseDN}`);
+      throw new Error(`Estructura LDAP base no encontrada: ${baseDN}`);
+    }
+  }
+
   private normalizeAcademicData(studentData: any) {
     if (!studentData?.academicData?.faculty || !studentData?.academicData?.career) {
       throw new Error("Datos académicos incompletos: faculty o career no definidos");
     }
+    
     const faculty = studentData.academicData.faculty || "";
     const career = studentData.academicData.career || "";
-    const courseType = studentData.rawData.docentData.courseType || "";
     const year = studentData.rawData.docentData.year || "";
-    console.log("Faculty:", faculty);
-    console.log("Career:", career);
-    console.log("Course Type:", courseType);
+    
+    const isThesisExtension = studentData.rawData.docentData.academicSituation === 'Prórroga de Tesis' || 
+                             studentData.rawData.docentData.studentStatus === 'Prórroga de Tesis';
+    
     return {
       faculty: this.sanitizeOUName(faculty),
       career: this.sanitizeOUName(career),
-      year: year.replace(/\D/g, ""),
+      year: isThesisExtension ? "Prórroga de Tesis" : year.replace(/\D/g, ""),
+      isThesisExtension: isThesisExtension
     };
   }
 
   private async createUserEntry(dn: string, studentData: any, username: string, password: string, userEmail: string) {
-    console.log("📝 Creando entrada para el estudiante:", {
-      name: studentData.rawData.personalData.name,
-      fullName: studentData.personalData.fullName,
-    });
-
     const name = studentData.rawData.personalData.name.toString();
     const middleName = studentData.rawData.personalData.middleName.toString();
     const lastName = studentData.rawData.personalData.lastName.toString();
     const fullName = studentData.personalData.fullName.toString();
     
-    // Generar el userPrincipalName que será usado también para mail
+    const normalizedName = this.normalizeName(name);
+    const normalizedMiddleName = this.normalizeName(middleName);
+    const normalizedLastName = this.normalizeName(lastName);
+    const normalizedFullName = this.normalizeName(fullName);
+    
+    const isThesisExtension = studentData.rawData.docentData.academicSituation === 'Prórroga de Tesis' || 
+                             studentData.rawData.docentData.studentStatus === 'Prórroga de Tesis';
+    
     const userPrincipalName = `${username}@uniss.edu.cu`;
 
-    // Atributos modificados según los nuevos requerimientos
     const attributes = {
       objectClass: ["top", "person", "organizationalPerson", "user"],
       sAMAccountName: username,
       uid: username,
-      cn: `Estudiante ${this.escapeLDAPValue(fullName)}`.trim(),
-      givenName: this.normalizeDisplayName(name),
-      sn: this.normalizeDisplayName(`${middleName} ${lastName}`),
-      displayName: this.normalizeDisplayName(fullName),
-      mail: userPrincipalName, // Usar el mismo valor que userPrincipalName
+      cn: `Estudiante ${normalizedFullName}`.trim(),
+      givenName: this.normalizeDisplayName(normalizedName),
+      sn: this.normalizeDisplayName(`${normalizedMiddleName} ${normalizedLastName}`.trim()),
+      displayName: this.normalizeDisplayName(normalizedFullName),
+      mail: userPrincipalName,
       userPrincipalName: userPrincipalName,
       employeeID: studentData.personalData.identification,
       telephoneNumber: this.formatPhoneNumber(
@@ -225,46 +300,36 @@ async getStudentAccount(employeeID: string): Promise<any> {
       streetAddress: studentData.personalData.address,
       l: this.sanitizeAttribute(studentData.rawData.personalData.town),
       st: this.sanitizeAttribute(studentData.rawData.personalData.province),
-      // description se deja vacío o no se incluye
-      physicalDeliveryOfficeName: `Estudiante de ${studentData.academicData.career} actualmente ${studentData.rawData.docentData.studentType}`, // Lo que iba en description ahora va en office
+      physicalDeliveryOfficeName: isThesisExtension 
+        ? `Estudiante de ${studentData.academicData.career} en Prórroga de Tesis`
+        : `Estudiante de ${studentData.academicData.career} actualmente ${studentData.rawData.docentData.studentType}`,
       title: "Estudiante",
-      departmentNumber: studentData.academicData.year,
+      departmentNumber: isThesisExtension ? "Prórroga de Tesis" : studentData.academicData.year,
       employeeType: "Estudiante",
       ou: studentData.academicData.faculty,
       department: studentData.academicData.career,
-      company: userEmail, // El email del usuario ahora va en company
-      userAccountControl: "512", // Cuenta habilitada
-      unicodePwd: this.encodePassword(password), // Contraseña codificada
+      company: userEmail,
+      userAccountControl: "512",
+      unicodePwd: this.encodePassword(password),
     };
 
-    console.log("📁 Atributos a agregar en la entrada del estudiante:", attributes);
-
-    // Crear usuario CON contraseña y habilitado
     await new Promise((resolve, reject) => {
       this.client.add(dn, attributes, (err) => {
         if (err) {
-          console.error("❌ Error al crear entrada LDAP:", err);
+          console.error("Error al crear entrada LDAP:", err);
           reject(err);
         } else {
-          console.log("✅ Entrada LDAP creada exitosamente con contraseña");
           resolve(true);
         }
       });
     });
 
-    // Agregar a grupos
     const requiredGroups = [
       "CN=correo_int,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
       "CN=UNISS-Everyone,OU=_Grupos,DC=uniss,DC=edu,DC=cu"
     ];
     
-    try {
-      await this.addUserToGroups(dn, requiredGroups);
-      console.log("✅ Usuario agregado a todos los grupos correctamente");
-    } catch (error) {
-      console.error("⚠️ Error al agregar a grupos:", error);
-      throw new Error("Usuario creado pero falló la asignación a grupos");
-    }
+    await this.addUserToGroups(dn, requiredGroups);
   }
 
   private async addUserToGroups(userDN: string, groupDNs: string[]): Promise<void> {
@@ -272,7 +337,7 @@ async getStudentAccount(employeeID: string): Promise<any> {
       try {
         await this.addUserToGroup(userDN, groupDN);
       } catch (error) {
-        console.error(`⛔ Error crítico agregando a ${groupDN}:`, error);
+        console.error(`Error agregando a ${groupDN}:`, error);
         throw error;
       }
     }
@@ -290,24 +355,23 @@ async getStudentAccount(employeeID: string): Promise<any> {
       this.client.modify(groupDN, change, (err) => {
         if (err) {
           if (err.name === "ConstraintViolationError" || err.code === 20) {
-            console.warn(`⚠️ El usuario ya existe en el grupo: ${groupDN}`);
-            return resolve();
+            resolve();
+          } else {
+            reject(new Error(`Error LDAP (${err.code}): ${err.message}`));
           }
-          reject(new Error(`Error LDAP (${err.code}): ${err.message}`));
         } else {
-          console.log(`✔️ Usuario agregado exitosamente a: ${groupDN}`);
           resolve();
         }
       });
     });
   }
 
-  private encodePassword(password: string): Buffer {
-    return Buffer.from(`"${password}"`, 'utf16le');
-  }
-
-  private generateStudentEmail(studentData: any): string {
-    return `${studentData.personalData.identification}@uniss.edu.cu`;
+  private normalizeName(name: string): string {
+    return name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private sanitizeOUName(name: string): string {
@@ -315,53 +379,33 @@ async getStudentAccount(employeeID: string): Promise<any> {
     if (this.nameCache.has(name)) {
       return this.nameCache.get(name)!;
     }
+    
     let cleaned = name
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[()]/g, "")
-      .replace(/[^a-zA-Z0-9 -]/g, "")
+      .replace(/[^\w\s-]/g, "")
       .replace(/\s+/g, " ")
-      .trim()
-      .substring(0, 64)
       .trim();
+
+    cleaned = cleaned.substring(0, 64);
     this.nameCache.set(name, cleaned);
     return cleaned;
   }
 
-  private sanitizeCN(value: string): string {
-    return value.replace(/[^a-zA-Z0-9\-_]/g, "").substring(0, 64);
-  }
-
-  private async findOUByName(parentDN: string, ouName: string): Promise<string> {
-    if (!ouName || ouName.trim() === "") {
-      throw new Error("Nombre de OU no puede estar vacío");
-    }
-    const searchOptions: SearchOptions = {
-      scope: "one",
-      filter: `(&(objectClass=organizationalUnit)(ou=${ouName}))`,
-      attributes: ["ou"],
-    };
-    console.log("🔍 Buscando OU:", { parentDN, filter: searchOptions.filter });
-    const entries = await new Promise<string[]>((resolve, reject) => {
-      this.client.search(parentDN, searchOptions, (err, res) => {
-        if (err) return reject(err);
-        const results: string[] = [];
-        res.on("searchEntry", (entry: SearchEntry) => {
-          const ou = entry.pojo.attributes.find((a: LdapAttribute) => a.type === "ou")?.values?.[0];
-          if (ou) results.push(ou);
-        });
-        res.on("error", reject);
-        res.on("end", () => resolve(results));
-      });
-    });
-    if (entries.length === 0) {
-      throw new Error(`No se encontró OU con nombre ${ouName} en ${parentDN}`);
-    }
-    return `OU=${entries[0]},${parentDN}`;
-  }
-
   private sanitizeAttribute(value: string): string {
     return value.replace(/[^\p{L}\s\-]/gu, "").substring(0, 128);
+  }
+
+  private normalizeDisplayName(fullName: string | undefined): string {
+    if (!fullName) return "";
+    return fullName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/ñ/g, "n").replace(/Ñ/g, "N")
+      .replace(/[^a-zA-Z\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .substring(0, 64);
   }
 
   private async authenticate(): Promise<void> {
@@ -376,13 +420,8 @@ async getStudentAccount(employeeID: string): Promise<any> {
     try {
       this.client.unbind();
     } catch (error) {
-      console.error("⚠️ Error al cerrar conexión:", error);
+      console.error("Error al cerrar conexión:", error);
     }
-  }
-
-  private fallbackUsernameGeneration(firstName: string, firstSurname: string): string {
-    const base = `${firstName}${firstSurname}`;
-    return base.substring(0, 20);
   }
 
   private generateBaseUsername(studentData: any): string {
@@ -420,11 +459,6 @@ async getStudentAccount(employeeID: string): Promise<any> {
     throw new Error("No se pudo generar username único");
   }
 
-  private generateUsernameVariant(base: string, counter: number): string {
-    const suffix = counter.toString().padStart(2, "0");
-    return this.sanitizeUsername(`${base.substring(0, 15)}-${suffix}`);
-  }
-
   private sanitizeUsername(username: string): string {
     return username
       .toLowerCase()
@@ -436,22 +470,8 @@ async getStudentAccount(employeeID: string): Promise<any> {
       .replace(/^-|-$/g, "");
   }
 
-  private normalizeDisplayName(fullName: string | undefined): string {
-    if (!fullName) return "";
-    return fullName
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/ñ/g, "n")
-      .replace(/Ñ/g, "N")
-      .replace(/[^a-zA-Z\s]/g, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .substring(0, 64);
-  }
-
   public async usernameExists(username: string): Promise<boolean> {
     const maxRetries = 3;
-    let lastError: Error | null = null;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await this.authenticate();
@@ -465,19 +485,12 @@ async getStudentAccount(employeeID: string): Promise<any> {
               attr.values.includes(username)
           )
         );
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          lastError = error;
-        } else {
-          lastError = new Error(String(error));
-        }
-        console.warn(`Intento ${attempt} fallido:`, lastError);
+      } catch (error) {
         if (attempt < maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
         }
       }
     }
-    console.error("Todos los intentos fallaron:", lastError);
     return false;
   }
 
@@ -509,16 +522,33 @@ async getStudentAccount(employeeID: string): Promise<any> {
     });
   }
 
+  private encodePassword(password: string): Buffer {
+    return Buffer.from(`"${password}"`, 'utf16le');
+  }
+
   private escapeLDAPValue(value: string): string {
+    if (!value) return "";
     return value
-      .replace(/\\/g, "\\5c")
-      .replace(/,/g, "\\2c")
-      .replace(/"/g, "\\22")
-      .replace(/</g, "\\3c")
-      .replace(/>/g, "\\3e")
-      .replace(/;/g, "\\3b")
-      .replace(/\//g, "\\2f")
-      .substring(0, 64);
+      .replace(/\\/g, "\\\\")
+      .replace(/,/g, "\\,")
+      .replace(/"/g, '\\"')
+      .replace(/</g, "\\<")
+      .replace(/>/g, "\\>")
+      .replace(/;/g, "\\;")
+      .replace(/=/g, "\\=")
+      .replace(/\+/g, "\\+")
+      .replace(/\#/g, "\\#")
+      .replace(/\r/g, "")
+      .replace(/\n/g, "");
+  }
+
+  private escapeCN(value: string): string {
+    if (!value) return "";
+    return value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private formatPhoneNumber(phone: string, country: string): string {
