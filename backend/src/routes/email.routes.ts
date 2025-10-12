@@ -1,5 +1,5 @@
 import express from 'express';
-import { debugVerificationCodes, enviarAlertasManuales, generarReporteExpiración, getEmailStats, sendChangeEmailVerificationCode, sendPasswordAlert, sendVerificationCodeChangeEmail, sendVerificationCodeEmailPassword, sendWelcomeEmailToUser, verEstadoCache, verifyAndUpdateEmail, verifyCode } from '../controllers/email.controller';
+import { debugVerificationCodes, enviarAlertasManuales, generarReporteExpiración, getEmailStats, handleForgotPassword, sendChangeEmailVerificationCode, sendPasswordAlert, sendVerificationCodeChangeEmail, sendVerificationCodeEmailPassword, sendWelcomeEmailToUser, verEstadoCache, verifyAndUpdateEmail, verifyCode, verifyCodeAndResetPassword } from '../controllers/email.controller';
 import { sendWelcomeEmail } from '../services/emailService';
 import { verifyTokenMiddleware } from '../middlewares/auth.middleware';
 
@@ -23,6 +23,9 @@ router.post('/change-email/verify-and-update', verifyTokenMiddleware, verifyAndU
 router.get('/expiracion/reporte', generarReporteExpiración);
 router.post('/expiración/enviar-alertas', enviarAlertasManuales);
 router.get('/expiración/estado-cache', verEstadoCache);
+
+router.post('/forgot-password', handleForgotPassword);
+router.post('/reset-password', verifyCodeAndResetPassword);
 
 
 export default router;

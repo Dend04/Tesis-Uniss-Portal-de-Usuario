@@ -294,6 +294,87 @@ export class PasswordService {
     // Implementación futura con historial manual
     return false;
   }
+
+  async resetPassword(userDN: string, newPassword: string): Promise<void> {
+  let lastError;
+  const username = userService.extractUsernameFromDN(userDN);
+
+  for (let attempt = 1; attempt <= this.maxRetries + 1; attempt++) {
+    const client = createLDAPClient(process.env.LDAP_URL!);
+    
+    try {
+      console.log(`🔄 Intento ${attempt} de reset de contraseña`);
+
+      await auditService.addLogEntry(username, 'reset_password_attempt', 'started', {
+        attempt: attempt,
+        timestamp: new Date().toISOString(),
+        isPasswordReset: true // ✅ Indicar que es un reset, no cambio normal
+      });
+
+      await bindAsync(client, process.env.LDAP_ADMIN_DN!, process.env.LDAP_ADMIN_PASSWORD!);
+
+      // Validar políticas de contraseña (igual que en changePassword)
+      await this.validatePasswordPolicy(newPassword, username);
+
+      const change = {
+        operation: "replace",
+        modification: {
+          type: "unicodePwd",
+          values: [this.encodePassword(newPassword)]
+        }
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        client.modify(userDN, change, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+
+      console.log(`✅ Contraseña reseteada exitosamente`);
+      
+      await auditService.logPasswordChange(username, true, {
+        attempt: attempt,
+        timestamp: new Date().toISOString(),
+        retriesUsed: attempt - 1,
+        isPasswordReset: true // ✅ Indicar que es un reset
+      });
+      
+      return; 
+
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`⚠️ Intento ${attempt} fallido:`, error.message);
+
+      await auditService.addLogEntry(username, 'reset_password_attempt', 'failed', {
+        attempt: attempt,
+        error: error.message,
+        errorCode: error.code,
+        timestamp: new Date().toISOString(),
+        isConnectionError: error.code === 80,
+        isPasswordReset: true
+      });
+
+      if (error.code === 80 && attempt <= this.maxRetries) {
+        console.log('⏳ Reintentando...');
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      } else {
+        break;
+      }
+    } finally {
+      if (client && typeof client.unbind === 'function') {
+        client.unbind(() => { 
+          console.log(`🔒 Conexión LDAP cerrada`);
+        });
+      }
+    }
+  }
+  
+  throw lastError;
+}
 }
 
 export const passwordService = new PasswordService();

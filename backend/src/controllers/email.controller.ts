@@ -6,6 +6,7 @@ import {
   sendVerificationCode as sendVerificationCodeService,
   sendEmailNew,
   sendChangeEmailVerification,
+  findUserBySAMOrEmployeeID,
 } from "../services/emailService";
 import { verificationStorage } from "../services/verificationStorage";
 import { passwordExpiryService } from "../services/passwordExpiryService";
@@ -13,6 +14,7 @@ import { cacheService } from "../utils/cache.utils";
 import { AuthenticatedRequest } from "../types/express";
 import { LDAPEmailUpdateService } from "../services/ldap-email-update.services";
 import { searchLDAPUserForEmail } from "../utils/ldap.utils";
+import { passwordService } from "../services/password.services";
 
 // Almacenamiento temporal de códigos de verificación
 const verificationCodes = new Map<
@@ -612,6 +614,120 @@ export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise
       success: false,
       message: "Error al actualizar el correo",
       error: error.message,
+    });
+  }
+};
+
+export const handleForgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userIdentifier } = req.body; // sAMAccountName o employeeID
+
+    if (!userIdentifier) {
+      res.status(400).json({
+        success: false,
+        message: "Se requiere el nombre de usuario (sAMAccountName) o carnet de identidad (employeeID)",
+      });
+      return;
+    }
+
+    console.log(`🔐 Solicitud de recuperación para: ${userIdentifier}`);
+
+    // 1. Buscar al usuario en LDAP y obtener su email desde el campo company
+    const user = await findUserBySAMOrEmployeeID(userIdentifier);
+    
+    // 2. Generar código de verificación (usando tu función existente)
+    const verificationCode = generateVerificationCode();
+    
+    // 3. Guardar el código en el almacenamiento
+    verificationStorage.setCode(user.email, verificationCode, 10 * 60 * 1000); // 10 minutos
+    
+    // 4. Enviar el código por correo usando tu servicio existente
+    const info = await sendVerificationCodeService(
+      user.email,
+      user.displayName || "Usuario",
+      verificationCode
+    );
+
+    console.log(`✅ Código enviado a: ${user.email}`);
+
+    // 5. Responder al cliente
+    res.status(200).json({
+      success: true,
+      message: "Código de verificación enviado con éxito",
+      // No incluimos el email en la respuesta por seguridad
+      userIdentifier: userIdentifier,
+      emailStats: {
+        count: emailCounter.getCount(),
+        remaining: emailCounter.getRemaining(),
+        dailyLimit: emailCounter.getRemaining() + emailCounter.getCount(),
+        usageMessage: emailCounter.getUsageMessage(),
+      },
+    });
+
+  } catch (error: any) {
+    console.error("❌ Error en recuperación de contraseña:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Error al procesar la solicitud de recuperación de contraseña",
+    });
+  }
+};
+
+export const verifyCodeAndResetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userIdentifier, code, newPassword } = req.body;
+
+    if (!userIdentifier || !code || !newPassword) {
+      res.status(400).json({
+        success: false,
+        message: "Se requieren el identificador de usuario, código de verificación y nueva contraseña",
+      });
+      return;
+    }
+
+    // 1. Buscar al usuario para obtener su email
+    const user = await findUserBySAMOrEmployeeID(userIdentifier);
+    
+    // 2. Verificar el código usando tu función existente
+    const storedData = verificationStorage.getCode(user.email);
+
+    if (!storedData) {
+      res.status(400).json({
+        success: false,
+        message: "Código de verificación no encontrado o ha expirado",
+      });
+      return;
+    }
+
+    if (storedData.code !== code) {
+      res.status(400).json({
+        success: false,
+        message: "El código de verificación es incorrecto",
+      });
+      return;
+    }
+
+    // 3. Código verificado - ahora cambiar la contraseña en LDAP
+    // Aquí necesitarás implementar la función para cambiar la contraseña en LDAP
+     await passwordService.resetPassword(user.dn, newPassword);
+    
+    if (!passwordService) {
+      throw new Error('Error al cambiar la contraseña en el directorio');
+    }
+
+    // 4. Limpiar el código de verificación
+    verificationStorage.deleteCode(user.email);
+
+    res.status(200).json({
+      success: true,
+      message: "Contraseña restablecida exitosamente",
+    });
+
+  } catch (error: any) {
+    console.error("❌ Error en verifyCodeAndResetPassword:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Error al restablecer la contraseña",
     });
   }
 };

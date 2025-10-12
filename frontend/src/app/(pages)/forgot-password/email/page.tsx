@@ -1,334 +1,168 @@
+// src/app/(pages)/forgot-password/email/page.tsx
 "use client";
 
-import { useState, useCallback } from "react";
-import { motion } from "framer-motion";
-import { 
-  EnvelopeIcon, 
-  UserIcon, 
-  ArrowLeftIcon, 
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+import { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import StepsIndicator, { Step, StepStatus } from "@/app/components/active-account/StepsIndicator";
+import UserIdentifierForm from "@/app/components/forgot-password/UserIdentifierForm";
+import VerificationCodeForm from "@/app/components/forgot-password/VerificationCodeForm";
+import ResetPasswordForm from "@/app/components/forgot-password/ResetPasswordForm";
+import SuccessStep from "@/app/components/forgot-password/SuccessStep";
 
-type Step = "email" | "code";
-
-interface LDAPUserData {
-  sAMAccountName: string;
-  dn: string;
-  username: string;
-  nombreCompleto: string;
+interface UserData {
   email: string;
-  nombre: string;
-  apellido: string;
-  displayName: string;
-  employeeID: string;
+  displayName?: string;
+  sAMAccountName?: string;
+  employeeID?: string;
+  userPrincipalName?: string;
+  dn: string;
 }
 
-export default function EmailRecoveryPage() {
-  const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
-  const [usernameInput, setUsernameInput] = useState("");
-  const [code, setCode] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [userInfo, setUserInfo] = useState<LDAPUserData | null>(null);
-  const router = useRouter();
+type StepType = "identify" | "verify" | "reset" | "success";
 
-  const searchUserInLDAP = useCallback(async (email: string, username: string) => {
-    setIsSubmitting(true);
-    setError("");
-    
-    try {
-      // Validar que al menos un campo esté lleno
-      if (!email && !username) {
-        setError("Debe proporcionar al menos un correo o nombre de usuario");
-        return;
-      }
+export default function ForgotPasswordPage() {
+  const [currentStep, setCurrentStep] = useState<StepType>("identify");
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userIdentifier, setUserIdentifier] = useState("");
+  const containerRef = useRef(null);
 
-      // Construir el cuerpo de la petición
-      const requestBody: any = {};
-      if (email) requestBody.email = email;
-      if (username) requestBody.username = username;
+  // Definir los steps del wizard
+  const steps: Step[] = [
+    {
+      id: "identify",
+      title: "Identificación",
+      status: (currentStep === "identify" 
+        ? "current" 
+        : ["verify", "reset", "success"].includes(currentStep) 
+        ? "complete" 
+        : "upcoming") as StepStatus,
+    },
+    {
+      id: "verify",
+      title: "Verificación",
+      status: (currentStep === "verify" 
+        ? "current" 
+        : ["reset", "success"].includes(currentStep) 
+        ? "complete" 
+        : "upcoming") as StepStatus,
+    },
+    {
+      id: "reset",
+      title: "Contraseña",
+      status: (currentStep === "reset" 
+        ? "current" 
+        : currentStep === "success" 
+        ? "complete" 
+        : "upcoming") as StepStatus,
+    },
+    {
+      id: "success",
+      title: "Completado",
+      status: (currentStep === "success" ? "current" : "upcoming") as StepStatus,
+    },
+  ];
 
-      // Llamar a la API para buscar usuario en LDAP
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ldap/search-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+  // Manejar éxito en identificación de usuario
+  const handleUserIdentified = (data: UserData, identifier: string) => {
+    setUserData(data);
+    setUserIdentifier(identifier);
+    setCurrentStep("verify");
+  };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al buscar usuario");
-      }
+  // Manejar éxito en verificación de código
+  const handleCodeVerified = () => {
+    setCurrentStep("reset");
+  };
 
-      const userData: LDAPUserData = await response.json();
+  // Manejar éxito en cambio de contraseña
+  const handlePasswordReset = () => {
+    setCurrentStep("success");
+  };
 
-      if (userData) {
-        setUserInfo(userData);
-        
-        // Enviar código de verificación al correo del usuario
-        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/verificacion`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            email: userData.email,
-            username: userData.sAMAccountName 
-          }),
-        });
-
-        if (!emailResponse.ok) {
-          throw new Error("Error al enviar el correo de verificación");
-        }
-
-        setStep("code");
-      } else {
-        setError("No se encontró ningún usuario con los datos proporcionados");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al buscar usuario. Intente nuevamente.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, []);
-
-  const handleSendCode = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    await searchUserInLDAP(email, usernameInput);
-  }, [email, usernameInput, searchUserInLDAP]);
-
-  const handleVerifyCode = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    try {
-      // Verificar el código con el servidor
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/verify-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: userInfo?.email,
-          code 
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Código inválido");
-      }
-
-      // Redirigir a la página de reset con el username
-      router.push(`/forgot-password/reset?username=${userInfo?.sAMAccountName}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al verificar el código.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [code, userInfo, router]);
-
-  const handleResendCode = useCallback(async () => {
-    setIsSubmitting(true);
-    try {
-      // Reenviar código de verificación
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/verificacion`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: userInfo?.email,
-          username: userInfo?.sAMAccountName 
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al reenviar el código");
-      }
-
-      setError("Código reenviado correctamente");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al reenviar el código.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [userInfo]);
+  // Corrección para la animación del logo
+  const logoAnimationProps = {
+    initial: { y: 100, opacity: 0 },
+    animate: { y: 0, opacity: 1 },
+    transition: { duration: 1.2, ease: "easeOut" as const },
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
-          <Image
-            src="/uniss-logo.png"
-            alt="UNISS Logo"
-            width={80}
-            height={80}
-            className="mx-auto mb-6"
-            priority
-          />
-          
-          <button
-            onClick={() => step === "email" ? router.back() : setStep("email")}
-            className="flex items-center text-uniss-blue hover:text-uniss-blue-dark mb-4"
+    <div
+      className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-2 sm:p-4"
+      ref={containerRef}
+    >
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white rounded-xl md:rounded-2xl shadow-lg md:shadow-xl overflow-hidden mx-2">
+        <AnimatePresence>
+          <motion.div
+            key="logo"
+            className="flex justify-center pt-6 md:pt-8 px-4 md:px-8"
+            {...logoAnimationProps}
           >
-            <ArrowLeftIcon className="w-5 h-5 mr-1" />
-            Volver
-          </button>
-          
-          {step === "email" ? (
-            <>
-              <h1 className="text-2xl font-bold text-uniss-black mb-2">Recuperar Contraseña</h1>
-              <p className="text-gray-600 mb-6">Ingrese su correo electrónico o nombre de usuario</p>
-
-              <form onSubmit={handleSendCode} className="space-y-4">
-                <div>
-                  <label className="block mb-2 text-gray-600">
-                    Correo electrónico
-                  </label>
-                  <div className="relative">
-                    <EnvelopeIcon className="w-5 h-5 text-gray-400 absolute left-3 top-3.5" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="usuario@ejemplo.com"
-                      className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uniss-blue focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div className="text-gray-500 text-sm">- o -</div>
-
-                <div>
-                  <label className="block mb-2 text-gray-600">
-                    Nombre de usuario
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="w-5 h-5 text-gray-400 absolute left-3 top-3.5" />
-                    <input
-                      type="text"
-                      value={usernameInput}
-                      onChange={(e) => setUsernameInput(e.target.value)}
-                      placeholder="Nombre de usuario"
-                      className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uniss-blue focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting || (!email && !usernameInput)}
-                  className="w-full bg-uniss-blue text-white py-3 rounded-lg hover:bg-opacity-90 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+            <div className="relative">
+              <Image
+                src="/uniss-logo.png"
+                alt="UNISS Logo"
+                width={80}
+                height={80}
+                className="object-contain w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24"
+                priority
+              />
+              {currentStep !== "identify" && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                  className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-white rounded-full"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                      Buscando usuario...
-                    </>
-                  ) : (
-                    "Continuar"
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-4 text-sm text-gray-600">
-                ¿Recordó su contraseña?{" "}
-                <Link href="/" className="text-uniss-blue hover:underline" prefetch={false}>
-                  Iniciar sesión
-                </Link>
-              </div>
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold text-uniss-black mb-2">Verificar Identidad</h1>
-              
-              {userInfo && (
-                <div className="bg-uniss-blue p-3 rounded-lg mb-4 text-left">
-                  <p className="text-sm text-blue-800">
-                    <strong>Usuario encontrado:</strong> {userInfo.nombreCompleto}
-                    <br />
-                    <strong>Correo:</strong> {userInfo.email}
-                  </p>
-                </div>
+                  <CheckCircleIcon className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-green-500" />
+                </motion.div>
               )}
-              
-              <p className="text-gray-600 mb-6">
-                Se ha enviado un código de verificación a su correo electrónico
-              </p>
-
-              <form onSubmit={handleVerifyCode} className="space-y-4">
-                <div>
-                  <label className="block mb-2 text-gray-600">
-                    Código de verificación
-                  </label>
-                  <input
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Código de 6 dígitos"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uniss-blue focus:border-transparent"
-                    maxLength={6}
-                    required
-                  />
-                </div>
-
-                {error && (
-                  <div className={`p-3 rounded-lg text-sm ${
-                    error.includes("reenviado") 
-                      ? "bg-green-50 text-green-700" 
-                      : "bg-red-50 text-red-700"
-                  }`}>
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting || code.length < 6}
-                  className="w-full bg-uniss-blue text-white py-3 rounded-lg hover:bg-opacity-90 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                      Verificando...
-                    </>
-                  ) : (
-                    "Verificar Código"
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-4 text-sm text-gray-600">
-                ¿No recibió el código?{" "}
-                <button
-                  onClick={handleResendCode}
-                  disabled={isSubmitting}
-                  className="text-uniss-blue hover:underline disabled:opacity-50"
-                >
-                  Reenviar código
-                </button>
-              </div>
-            </>
+            </div>
+          </motion.div>
+          
+          <div className="px-2 sm:px-4">
+            <StepsIndicator steps={steps} />
+          </div>
+          
+          {/* Paso 1: Identificación del usuario */}
+          {currentStep === "identify" && (
+            <UserIdentifierForm
+              key="identify-step"
+              onUserIdentified={handleUserIdentified}
+            />
           )}
-        </motion.div>
+          
+          {/* Paso 2: Verificación del código */}
+          {currentStep === "verify" && userData && (
+            <VerificationCodeForm
+              key="verify-step"
+              userData={userData}
+              onBack={() => setCurrentStep("identify")}
+              onCodeVerified={handleCodeVerified}
+            />
+          )}
+          
+          {/* Paso 3: Restablecimiento de contraseña */}
+          {currentStep === "reset" && userData && (
+            <ResetPasswordForm
+              key="reset-step"
+              userData={userData}
+              userIdentifier={userIdentifier}
+              onBack={() => setCurrentStep("verify")}
+              onPasswordReset={handlePasswordReset}
+            />
+          )}
+          
+          {/* Paso 4: Éxito */}
+          {currentStep === "success" && (
+            <SuccessStep
+              key="success-step"
+              onComplete={() => window.location.href = '/login'}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
