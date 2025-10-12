@@ -1,4 +1,3 @@
-// app/activity-logs/page.tsx
 "use client";
 
 import {
@@ -14,6 +13,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import Header from "@/app/components/Header";
+import { useDarkModeContext } from "@/app/contexts/DarkModeContext";
 
 interface ActivityLog {
   id: number;
@@ -30,7 +30,7 @@ interface DateRange {
 }
 
 export default function ActivityLogsPage() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { isDarkMode } = useDarkModeContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -197,10 +197,8 @@ export default function ActivityLogsPage() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}>
-      <Header 
-        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-        isDarkMode={isDarkMode}
-      />
+      {/* ✅ Header sin props - usa el contexto internamente */}
+      <Header />
       
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
@@ -223,7 +221,7 @@ export default function ActivityLogsPage() {
               <input
                 type="text"
                 placeholder="Buscar en Dispositivos..."
-                className={`w-full pl-10 pr-4 py-2 border ${isDarkMode ? "border-gray-600 text-gray-200" : "border-gray-300 text-gray-800"} rounded-lg bg-transparent`}
+                className={`w-full pl-10 pr-4 py-2 border ${isDarkMode ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-400" : "border-gray-300 bg-white text-gray-800 placeholder-gray-500"} rounded-lg focus:outline-none focus:ring-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -232,10 +230,10 @@ export default function ActivityLogsPage() {
 
             <button
               onClick={() => setFilterOpen(!filterOpen)}
-              className={`flex items-center gap-2 px-4 py-2 border ${isDarkMode ? "border-gray-600 hover:bg-gray-700" : "border-gray-300 hover:bg-gray-50"} rounded-lg`}
+              className={`flex items-center gap-2 px-4 py-2 border ${isDarkMode ? "border-gray-600 bg-gray-700 hover:bg-gray-600 text-gray-300" : "border-gray-300 bg-white hover:bg-gray-50 text-gray-600"} rounded-lg transition-colors`}
             >
-              <FunnelIcon className={`w-5 h-5 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`} />
-              <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>Filtros</span>
+              <FunnelIcon className="w-5 h-5" />
+              <span>Filtros</span>
             </button>
           </div>
 
@@ -243,45 +241,57 @@ export default function ActivityLogsPage() {
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Filtro Tipo */}
               <div className="space-y-2">
-                <label className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Tipo</label>
+                <label className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Tipo</label>
                 <select
-                  className={`w-full p-2 ${isDarkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-gray-300 text-gray-800"} rounded-lg border`}
+                  className={`w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold ${
+                    isDarkMode 
+                      ? "bg-gray-700 border-gray-600 text-gray-200" 
+                      : "bg-white border-gray-300 text-gray-800"
+                  }`}
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
                 >
-                  <option value="all" className={isDarkMode ? "bg-gray-700" : ""}>Todos</option>
-                  <option value="login" className={isDarkMode ? "bg-gray-700" : ""}>Inicio de sesión</option>
-                  <option value="failed_attempt" className={isDarkMode ? "bg-gray-700" : ""}>Intento fallido</option>
-                  <option value="password_change" className={isDarkMode ? "bg-gray-700" : ""}>Cambio de contraseña</option>
-                  <option value="device_change" className={isDarkMode ? "bg-gray-700" : ""}>Dispositivo</option>
+                  <option value="all">Todos</option>
+                  <option value="login">Inicio de sesión</option>
+                  <option value="failed_attempt">Intento fallido</option>
+                  <option value="password_change">Cambio de contraseña</option>
+                  <option value="device_change">Dispositivo</option>
                 </select>
               </div>
 
               {/* Filtro Estado */}
               <div className="space-y-2">
-                <label className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Estado</label>
+                <label className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Estado</label>
                 <select
-                  className={`w-full p-2 ${isDarkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-gray-300 text-gray-800"} rounded-lg border`}
+                  className={`w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold ${
+                    isDarkMode 
+                      ? "bg-gray-700 border-gray-600 text-gray-200" 
+                      : "bg-white border-gray-300 text-gray-800"
+                  }`}
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
                 >
-                  <option value="all" className={isDarkMode ? "bg-gray-700" : ""}>Todos</option>
-                  <option value="success" className={isDarkMode ? "bg-gray-700" : ""}>Éxito</option>
-                  <option value="failed" className={isDarkMode ? "bg-gray-700" : ""}>Fallido</option>
+                  <option value="all">Todos</option>
+                  <option value="success">Éxito</option>
+                  <option value="failed">Fallido</option>
                 </select>
               </div>
 
               {/* Filtro Dispositivo */}
               <div className="space-y-2">
-                <label className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Dispositivo</label>
+                <label className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Dispositivo</label>
                 <select
-                  className={`w-full p-2 ${isDarkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-gray-300 text-gray-800"} rounded-lg border`}
+                  className={`w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold ${
+                    isDarkMode 
+                      ? "bg-gray-700 border-gray-600 text-gray-200" 
+                      : "bg-white border-gray-300 text-gray-800"
+                  }`}
                   value={selectedDevice}
                   onChange={(e) => setSelectedDevice(e.target.value)}
                 >
-                  <option value="all" className={isDarkMode ? "bg-gray-700" : ""}>Todos</option>
+                  <option value="all">Todos</option>
                   {[...new Set(activityLogs.map((log) => log.device))].map((device) => (
-                    <option key={device} value={device} className={isDarkMode ? "bg-gray-700" : ""}>
+                    <option key={device} value={device}>
                       {device}
                     </option>
                   ))}
@@ -290,22 +300,30 @@ export default function ActivityLogsPage() {
 
               {/* Filtro Fechas */}
               <div className="space-y-2">
-                <label className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Rango de fechas</label>
+                <label className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Rango de fechas</label>
                 <div className="space-y-2">
                   <div className="relative">
-                    <span className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Desde</span>
+                    <span className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Desde</span>
                     <input
                       type="date"
-                      className={`w-full p-2 border ${isDarkMode ? "border-gray-600 text-gray-200" : "border-gray-300 text-gray-800"} rounded-lg bg-transparent mt-1`}
+                      className={`w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold ${
+                        isDarkMode 
+                          ? "bg-gray-700 border-gray-600 text-gray-200" 
+                          : "bg-white border-gray-300 text-gray-800"
+                      }`}
                       value={dateRange.start}
                       onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
                     />
                   </div>
                   <div className="relative">
-                    <span className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Hasta</span>
+                    <span className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Hasta</span>
                     <input
                       type="date"
-                      className={`w-full p-2 border ${isDarkMode ? "border-gray-600 text-gray-200" : "border-gray-300 text-gray-800"} rounded-lg bg-transparent mt-1`}
+                      className={`w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold ${
+                        isDarkMode 
+                          ? "bg-gray-700 border-gray-600 text-gray-200" 
+                          : "bg-white border-gray-300 text-gray-800"
+                      }`}
                       value={dateRange.end}
                       onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
                     />
@@ -313,7 +331,7 @@ export default function ActivityLogsPage() {
                   {(dateRange.start || dateRange.end) && (
                     <button
                       onClick={() => setDateRange({ start: "", end: "" })}
-                      className="w-full text-red-500 hover:text-red-600 flex items-center justify-center gap-1"
+                      className="w-full text-red-500 hover:text-red-600 flex items-center justify-center gap-1 text-sm"
                     >
                       <XMarkIcon className="w-4 h-4" />
                       Limpiar fechas
@@ -336,7 +354,7 @@ export default function ActivityLogsPage() {
             </span>
             <button
               onClick={clearFilters}
-              className="flex items-center gap-1 text-red-500 hover:text-red-600"
+              className="flex items-center gap-1 text-red-500 hover:text-red-600 text-sm"
             >
               <XMarkIcon className="w-4 h-4" />
               Limpiar filtros
@@ -345,28 +363,28 @@ export default function ActivityLogsPage() {
         </div>
 
         {/* Tabla de resultados */}
-        <div className={`${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} rounded-lg shadow-sm border p-6`}>
+        <div className={`${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} rounded-lg shadow-sm border overflow-hidden`}>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className={`border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
-                  <th className={`text-left py-3 px-4 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Tipo</th>
-                  <th className={`text-left py-3 px-4 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Fecha</th>
-                  <th className={`text-left py-3 px-4 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Dispositivo</th>
-                  <th className={`text-left py-3 px-4 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Estado</th>
-                  <th className={`text-left py-3 px-4 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>IP</th>
+                <tr className={`border-b ${isDarkMode ? "border-gray-700 bg-gray-750" : "border-gray-200 bg-gray-50"}`}>
+                  <th className={`text-left py-3 px-4 font-semibold ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Tipo</th>
+                  <th className={`text-left py-3 px-4 font-semibold ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Fecha</th>
+                  <th className={`text-left py-3 px-4 font-semibold ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Dispositivo</th>
+                  <th className={`text-left py-3 px-4 font-semibold ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Estado</th>
+                  <th className={`text-left py-3 px-4 font-semibold ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>IP</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredLogs.map((log) => (
                   <tr
                     key={log.id}
-                    className={`border-b ${isDarkMode ? "border-gray-700 hover:bg-gray-700" : "hover:bg-gray-50"}`}
+                    className={`border-b ${isDarkMode ? "border-gray-700 hover:bg-gray-750" : "border-gray-200 hover:bg-gray-50"} transition-colors`}
                   >
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
                         {getActivityIcon(log.type)}
-                        <span className={isDarkMode ? "text-gray-200" : "text-gray-800"}>
+                        <span className={`font-medium ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>
                           {log.type === "login" && "Inicio de sesión"}
                           {log.type === "failed_attempt" && "Intento fallido"}
                           {log.type === "password_change" && "Cambio de contraseña"}
@@ -382,20 +400,20 @@ export default function ActivityLogsPage() {
                     </td>
                     <td className="py-4 px-4">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs ${
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
                           log.status === "success"
                             ? isDarkMode 
-                              ? "bg-green-900 text-green-100" 
-                              : "bg-green-100 text-green-800"
+                              ? "bg-green-900/50 text-green-300 border border-green-700" 
+                              : "bg-green-100 text-green-800 border border-green-200"
                             : isDarkMode 
-                              ? "bg-red-900 text-red-100" 
-                              : "bg-red-100 text-red-800"
+                              ? "bg-red-900/50 text-red-300 border border-red-700" 
+                              : "bg-red-100 text-red-800 border border-red-200"
                         }`}
                       >
                         {log.status === "success" ? "Éxito" : "Fallido"}
                       </span>
                     </td>
-                    <td className={`py-4 px-4 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+                    <td className={`py-4 px-4 font-mono text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
                       {log.ip}
                     </td>
                   </tr>
@@ -403,6 +421,14 @@ export default function ActivityLogsPage() {
               </tbody>
             </table>
           </div>
+          
+          {filteredLogs.length === 0 && (
+            <div className="text-center py-8">
+              <p className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                No se encontraron resultados con los filtros aplicados
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -37,6 +37,7 @@ interface EmployeeProfileProps {
     formatRegimenSalarial: (regimen?: number) => string;
     getAnoContratacion: (fechaContratacion: any, anoAlta?: number) => string;
     formatProfesionDescription: (profesion?: string) => string;
+    isDarkMode: boolean;
 }
 
 const EmployeeProfile = ({

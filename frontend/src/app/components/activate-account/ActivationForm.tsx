@@ -47,7 +47,7 @@ export default function ActivationForm({
             value={watch("carnet") || ""}
             onChange={handleNumericInput("carnet", 11)}
             placeholder="Ej: 01234567891"
-            className={`w-full p-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all ${
+            className={`w-full p-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all bg-white text-gray-800 ${
               errors.carnet 
                 ? "border-red-500 focus:ring-red-300" 
                 : "border-gray-300 focus:ring-blue-400"
@@ -70,7 +70,7 @@ export default function ActivationForm({
               value={watch("tomo") || ""}
               onChange={handleNumericInput("tomo", 3)}
               placeholder="Ej: 213"
-              className={`w-full p-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all ${
+              className={`w-full p-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all bg-white text-gray-800 ${
                 errors.tomo 
                   ? "border-red-500 focus:ring-red-300" 
                   : "border-gray-300 focus:ring-blue-400"
@@ -92,7 +92,7 @@ export default function ActivationForm({
               value={watch("folio") || ""}
               onChange={handleNumericInput("folio", 2)}
               placeholder="Ej: 21"
-              className={`w-full p-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all ${
+              className={`w-full p-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all bg-white text-gray-800 ${
                 errors.folio 
                   ? "border-red-500 focus:ring-red-300" 
                   : "border-gray-300 focus:ring-blue-400"
@@ -120,7 +120,7 @@ export default function ActivationForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? (
             <>

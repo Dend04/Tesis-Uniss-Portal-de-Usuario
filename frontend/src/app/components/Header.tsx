@@ -15,11 +15,7 @@ import Link from "next/link";
 import { useState, useCallback, memo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-
-interface HeaderProps {
-  onToggleDarkMode: () => void;
-  isDarkMode: boolean;
-}
+import { useDarkModeContext } from "../contexts/DarkModeContext";
 
 interface NavIconProps {
   icon: React.ReactElement;
@@ -38,50 +34,6 @@ interface MobileNavItemProps {
   onClick: () => void;
   onHover?: () => void;
 }
-
-// Hook personalizado para el modo oscuro con persistencia
-const useDarkMode = (): [boolean, () => void] => {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-
-  useEffect(() => {
-    // Cargar preferencia del localStorage al montar el componente
-    const savedDarkMode = localStorage.getItem('darkMode');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    // Prioridad: localStorage > preferencia del sistema > claro por defecto
-    const initialDarkMode = savedDarkMode !== null 
-      ? JSON.parse(savedDarkMode) 
-      : prefersDark;
-    
-    setIsDarkMode(initialDarkMode);
-    applyDarkMode(initialDarkMode);
-  }, []);
-
-  const applyDarkMode = useCallback((dark: boolean) => {
-    // Aplicar clase al documento root
-    if (dark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode(prev => {
-      const newValue = !prev;
-      
-      // Guardar en localStorage
-      localStorage.setItem('darkMode', JSON.stringify(newValue));
-      
-      // Aplicar cambios al DOM
-      applyDarkMode(newValue);
-      
-      return newValue;
-    });
-  }, [applyDarkMode]);
-
-  return [isDarkMode, toggleDarkMode];
-};
 
 // Función para limpiar el nombre eliminando palabras específicas
 const cleanDisplayName = (displayName: string): string => {
@@ -142,7 +94,8 @@ const getUserDataFromToken = () => {
 };
 
 // Componente principal Header optimizado
-export const Header = memo(({ onToggleDarkMode, isDarkMode }: HeaderProps) => {
+export const Header = memo(() => {
+  const { isDarkMode, toggleDarkMode } = useDarkModeContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userDisplayName, setUserDisplayName] = useState<string>('Usuario');
   const router = useRouter();
@@ -240,7 +193,7 @@ export const Header = memo(({ onToggleDarkMode, isDarkMode }: HeaderProps) => {
 
             {/* Botón de tema oscuro - siempre visible */}
             <DarkModeButton
-              onToggleDarkMode={onToggleDarkMode}
+              onToggleDarkMode={toggleDarkMode}
               isDarkMode={isDarkMode}
             />
 
@@ -548,8 +501,13 @@ const LogoutButton = memo(({ isDarkMode }: { isDarkMode: boolean }) => {
 
 LogoutButton.displayName = 'LogoutButton';
 
-// Componente DarkModeButton actualizado para usar la nueva lógica
-const DarkModeButton = memo(({ onToggleDarkMode, isDarkMode }: { onToggleDarkMode: () => void; isDarkMode: boolean }) => (
+// Componente DarkModeButton
+interface DarkModeButtonProps {
+  onToggleDarkMode: () => void;
+  isDarkMode: boolean;
+}
+
+const DarkModeButton = memo(({ onToggleDarkMode, isDarkMode }: DarkModeButtonProps) => (
   <button
     onClick={onToggleDarkMode}
     className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold"
@@ -579,8 +537,5 @@ const DarkModeButton = memo(({ onToggleDarkMode, isDarkMode }: { onToggleDarkMod
 ));
 
 DarkModeButton.displayName = 'DarkModeButton';
-
-// Hook de modo oscuro para usar en otros componentes
-export { useDarkMode };
 
 export default Header;

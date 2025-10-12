@@ -10,14 +10,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import StepsIndicator, {
   Step,
   StepStatus,
-} from "@/app/components/active-account/StepsIndicator";
-import ActivationForm from "@/app/components/active-account/ActivationForm";
-import VerificationSuccess from "@/app/components/active-account/VerificationSuccess";
-import BackupEmailForm from "@/app/components/active-account/BackupEmailForm";
-import UserConfirmation from "@/app/components/active-account/UserConfirmation";
-import UsernameSelection from "@/app/components/active-account/UsernameSelection";
-import PasswordForm from "@/app/components/active-account/PasswordForm";
-
+} from "@/app/components/activate-account/StepsIndicator";
+import ActivationForm from "@/app/components/activate-account/ActivationForm";
+import VerificationSuccess from "@/app/components/activate-account/VerificationSuccess";
+import BackupEmailForm from "@/app/components/activate-account/BackupEmailForm";
+import UserConfirmation from "@/app/components/activate-account/UserConfirmation";
+import UsernameSelection from "@/app/components/activate-account/UsernameSelection";
+import PasswordForm from "@/app/components/activate-account/PasswordForm";
 
 // Define interfaces for the expected data structure
 export interface StudentData {
@@ -39,6 +38,7 @@ export interface EmployeeData {
   type: "employee";
 }
 export type IdentityVerificationResponse = StudentData | EmployeeData;
+
 const activationSchema = z.object({
   carnet: z
     .string()
@@ -53,9 +53,11 @@ const activationSchema = z.object({
     .length(2, "El folio debe tener 2 dígitos")
     .regex(/^\d+$/, "Solo se permiten números"),
 });
+
 const emailSchema = z.object({
   email: z.string().email("Debe ingresar un correo electrónico válido"),
 });
+
 export type ActivationFormData = z.infer<typeof activationSchema>;
 export type EmailFormData = z.infer<typeof emailSchema>;
 type StepType =
@@ -77,9 +79,11 @@ export default function ActivationPage() {
   const [userPrincipalName, setUserPrincipalName] = useState("");
   const [password, setPassword] = useState("");
   const containerRef = useRef(null);
+  
   const activationForm = useForm<ActivationFormData>({
     resolver: zodResolver(activationSchema),
   });
+  
   const emailForm = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
   });
@@ -224,45 +228,43 @@ export default function ActivationPage() {
     setCurrentStep("confirmation");
   };
 
-  
-
   // Función para cuando se completa el proceso 
-const onCompleteActivation = async () => {
-  try {
-    console.log('Enviando correo de bienvenida a:', verifiedEmail);
-    
-    const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/bienvenido`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        to: verifiedEmail,
-        username: selectedUsername,
-        userPrincipalName: userPrincipalName,
-        fullName: result?.fullName,
-        userType: result?.type
-      }),
-    });
+  const onCompleteActivation = async () => {
+    try {
+      console.log('Enviando correo de bienvenida a:', verifiedEmail);
+      
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/bienvenido`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: verifiedEmail,
+          username: selectedUsername,
+          userPrincipalName: userPrincipalName,
+          fullName: result?.fullName,
+          userType: result?.type
+        }),
+      });
 
-    const emailResult = await emailResponse.json();
-    
-    if (!emailResponse.ok) {
-      console.warn('Correo no enviado, pero continuando:', emailResult.message);
-      // NO lanzar error, solo loguear advertencia
-    } else {
-      console.log('Correo de bienvenida enviado exitosamente');
+      const emailResult = await emailResponse.json();
+      
+      if (!emailResponse.ok) {
+        console.warn('Correo no enviado, pero continuando:', emailResult.message);
+        // NO lanzar error, solo loguear advertencia
+      } else {
+        console.log('Correo de bienvenida enviado exitosamente');
+      }
+
+      // Siempre redirigir al dashboard
+      window.location.href = '/dashboard';
+      
+    } catch (error) {
+      console.error('Error en el proceso final:', error);
+      // Aún con error, redirigir al dashboard
+      window.location.href = '/dashboard';
     }
-
-    // Siempre redirigir al dashboard
-    window.location.href = '/dashboard';
-    
-  } catch (error) {
-    console.error('Error en el proceso final:', error);
-    // Aún con error, redirigir al dashboard
-    window.location.href = '/dashboard';
-  }
-};
+  };
 
   // Corrección para la animación del logo
   const logoAnimationProps = {

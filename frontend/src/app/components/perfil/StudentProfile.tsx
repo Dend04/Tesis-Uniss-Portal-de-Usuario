@@ -41,6 +41,7 @@ interface StudentProfileProps {
     isTrabajador: boolean;
     formatPhoneNumber: (phone: string) => string;
     loadingStudent?: boolean;
+    isDarkMode: boolean;
 }
 
 const StudentProfile = ({ student, employeeID, isTrabajador, formatPhoneNumber }: StudentProfileProps) => {

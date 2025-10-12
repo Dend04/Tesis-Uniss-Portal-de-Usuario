@@ -5,11 +5,11 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
-import StepsIndicator, { Step, StepStatus } from "@/app/components/active-account/StepsIndicator";
-import UserIdentifierForm from "@/app/components/forgot-password/UserIdentifierForm";
 import VerificationCodeForm from "@/app/components/forgot-password/VerificationCodeForm";
 import ResetPasswordForm from "@/app/components/forgot-password/ResetPasswordForm";
 import SuccessStep from "@/app/components/forgot-password/SuccessStep";
+import StepsIndicator, { Step, StepStatus } from "@/app/components/activate-account/StepsIndicator";
+import UserIdentifierForm from "@/app/components/forgot-password/UserIdentifierForm";
 
 interface UserData {
   email: string;

@@ -160,7 +160,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       <div className="mt-4 text-center">
         <p className="text-sm text-gray-600">
           ¿Recordó su contraseña?{" "}
-          <a href="/login" className="text-blue-600 hover:underline font-medium">
+          <a href="/" className="text-blue-600 hover:underline font-medium">
             Iniciar sesión
           </a>
         </p>

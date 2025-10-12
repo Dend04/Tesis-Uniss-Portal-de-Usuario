@@ -17,6 +17,8 @@ import { Device } from "@/types";
 
 // Utilidades
 import TutorialModal from "@/app/components/TutorialModal";
+import { useDarkMode } from "@/app/hooks/useDarkMode";
+import { useDarkModeContext } from "@/app/contexts/DarkModeContext";
 
 // ✅ Definir interfaz para los datos de contraseña
 interface PasswordData {
@@ -109,24 +111,6 @@ const DevicesSection = dynamic(
   }
 );
 
-// Hook personalizado para el modo oscuro
-const useDarkMode = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
-
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode((prev) => !prev);
-  }, []);
-
-  return { isDarkMode, toggleDarkMode };
-};
 
 // Hook para obtener datos de expiración de contraseña del backend
 const usePasswordData = () => {
@@ -196,7 +180,7 @@ const usePasswordData = () => {
 
 export default function Dashboard() {
   const router = useRouter();
-  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isDarkMode, toggleDarkMode } = useDarkModeContext();
   const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -322,7 +306,7 @@ export default function Dashboard() {
             <div className="h-16 bg-white dark:bg-gray-800 border-b dark:border-gray-700" />
           }
         >
-          <Header onToggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
+          <Header/>
         </Suspense>
 
         {isLoading ? (

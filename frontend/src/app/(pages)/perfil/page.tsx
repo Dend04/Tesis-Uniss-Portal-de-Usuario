@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import ProgressBar from "@/app/components/ProgressBar";
 import StudentProfile from "@/app/components/perfil/StudentProfile";
 import EmployeeProfile from "@/app/components/perfil/EmployeeProfile";
+import Header from "@/app/components/Header";
+import { useDarkModeContext } from "@/app/contexts/DarkModeContext";
 
 interface StudentData {
   personalData: {
@@ -191,6 +193,7 @@ const formatPhoneNumber = (phone: string) => {
 };
 
 export default function ProfilePage() {
+  const { isDarkMode } = useDarkModeContext();
   const [student, setStudent] = useState<StudentData | null>(null);
   const [employee, setEmployee] = useState<EmployeeData | null>(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -370,130 +373,138 @@ export default function ProfilePage() {
 
   if (!isMounted) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
+      <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}>
+        <div className="flex justify-center items-center min-h-screen">
+          <div className={`animate-spin rounded-full h-12 w-12 border-t-4 ${isDarkMode ? "border-blue-400" : "border-blue-500"}`}></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto py-8 px-4 text-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
+      <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}>
+        <Header />
+        <div className="max-w-4xl mx-auto py-8 px-4 text-center">
+          <div className={`${isDarkMode ? "bg-red-900/50 border-red-700 text-red-300" : "bg-red-100 border-red-400 text-red-700"} border px-4 py-3 rounded mb-4`}>
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{error}</span>
+          </div>
+          <div className={`mb-4 p-4 ${isDarkMode ? "bg-yellow-900/30 border-yellow-700 text-yellow-300" : "bg-yellow-100 border-yellow-400 text-yellow-700"} border rounded`}>
+            <p>
+              <strong>Información del usuario:</strong>
+              <br />
+              EmployeeID: {userData?.employeeID || "No disponible"}
+              <br />
+              Título: {userData?.title || "No disponible"}
+              <br />
+              Usuario: {userData?.username || "No disponible"}
+              <br />
+              Nombre: {userData?.displayName || "No disponible"}
+              <br />
+              Doble ocupación: {dobleOcupacion ? "Sí" : "No"}
+              <br />
+              Mostrar estudiante: {showStudent ? "Sí" : "No"}
+              <br />
+              Mostrar empleado: {showEmployee ? "Sí" : "No"}
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-uniss-blue text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Reintentar
+          </button>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className={`ml-4 ${isDarkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-500 hover:bg-gray-700"} text-white px-4 py-2 rounded transition`}
+          >
+            Volver al Dashboard
+          </button>
         </div>
-        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
-          <p className="text-yellow-700">
-            <strong>Información del usuario:</strong>
-            <br />
-            EmployeeID: {userData?.employeeID || "No disponible"}
-            <br />
-            Título: {userData?.title || "No disponible"}
-            <br />
-            Usuario: {userData?.username || "No disponible"}
-            <br />
-            Nombre: {userData?.displayName || "No disponible"}
-            <br />
-            Doble ocupación: {dobleOcupacion ? "Sí" : "No"}
-            <br />
-            Mostrar estudiante: {showStudent ? "Sí" : "No"}
-            <br />
-            Mostrar empleado: {showEmployee ? "Sí" : "No"}
-          </p>
-        </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="bg-uniss-blue text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-        >
-          Reintentar
-        </button>
-        <button
-          onClick={() => router.push("/dashboard")}
-          className="ml-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
-        >
-          Volver al Dashboard
-        </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
-      {!student && !employee ? (
-        <div className="text-center">
-          <ProgressBar percentage={loadingProgress} darkMode={false} />
-          <div className="mt-4 text-lg text-gray-600">
-            Cargando información del perfil...
-          </div>
-          {userData?.employeeID && (
-            <div className="mt-2 text-sm text-gray-500">
-              Consultando datos para: {userData.employeeID}
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}>
+      <Header />
+      
+      <div className="max-w-6xl mx-auto py-8 px-4">
+        {!student && !employee ? (
+          <div className="text-center">
+            <ProgressBar percentage={loadingProgress} darkMode={isDarkMode} />
+            <div className={`mt-4 text-lg ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+              Cargando información del perfil...
             </div>
-          )}
-          <div className="mt-2 text-sm text-purple-600 font-medium">
-            Título: {userData?.title || "No disponible"}
-          </div>
-          {dobleOcupacion && (
-            <div className="mt-2 text-sm text-green-600 font-medium">
-              ⚡ Usuario con doble ocupación
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {/* ✅ MOSTRAR ESTUDIANTE SI CORRESPONDE */}
-
-          {showStudent &&
-            // ✅ Solo renderiza StudentProfile si student no es null
-            (student ? (
-              <StudentProfile
-                student={student}
-                employeeID={userData?.employeeID || ""}
-                isTrabajador={dobleOcupacion}
-                formatPhoneNumber={formatPhoneNumber}
-                loadingStudent={loadingStudent} // ✅ Pasa el estado de carga
-              />
-            ) : (
-              // ✅ Muestra un mensaje o un loader si student es null y se está cargando
-              <div className="text-center py-8">
-                {loadingStudent
-                  ? "Cargando datos del estudiante..."
-                  : "No hay datos del estudiante disponibles."}
+            {userData?.employeeID && (
+              <div className={`mt-2 text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                Consultando datos para: {userData.employeeID}
               </div>
-            ))}
-
-          {/* ✅ MOSTRAR EMPLEADO SI CORRESPONDE */}
-          {showEmployee && (
-            <EmployeeProfile
-              employee={employee}
-              loadingEmployee={loadingEmployee}
-              formatTipoContrato={formatTipoContrato}
-              formatRegimenSalarial={formatRegimenSalarial}
-              getAnoContratacion={getAnoContratacion}
-              formatProfesionDescription={formatProfesionDescription}
-            />
-          )}
-
-          {/* ✅ INDICADORES DE CARGA */}
-          {(loadingStudent || loadingEmployee) && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-2xl p-8 max-w-md mx-4">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+            )}
+            <div className={`mt-2 text-sm font-medium ${isDarkMode ? "text-purple-400" : "text-purple-600"}`}>
+              Título: {userData?.title || "No disponible"}
+            </div>
+            {dobleOcupacion && (
+              <div className="mt-2 text-sm text-green-600 font-medium">
+                ⚡ Usuario con doble ocupación
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* ✅ MOSTRAR ESTUDIANTE SI CORRESPONDE */}
+            {showStudent &&
+              (student ? (
+                <StudentProfile
+                  student={student}
+                  employeeID={userData?.employeeID || ""}
+                  isTrabajador={dobleOcupacion}
+                  formatPhoneNumber={formatPhoneNumber}
+                  loadingStudent={loadingStudent}
+                  isDarkMode={isDarkMode}
+                />
+              ) : (
+                <div className={`text-center py-8 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+                  {loadingStudent
+                    ? "Cargando datos del estudiante..."
+                    : "No hay datos del estudiante disponibles."}
                 </div>
-                <p className="text-center text-lg font-semibold text-gray-700">
-                  {loadingStudent && loadingEmployee
-                    ? "Cargando información completa..."
-                    : loadingStudent
-                    ? "Cargando información del estudiante..."
-                    : "Cargando información laboral..."}
-                </p>
+              ))}
+
+            {/* ✅ MOSTRAR EMPLEADO SI CORRESPONDE */}
+            {showEmployee && (
+              <EmployeeProfile
+                employee={employee}
+                loadingEmployee={loadingEmployee}
+                formatTipoContrato={formatTipoContrato}
+                formatRegimenSalarial={formatRegimenSalarial}
+                getAnoContratacion={getAnoContratacion}
+                formatProfesionDescription={formatProfesionDescription}
+                isDarkMode={isDarkMode}
+              />
+            )}
+
+            {/* ✅ INDICADORES DE CARGA */}
+            {(loadingStudent || loadingEmployee) && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className={`rounded-2xl p-8 max-w-md mx-4 ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <div className="flex items-center justify-center mb-4">
+                    <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${isDarkMode ? "border-green-400" : "border-green-500"}`}></div>
+                  </div>
+                  <p className={`text-center text-lg font-semibold ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>
+                    {loadingStudent && loadingEmployee
+                      ? "Cargando información completa..."
+                      : loadingStudent
+                      ? "Cargando información del estudiante..."
+                      : "Cargando información laboral..."}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

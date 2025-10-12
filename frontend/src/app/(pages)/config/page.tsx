@@ -25,6 +25,8 @@ import {
 import { useConfirmation } from "@/app/hooks/useConfirmation";
 import ConfirmationModal from "@/app/components/modals/ConfirmationModal";
 import { useBackupEmail } from "@/app/hooks/useBackupEmail";
+import { useDarkMode } from "@/app/hooks/useDarkMode";
+import { useDarkModeContext } from "@/app/contexts/DarkModeContext";
 
 // Carga perezosa optimizada con imports explícitos
 const PasswordForm = dynamic(() => import("@/app/components/config/PasswordForm"), {
@@ -94,25 +96,6 @@ const usePreload = () => {
   return { preloadComponent, preloaded };
 };
 
-// Hook personalizado para modo oscuro optimizado
-const useDarkMode = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    const isDark = localStorage.getItem('darkMode') === 'true';
-    setIsDarkMode(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
-  }, []);
-
-  const toggleDarkMode = useCallback(() => {
-    const newDarkMode = !isDarkMode;
-    setIsDarkMode(newDarkMode);
-    document.documentElement.classList.toggle("dark", newDarkMode);
-    localStorage.setItem('darkMode', newDarkMode.toString());
-  }, [isDarkMode]);
-
-  return { isDarkMode, toggleDarkMode };
-};
 
 // Componente ToggleSwitch mejorado
 const ToggleSwitch = memo(({ 
@@ -332,7 +315,7 @@ const SecurityProgress = memo(({
 SecurityProgress.displayName = "SecurityProgress";
 
 export default function ConfigPage() {
-  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isDarkMode, toggleDarkMode } = useDarkModeContext();
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
   const [showTwoFASetup, setShowTwoFASetup] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -497,8 +480,8 @@ export default function ConfigPage() {
   }, []);
 
   return (
-    <div className="min-h-screen transition-colors duration-300 bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-900 dark:to-blue-900/20">
-      <Header onToggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
+   <div className="min-h-screen transition-colors duration-300 bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-900 dark:to-blue-900/20">
+      <Header />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header mejorado */}
