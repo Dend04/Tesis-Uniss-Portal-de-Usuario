@@ -23,7 +23,7 @@ services:
       - "8083:8083"
     depends_on:
       - kafka
-      - sqlserver  # Asegura que SQL Server esté listo
+      - sqlserver  
     environment:
       - BOOTSTRAP_SERVERS=kafka:9092
       - GROUP_ID=1
@@ -34,17 +34,16 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2019-latest
     container_name: sqlserver
-    hostname: sqlserver  # Importante para que Debezium lo resuelva internamente
+    hostname: sqlserver 
     ports:
       - "1433:1433"
     env_file:
-      - .env  # Carga las variables desde el archivo .env
+      - .env  
     environment:
       - ACCEPT_EULA=${ACCEPT_EULA}
       - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
       - MSSQL_PID=${MSSQL_PID}
-      - MSSQL_AGENT_ENABLED=${MSSQL_AGENT_ENABLED}  # Crucial para CDC
-    # Volúmenes para persistir datos (recomendado)
+      - MSSQL_AGENT_ENABLED=${MSSQL_AGENT_ENABLED}
     volumes:
       - sqlserver_data:/var/opt/mssql
 

@@ -273,6 +273,12 @@ function determineAccountStatus(
     return "locked";
   }
 
+    // En AD, cuando pwdLastSet = 0, significa que la contraseña debe cambiarse en el próximo login
+  const pwdLastSet = user.pwdLastSet || 0;
+  if (pwdLastSet === 0) {
+    return "expired";
+  }
+
   // Para contraseñas expiradas, generalmente se considera "active"
   // porque el usuario puede cambiarla
   return "active";

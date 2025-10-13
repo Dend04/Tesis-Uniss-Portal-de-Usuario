@@ -251,10 +251,7 @@ export const sendVerificationCodeChangeEmail = async (
   }
 };
 
-export const verifyCode = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const verifyCode = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, code } = req.body;
 
@@ -286,8 +283,8 @@ export const verifyCode = async (
       return;
     }
 
-    // Código verificado correctamente
-    verificationStorage.deleteCode(email);
+    // ✅ CORREGIDO: NO eliminar el código aquí
+    // verificationStorage.deleteCode(email); // ← ELIMINAR ESTA LÍNEA
 
     res.status(200).json({
       success: true,
@@ -620,7 +617,7 @@ export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise
 
 export const handleForgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userIdentifier } = req.body; // sAMAccountName o employeeID
+    const { userIdentifier } = req.body;
 
     if (!userIdentifier) {
       res.status(400).json({
@@ -632,16 +629,16 @@ export const handleForgotPassword = async (req: Request, res: Response): Promise
 
     console.log(`🔐 Solicitud de recuperación para: ${userIdentifier}`);
 
-    // 1. Buscar al usuario en LDAP y obtener su email desde el campo company
+    // 1. Buscar al usuario en LDAP
     const user = await findUserBySAMOrEmployeeID(userIdentifier);
     
-    // 2. Generar código de verificación (usando tu función existente)
+    // 2. Generar código de verificación
     const verificationCode = generateVerificationCode();
     
     // 3. Guardar el código en el almacenamiento
-    verificationStorage.setCode(user.email, verificationCode, 10 * 60 * 1000); // 10 minutos
+    verificationStorage.setCode(user.email, verificationCode, 10 * 60 * 1000);
     
-    // 4. Enviar el código por correo usando tu servicio existente
+    // 4. Enviar el código por correo
     const info = await sendVerificationCodeService(
       user.email,
       user.displayName || "Usuario",
@@ -650,12 +647,18 @@ export const handleForgotPassword = async (req: Request, res: Response): Promise
 
     console.log(`✅ Código enviado a: ${user.email}`);
 
-    // 5. Responder al cliente
+    // 5. ✅ CORREGIDO: Incluir todos los datos del usuario en la respuesta
     res.status(200).json({
       success: true,
       message: "Código de verificación enviado con éxito",
-      // No incluimos el email en la respuesta por seguridad
-      userIdentifier: userIdentifier,
+      // ✅ Incluir todos los datos que el frontend necesita
+      email: user.email,
+      displayName: user.displayName,
+      sAMAccountName: user.sAMAccountName,
+      employeeID: user.employeeID,
+      userPrincipalName: user.userPrincipalName,
+      dn: user.dn,
+      accountStatus: user.accountStatus, // ✅ Incluir el estado de la cuenta
       emailStats: {
         count: emailCounter.getCount(),
         remaining: emailCounter.getRemaining(),
@@ -673,61 +676,34 @@ export const handleForgotPassword = async (req: Request, res: Response): Promise
   }
 };
 
-export const verifyCodeAndResetPassword = async (req: Request, res: Response): Promise<void> => {
+export const verifyCodeAndResetPassword = async (req: Request, res: Response) => {
   try {
     const { userIdentifier, code, newPassword } = req.body;
-
-    if (!userIdentifier || !code || !newPassword) {
-      res.status(400).json({
-        success: false,
-        message: "Se requieren el identificador de usuario, código de verificación y nueva contraseña",
-      });
-      return;
-    }
-
-    // 1. Buscar al usuario para obtener su email
+    
+    // 1. Buscar usuario y verificar código (sin eliminarlo aún)
     const user = await findUserBySAMOrEmployeeID(userIdentifier);
-    
-    // 2. Verificar el código usando tu función existente
     const storedData = verificationStorage.getCode(user.email);
-
-    if (!storedData) {
-      res.status(400).json({
-        success: false,
-        message: "Código de verificación no encontrado o ha expirado",
-      });
-      return;
-    }
-
-    if (storedData.code !== code) {
-      res.status(400).json({
-        success: false,
-        message: "El código de verificación es incorrecto",
-      });
-      return;
-    }
-
-    // 3. Código verificado - ahora cambiar la contraseña en LDAP
-    // Aquí necesitarás implementar la función para cambiar la contraseña en LDAP
-     await passwordService.resetPassword(user.dn, newPassword);
     
-    if (!passwordService) {
-      throw new Error('Error al cambiar la contraseña en el directorio');
+    if (!storedData || storedData.code !== code) {
+     res.status(400).json({
+        success: false,
+        message: "Código de verificación no encontrado o ha expirado"
+      });
+      return
     }
-
-    // 4. Limpiar el código de verificación
+    
+    // 2. Restablecer contraseña en LDAP
+    await passwordService.resetPassword(user.dn, newPassword);
+    
+    // 3. ✅ SOLO AHORA eliminar el código (después del éxito)
     verificationStorage.deleteCode(user.email);
-
+    
     res.status(200).json({
       success: true,
-      message: "Contraseña restablecida exitosamente",
+      message: "Contraseña restablecida exitosamente"
     });
-
-  } catch (error: any) {
-    console.error("❌ Error en verifyCodeAndResetPassword:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message || "Error al restablecer la contraseña",
-    });
+    
+  } catch (error) {
+    // Manejar error
   }
 };

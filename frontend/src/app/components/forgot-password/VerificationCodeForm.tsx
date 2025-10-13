@@ -14,7 +14,7 @@ interface UserData {
 interface VerificationCodeFormProps {
   userData: UserData;
   onBack: () => void;
-  onCodeVerified: () => void;
+  onCodeVerified: (code: string) => void
 }
 
 export default function VerificationCodeForm({
@@ -56,53 +56,49 @@ export default function VerificationCodeForm({
     }
   };
 
-  const handleVerifyCode = async () => {
-    const codeString = verificationCode.join('');
-    
-    if (codeString.length !== 6) {
-      setError("Por favor, ingrese el código completo de 6 dígitos");
-      return;
+const handleVerify = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const code = verificationCode.join("");
+  
+  if (code.length !== 6) {
+    setError("Por favor, ingrese el código completo de 6 dígitos");
+    return;
+  }
+
+  setIsSubmitting(true);
+  setError("");
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/verify-code`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: userData.email,
+        code: code,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Código de verificación incorrecto");
     }
 
-    setIsSubmitting(true);
-    setError("");
-    setSuccessMessage("");
+    const result = await response.json();
 
-    try {
-      // Verificar el código usando el endpoint existente
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/verify-code`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: userData.email,
-          code: codeString,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Código de verificación inválido");
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        setSuccessMessage("Código verificado correctamente");
-        setTimeout(() => {
-          onCodeVerified();
-        }, 1000);
-      } else {
-        throw new Error(result.message || "Error en la verificación");
-      }
-    } catch (err: any) {
-      console.error("Error verificando código:", err);
-      setError(err.message || "Error al verificar el código. Intente nuevamente.");
-    } finally {
-      setIsSubmitting(false);
+    if (result.success) {
+      // ✅ Pasa el código verificado a la función
+      onCodeVerified(code);
+    } else {
+      throw new Error(result.message || "Error en la verificación");
     }
-  };
+  } catch (err: any) {
+    setError(err.message || "Error al verificar el código");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleResendCode = async () => {
     setIsSubmitting(true);
@@ -110,7 +106,7 @@ export default function VerificationCodeForm({
     
     try {
       // Reenviar código usando el endpoint de forgot-password
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forgot-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/forgot-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -208,7 +204,7 @@ export default function VerificationCodeForm({
             Volver
           </button>
           <button
-            onClick={handleVerifyCode}
+            onClick={handleVerify}
             disabled={isSubmitting || verificationCode.some((digit) => digit === "")}
             className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium text-center text-sm sm:text-base disabled:opacity-50"
           >

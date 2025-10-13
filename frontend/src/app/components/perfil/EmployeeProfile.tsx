@@ -46,12 +46,15 @@ const EmployeeProfile = ({
     formatTipoContrato,
     formatRegimenSalarial,
     getAnoContratacion,
-    formatProfesionDescription
+    formatProfesionDescription,
+    isDarkMode
 }: EmployeeProfileProps) => {
     if (!employee) return null;
 
     return (
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mt-8">
+        <div className={`rounded-2xl shadow-xl overflow-hidden mt-8 ${
+            isDarkMode ? "bg-gray-800" : "bg-white"
+        }`}>
             {/* Encabezado con estilo similar al estudiante */}
             <div className="bg-gradient-to-r from-green-600 to-green-700 p-8 flex items-center gap-6">
                 <div className="bg-white/10 p-4 rounded-full">
@@ -81,8 +84,14 @@ const EmployeeProfile = ({
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {loadingEmployee ? (
                         <div className="md:col-span-3 flex justify-center items-center py-12">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-                            <span className="ml-4 text-lg text-gray-600">Cargando datos del trabajador...</span>
+                            <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
+                                isDarkMode ? "border-green-400" : "border-green-500"
+                            }`}></div>
+                            <span className={`ml-4 text-lg ${
+                                isDarkMode ? "text-gray-300" : "text-gray-600"
+                            }`}>
+                                Cargando datos del trabajador...
+                            </span>
                         </div>
                     ) : employee ? (
                         <>
@@ -91,57 +100,74 @@ const EmployeeProfile = ({
                                 label="Código de Ticket del Almuerzo"
                                 value={employee.Id_Empleado}
                                 highlight
+                                isDarkMode={isDarkMode}
                             />
                             <InfoItem
                                 icon={<BriefcaseIcon className="h-7 w-7" />}
                                 label="Cargo"
                                 value={employee.cargoDescription || 'Cargo no disponible'}
+                                isDarkMode={isDarkMode}
                             />
                             <InfoItem
                                 icon={<BuildingOfficeIcon className="h-7 w-7" />}
                                 label="Departamento"
                                 value={employee.department}
+                                isDarkMode={isDarkMode}
                             />
                             <InfoItem
                                 icon={<DocumentTextIcon className="h-7 w-7" />}
                                 label="Tipo de Contrato"
                                 value={formatTipoContrato(employee.Id_Tipo_Contrato)}
+                                isDarkMode={isDarkMode}
                             />
                             <InfoItem
                                 icon={<ScaleIcon className="h-7 w-7" />}
                                 label="Régimen Salarial"
                                 value={formatRegimenSalarial(employee.Regimen_Salarial)}
+                                isDarkMode={isDarkMode}
                             />
                             <InfoItem
                                 icon={<CalendarDaysIcon className="h-7 w-7" />}
                                 label="Año de Contratación"
                                 value={getAnoContratacion(employee.Fecha_Contratacion, employee.Ano_Alta)}
+                                isDarkMode={isDarkMode}
                             />
                             <InfoItem
                                 icon={<GraduationCapIcon className="h-7 w-7" />}
                                 label="Graduado de"
                                 value={formatProfesionDescription(employee.profesionDescription)}
+                                isDarkMode={isDarkMode}
                             />
                             <InfoItem
                                 icon={<MapIcon className="h-7 w-7" />}
                                 label="Municipio"
                                 value={employee.municipioDescription || 'No disponible'}
+                                isDarkMode={isDarkMode}
                             />
                             {/* Información adicional del empleado */}
                             <InfoItem
                                 icon={<UserCircleIcon className="h-7 w-7" />}
                                 label="Nombre Completo"
                                 value={`${employee.Nombre} ${employee.Apellido_1} ${employee.Apellido_2}`.trim()}
+                                isDarkMode={isDarkMode}
                             />
                         </>
                     ) : (
                         <div className="md:col-span-3 text-center py-8">
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                                <BriefcaseIcon className="h-12 w-12 text-yellow-500 mx-auto mb-3" />
-                                <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                            <div className={`rounded-lg p-6 ${
+                                isDarkMode 
+                                    ? "bg-yellow-900/30 border-yellow-700" 
+                                    : "bg-yellow-50 border-yellow-200"
+                            } border`}>
+                                <BriefcaseIcon className={`h-12 w-12 mx-auto mb-3 ${
+                                    isDarkMode ? "text-yellow-400" : "text-yellow-500"
+                                }`} />
+                                <h3 className={`text-lg font-semibold mb-2 ${
+                                    isDarkMode ? "text-yellow-300" : "text-yellow-800"
+                                }`}>
                                     No se pudieron cargar los datos del trabajador
                                 </h3>
-                                <p className="text-yellow-700">
+                                <p className={isDarkMode ? "text-yellow-200" : "text-yellow-700"}>
                                     La información laboral no está disponible en este momento.
                                 </p>
                             </div>
@@ -152,14 +178,22 @@ const EmployeeProfile = ({
                 {/* Estado de carga mejorado */}
                 {loadingEmployee && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-2xl p-8 max-w-md mx-4">
+                        <div className={`rounded-2xl p-8 max-w-md mx-4 ${
+                            isDarkMode ? "bg-gray-800" : "bg-white"
+                        }`}>
                             <div className="flex items-center justify-center mb-4">
-                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+                                <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
+                                    isDarkMode ? "border-green-400" : "border-green-500"
+                                }`}></div>
                             </div>
-                            <p className="text-center text-lg font-semibold text-gray-700">
+                            <p className={`text-center text-lg font-semibold ${
+                                isDarkMode ? "text-gray-200" : "text-gray-700"
+                            }`}>
                                 Cargando información laboral...
                             </p>
-                            <p className="text-center text-gray-600 mt-2">
+                            <p className={`text-center mt-2 ${
+                                isDarkMode ? "text-gray-400" : "text-gray-600"
+                            }`}>
                                 Esto puede tomar unos segundos
                             </p>
                         </div>
@@ -170,33 +204,48 @@ const EmployeeProfile = ({
     );
 };
 
-const InfoItem = ({ 
-    icon, 
-    label, 
-    value, 
-    highlight = false 
-}: {
+interface InfoItemProps {
     icon: React.ReactNode;
     label: string;
     value: string;
     highlight?: boolean;
-}) => (
+    isDarkMode: boolean;
+}
+
+const InfoItem = ({ 
+    icon, 
+    label, 
+    value, 
+    highlight = false,
+    isDarkMode
+}: InfoItemProps) => (
     <div className={`flex items-start gap-4 p-5 rounded-xl transition-all duration-200 ${
         highlight 
-            ? 'bg-green-50 border border-green-200 transform hover:scale-[1.02]' 
-            : 'bg-gray-50 hover:bg-gray-100'
+            ? isDarkMode
+                ? 'bg-green-900/20 border border-green-700 transform hover:scale-[1.02]' 
+                : 'bg-green-50 border border-green-200 transform hover:scale-[1.02]'
+            : isDarkMode
+                ? 'bg-gray-700 hover:bg-gray-600'
+                : 'bg-gray-50 hover:bg-gray-100'
     }`}>
-        <div className={`${highlight ? 'text-green-600' : 'text-green-500'} mt-1`}>
+        <div className={`${highlight 
+            ? isDarkMode ? 'text-green-400' : 'text-green-600' 
+            : isDarkMode ? 'text-green-400' : 'text-green-500'
+        } mt-1`}>
             {icon}
         </div>
         <div className="flex-1">
             <dt className={`text-base font-semibold mb-2 ${
-                highlight ? 'text-green-800' : 'text-gray-700'
+                highlight 
+                    ? isDarkMode ? 'text-green-300' : 'text-green-800'
+                    : isDarkMode ? 'text-gray-200' : 'text-gray-700'
             }`}>
                 {label}
             </dt>
             <dd className={`text-lg font-bold ${
-                highlight ? 'text-green-900' : 'text-gray-900'
+                highlight 
+                    ? isDarkMode ? 'text-green-200' : 'text-green-900'
+                    : isDarkMode ? 'text-gray-100' : 'text-gray-900'
             }`}>
                 {value || 'No disponible'}
             </dd>

@@ -38,18 +38,22 @@ const handleSubmit = async (e: React.FormEvent) => {
   setError("");
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forgot-password`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userIdentifier }),
     });
 
+    console.log("📨 Respuesta del servidor:", response.status, response.statusText);
+
     if (!response.ok) {
       const errorData = await response.json();
+      console.error("❌ Error del servidor:", errorData);
       throw new Error(errorData.message || "Error al buscar usuario");
     }
 
     const result = await response.json();
+    console.log("✅ Datos recibidos del servidor:", result);
 
     // ✅ Manejar diferentes estados de cuenta
     if (result.accountStatus === 'disabled') {
@@ -78,10 +82,14 @@ const handleSubmit = async (e: React.FormEvent) => {
         setSuccessMessage("Su contraseña ha expirado. Se ha enviado un código de verificación para restablecerla.");
       }
 
+      console.log("🚀 Llamando onUserIdentified con:", userData);
       onUserIdentified(userData, userIdentifier);
+    } else {
+      setError("Estado de cuenta no reconocido");
     }
 
   } catch (err: any) {
+    console.error("💥 Error completo:", err);
     setError(err.message || "Error al procesar la solicitud.");
   } finally {
     setIsSubmitting(false);

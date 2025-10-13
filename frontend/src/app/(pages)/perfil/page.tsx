@@ -261,7 +261,7 @@ export default function ProfilePage() {
         if (shouldLoadStudent) {
           setLoadingStudent(true);
           try {
-            console.log("🎓 Cargando datos del estudiante...");
+
             const studentRes = await fetch(`${API_URL}/students/${employeeID}`);
 
             if (studentRes.ok) {
@@ -288,7 +288,6 @@ export default function ProfilePage() {
         if (shouldLoadEmployee) {
           setLoadingEmployee(true);
           try {
-            console.log("👨‍💼 Cargando datos del empleado...");
             const employeeRes = await fetch(`${API_URL}/verify/dual-status`, {
               method: "POST",
               headers: {
@@ -320,7 +319,6 @@ export default function ProfilePage() {
                   profesionDescription: empData.profesionDescription,
                   municipioDescription: empData.municipioDescription,
                 });
-                console.log("✅ Datos del empleado cargados");
               }
             } else {
               console.error("❌ Error cargando empleado:", employeeRes.status);

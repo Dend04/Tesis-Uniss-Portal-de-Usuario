@@ -146,7 +146,6 @@ const useDualVerification = () => {
     // Limpiar cache
     localStorage.removeItem(DUAL_VERIFICATION_CACHE_KEY);
     localStorage.removeItem('dobleOcupacion');
-    console.log('🔄 Cache de verificación dual reseteado');
     
     // Forzar nueva verificación
     setRefreshTrigger(prev => prev + 1);
@@ -154,18 +153,16 @@ const useDualVerification = () => {
 
   useEffect(() => {
     const verifyDualStatus = async () => {
-      // ✅ PRIMERO VERIFICAR SI HAY DOBLE OCUPACIÓN EN LOCALSTORAGE
+      // ✅ VERIFICAR SI HAY DOBLE OCUPACIÓN EN LOCALSTORAGE
       const existingDobleOcupacion = localStorage.getItem('dobleOcupacion');
       if (existingDobleOcupacion === 'true' && refreshTrigger === 0) {
-        console.log('✅ Usando dobleOcupacion existente de localStorage');
         setHasDualOccupation(true);
-        return; // No hacemos la verificación si ya existe (solo en primera carga)
+        return;
       }
 
       // ✅ VERIFICAR CACHE DE VERIFICACIÓN DUAL (solo si no hay refresh)
       const cachedData = getDualVerificationCache();
       if (cachedData && refreshTrigger === 0) {
-        console.log('✅ Usando cache de verificación dual');
         const { data } = cachedData;
         setIsAlsoEmployee(data.isAlsoEmployee);
         setUsedSigenu(data.usedSigenu);
@@ -181,7 +178,7 @@ const useDualVerification = () => {
       try {
         const token = localStorage.getItem('authToken');
         if (!token) {
-          console.warn('❌ No hay token de autenticación');
+          console.warn('No hay token de autenticación');
           return;
         }
 
@@ -222,18 +219,11 @@ const useDualVerification = () => {
           // ✅ ACTUALIZAR LOCALSTORAGE SEGÚN LÓGICA
           updateDobleOcupacionStorage(dualOccupation, graduatedStatus, status);
 
-          console.log('✅ Verificación dual completada y cacheada:', {
-            esEmpleado: employeeStatus,
-            usoSigenu: sigenuUsed,
-            esEgresado: graduatedStatus,
-            estadoEstudiante: status,
-            dobleOcupacion: dualOccupation
-          });
         } else {
           throw new Error('Error en la respuesta del servidor');
         }
       } catch (error) {
-        console.error('❌ Error verificando estado dual:', error);
+        console.error('Error verificando estado dual:', error);
         // En caso de error, establecer valores por defecto
         setIsAlsoEmployee(false);
         setUsedSigenu(false);
@@ -253,14 +243,8 @@ const useDualVerification = () => {
       
       if (dualOccupation && !graduated && !isBaja) {
         localStorage.setItem('dobleOcupacion', 'true');
-        console.log('🔄 Guardado en localStorage: dobleOcupacion = true');
       } else {
         localStorage.removeItem('dobleOcupacion');
-        console.log('🔄 Removido de localStorage: dobleOcupacion - Razón:', {
-          dobleOcupacion: dualOccupation,
-          esEgresado: graduated,
-          esBaja: isBaja
-        });
       }
     };
 

@@ -21,6 +21,7 @@ interface UserData {
 interface ResetPasswordFormProps {
   userData: UserData;
   userIdentifier: string;
+  verifiedCode: string;
   onBack: () => void;
   onPasswordReset: () => void;
 }
@@ -72,6 +73,7 @@ const PasswordStrength = ({
 export default function ResetPasswordForm({
   userData,
   userIdentifier,
+  verifiedCode,
   onBack,
   onPasswordReset,
 }: ResetPasswordFormProps) {
@@ -111,13 +113,14 @@ export default function ResetPasswordForm({
 
     try {
       // Llamar al endpoint de reset-password que creamos
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reset-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userIdentifier,
+          code: verifiedCode,
           newPassword,
           // El código ya fue verificado en el paso anterior
         }),

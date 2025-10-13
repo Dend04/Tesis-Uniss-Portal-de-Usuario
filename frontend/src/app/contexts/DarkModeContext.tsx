@@ -16,7 +16,6 @@ export const DarkModeProvider = ({ children }: { children: ReactNode }) => {
 
   // Rutas que deben mantenerse SIEMPRE en modo claro
   const lightModeRoutes = [
-    '/',
     '/activate-account',
     '/forgot-password',
     // Agrega aquí cualquier otra ruta que deba ser siempre clara

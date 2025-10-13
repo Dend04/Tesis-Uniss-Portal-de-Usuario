@@ -44,11 +44,19 @@ interface StudentProfileProps {
     isDarkMode: boolean;
 }
 
-const StudentProfile = ({ student, employeeID, isTrabajador, formatPhoneNumber }: StudentProfileProps) => {
+const StudentProfile = ({ 
+    student, 
+    employeeID, 
+    isTrabajador, 
+    formatPhoneNumber,
+    isDarkMode 
+}: StudentProfileProps) => {
     return (
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className={`rounded-2xl shadow-xl overflow-hidden ${
+            isDarkMode ? "bg-gray-800" : "bg-white"
+        }`}>
             {/* Encabezado con foto */}
-            <div className="bg-uniss-blue p-8 flex items-center gap-6">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-8 flex items-center gap-6">
                 <div className="bg-white/10 p-4 rounded-full">
                     <UserCircleIcon className="h-20 w-20 text-white/80" />
                 </div>
@@ -80,7 +88,9 @@ const StudentProfile = ({ student, employeeID, isTrabajador, formatPhoneNumber }
             <div className="p-8 grid gap-8 md:grid-cols-2">
                 {/* Sección Datos Personales */}
                 <div className="space-y-5">
-                    <h2 className="text-2xl font-semibold flex items-center gap-2 text-blue-600">
+                    <h2 className={`text-2xl font-semibold flex items-center gap-2 ${
+                        isDarkMode ? "text-blue-400" : "text-blue-600"
+                    }`}>
                         <UserCircleIcon className="h-8 w-8" />
                         Datos Personales
                     </h2>
@@ -89,36 +99,43 @@ const StudentProfile = ({ student, employeeID, isTrabajador, formatPhoneNumber }
                         icon={<IdentificationIcon className="h-6 w-6" />}
                         label="Carné de Identidad"
                         value={student.personalData.identification}
+                        isDarkMode={isDarkMode}
                     />
 
                     <InfoItem
                         icon={<CalendarIcon className="h-6 w-6" />}
                         label="Fecha de Nacimiento"
                         value={student.personalData.birthDate}
+                        isDarkMode={isDarkMode}
                     />
 
                     <InfoItem
                         icon={<MapPinIcon className="h-6 w-6" />}
                         label="Dirección"
                         value={student.personalData.address}
+                        isDarkMode={isDarkMode}
                     />
 
                     <InfoItem
                         icon={<PhoneIcon className="h-6 w-6" />}
                         label="Contacto"
                         value={formatPhoneNumber(student.personalData.contact)}
+                        isDarkMode={isDarkMode}
                     />
 
                     <InfoItem
                         icon={<MapPinIcon className="h-6 w-6" />}
                         label="Lugar de Origen"
                         value={student.personalData.origin}
+                        isDarkMode={isDarkMode}
                     />
                 </div>
 
                 {/* Sección Académica */}
                 <div className="space-y-5">
-                    <h2 className="text-2xl font-semibold flex items-center gap-2 text-blue-600">
+                    <h2 className={`text-2xl font-semibold flex items-center gap-2 ${
+                        isDarkMode ? "text-blue-400" : "text-blue-600"
+                    }`}>
                         <AcademicCapIcon className="h-8 w-8" />
                         Información Académica
                     </h2>
@@ -127,36 +144,43 @@ const StudentProfile = ({ student, employeeID, isTrabajador, formatPhoneNumber }
                         icon={<BookOpenIcon className="h-6 w-6" />}
                         label="Facultad"
                         value={student.academicData.faculty}
+                        isDarkMode={isDarkMode}
                     />
 
                     <InfoItem
                         icon={<BookOpenIcon className="h-6 w-6" />}
                         label="Carrera"
                         value={student.academicData.career}
+                        isDarkMode={isDarkMode}
                     />
 
                     <InfoItem
                         icon={<CalendarDaysIcon className="h-6 w-6" />}
                         label="Año Académico"
                         value={student.academicData.year}
+                        isDarkMode={isDarkMode}
                     />
 
                     <InfoItem
                         icon={<ScaleIcon className="h-6 w-6" />}
                         label="Estado"
                         value={student.academicData.status}
+                        isDarkMode={isDarkMode}
                     />
 
                     <InfoItem
                         icon={<ScaleIcon className="h-6 w-6" />}
                         label="Índice Académico"
                         value={student.academicData.academicIndex}
+                        isDarkMode={isDarkMode}
                     />
                 </div>
 
                 {/* Sección Familiar */}
                 <div className="md:col-span-2 space-y-5">
-                    <h2 className="text-2xl font-semibold flex items-center gap-2 text-blue-600">
+                    <h2 className={`text-2xl font-semibold flex items-center gap-2 ${
+                        isDarkMode ? "text-blue-400" : "text-blue-600"
+                    }`}>
                         <UserGroupIcon className="h-8 w-8" />
                         Datos Familiares
                     </h2>
@@ -165,11 +189,13 @@ const StudentProfile = ({ student, employeeID, isTrabajador, formatPhoneNumber }
                             icon={<UserCircleIcon className="h-6 w-6" />}
                             label="Madre"
                             value={student.familyData.mother}
+                            isDarkMode={isDarkMode}
                         />
                         <InfoItem
                             icon={<UserCircleIcon className="h-6 w-6" />}
                             label="Padre"
                             value={student.familyData.father}
+                            isDarkMode={isDarkMode}
                         />
                     </div>
                 </div>
@@ -178,16 +204,29 @@ const StudentProfile = ({ student, employeeID, isTrabajador, formatPhoneNumber }
     );
 };
 
-const InfoItem = ({ icon, label, value }: {
+interface InfoItemProps {
     icon: React.ReactNode;
     label: string;
     value: string;
-}) => (
-    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-        <div className="text-blue-600">{icon}</div>
+    isDarkMode: boolean;
+}
+
+const InfoItem = ({ icon, label, value, isDarkMode }: InfoItemProps) => (
+    <div className={`flex items-start gap-4 p-4 rounded-lg ${
+        isDarkMode ? "bg-gray-700" : "bg-gray-50"
+    }`}>
+        <div className={isDarkMode ? "text-blue-400" : "text-blue-600"}>
+            {icon}
+        </div>
         <div className="flex-1">
-            <dt className="text-lg font-medium text-gray-600 mb-1">{label}</dt>
-            <dd className="text-xl text-gray-900 font-semibold">
+            <dt className={`text-lg font-medium mb-1 ${
+                isDarkMode ? "text-gray-300" : "text-gray-600"
+            }`}>
+                {label}
+            </dt>
+            <dd className={`text-xl font-semibold ${
+                isDarkMode ? "text-gray-100" : "text-gray-900"
+            }`}>
                 {value || 'No disponible'}
             </dd>
         </div>

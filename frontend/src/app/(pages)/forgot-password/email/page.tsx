@@ -26,6 +26,7 @@ export default function ForgotPasswordPage() {
   const [currentStep, setCurrentStep] = useState<StepType>("identify");
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userIdentifier, setUserIdentifier] = useState("");
+  const [verifiedCode, setVerifiedCode] = useState('');
   const containerRef = useRef(null);
 
   // Definir los steps del wizard
@@ -72,7 +73,8 @@ export default function ForgotPasswordPage() {
   };
 
   // Manejar éxito en verificación de código
-  const handleCodeVerified = () => {
+   const handleCodeVerified = (code: string) => { // ✅ Acepta el código
+    setVerifiedCode(code);
     setCurrentStep("reset");
   };
 
@@ -150,6 +152,7 @@ export default function ForgotPasswordPage() {
               key="reset-step"
               userData={userData}
               userIdentifier={userIdentifier}
+              verifiedCode={verifiedCode}
               onBack={() => setCurrentStep("verify")}
               onPasswordReset={handlePasswordReset}
             />
@@ -159,7 +162,7 @@ export default function ForgotPasswordPage() {
           {currentStep === "success" && (
             <SuccessStep
               key="success-step"
-              onComplete={() => window.location.href = '/login'}
+              onComplete={() => window.location.href = '/'}
             />
           )}
         </AnimatePresence>

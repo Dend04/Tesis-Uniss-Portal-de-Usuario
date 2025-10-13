@@ -1,8 +1,10 @@
+
 "use client";
 
 import {
   Cog6ToothIcon,
   ChartBarIcon,
+  ChartPieIcon,
   BellIcon,
   ArrowRightOnRectangleIcon,
   UserCircleIcon,
@@ -37,59 +39,57 @@ interface MobileNavItemProps {
 
 // Función para limpiar el nombre eliminando palabras específicas
 const cleanDisplayName = (displayName: string): string => {
-  if (!displayName) return 'Usuario';
-  
-  // Palabras a eliminar (case insensitive)
-  const wordsToRemove = ['estudiante', 'trabajador', 'docente', 'investigador'];
-  
-  // Dividir el nombre en palabras y filtrar
+  if (!displayName) return "Usuario";
+
+  const wordsToRemove = ["estudiante", "trabajador", "docente", "investigador"];
+
   const cleanedName = displayName
-    .split(' ')
-    .filter(word => {
+    .split(" ")
+    .filter((word) => {
       const lowerWord = word.toLowerCase().trim();
-      return !wordsToRemove.includes(lowerWord) && word.trim() !== '';
+      return !wordsToRemove.includes(lowerWord) && word.trim() !== "";
     })
-    .join(' ')
+    .join(" ")
     .trim();
-  
-  // Si después de limpiar queda vacío, devolver el nombre original o "Usuario"
-  return cleanedName || displayName || 'Usuario';
+
+  return cleanedName || displayName || "Usuario";
 };
 
 // Función para decodificar el token JWT
 const decodeToken = (token: string): any => {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
       atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Error decodificando token:', error);
+    console.error("Error decodificando token:", error);
     return null;
   }
 };
 
 // Función para obtener los datos del usuario desde el token
 const getUserDataFromToken = () => {
-  if (typeof window === 'undefined') return null;
-  
-  const token = localStorage.getItem('authToken');
+  if (typeof window === "undefined") return null;
+
+  const token = localStorage.getItem("authToken");
   if (!token) return null;
-  
+
   const decoded = decodeToken(token);
   if (!decoded) return null;
-  
+
   const rawDisplayName = decoded.displayName || decoded.nombreCompleto;
   const cleanedDisplayName = cleanDisplayName(rawDisplayName);
-  
+
   return {
     username: decoded.sAMAccountName,
-    displayName: cleanedDisplayName
+    displayName: cleanedDisplayName,
+    role: decoded.title, // Extraer el rol del token
   };
 };
 
@@ -97,32 +97,39 @@ const getUserDataFromToken = () => {
 export const Header = memo(() => {
   const { isDarkMode, toggleDarkMode } = useDarkModeContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [userDisplayName, setUserDisplayName] = useState<string>('Usuario');
+  const [userDisplayName, setUserDisplayName] = useState<string>("Usuario");
+  const [userRole, setUserRole] = useState<string>("");
   const router = useRouter();
   const preloadedPages = useRef(new Set<string>());
-  
+
   // Cargar datos del usuario al montar el componente
   useEffect(() => {
     const userData = getUserDataFromToken();
     if (userData?.displayName) {
       setUserDisplayName(userData.displayName);
     }
+    if (userData?.role) {
+      setUserRole(userData.role);
+    }
   }, []);
-  
+
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
-  
+
   const toggleMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    setIsMenuOpen(prev => !prev);
+    setIsMenuOpen((prev) => !prev);
   }, []);
 
   // Precargar página al hacer hover
-  const preloadPage = useCallback((path: string) => {
-    if (!preloadedPages.current.has(path)) {
-      router.prefetch(path);
-      preloadedPages.current.add(path);
-    }
-  }, [router]);
+  const preloadPage = useCallback(
+    (path: string) => {
+      if (!preloadedPages.current.has(path)) {
+        router.prefetch(path);
+        preloadedPages.current.add(path);
+      }
+    },
+    [router]
+  );
 
   return (
     <header
@@ -133,13 +140,13 @@ export const Header = memo(() => {
       aria-label="Encabezado principal"
     >
       <div className="max-w-7xl mx-auto">
-        <nav 
+        <nav
           className="flex justify-between items-center h-16"
           aria-label="Navegación principal"
         >
           {/* Logo como enlace al Dashboard */}
-          <Link 
-            href="/dashboard" 
+          <Link
+            href="/dashboard"
             className="flex items-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold rounded-md"
             aria-label="Ir al dashboard"
             prefetch={true}
@@ -167,12 +174,23 @@ export const Header = memo(() => {
           <div className="flex items-center gap-4">
             {/* Menú para desktop - oculto en móviles */}
             <div className="hidden md:flex items-center gap-6" role="menubar">
+              {/* Botón de Estadísticas - VISIBLE PARA TODOS LOS USUARIOS */}
+             
+
               <NavIcon
                 href="/config"
                 icon={<Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />}
                 label="Configuración"
                 isDarkMode={isDarkMode}
-                onHover={() => preloadPage('/config')}
+                onHover={() => preloadPage("/config")}
+              />
+
+               <NavIcon
+                href="/stats"
+                icon={<ChartPieIcon className="h-6 w-6" aria-hidden="true" />}
+                label="Estadísticas"
+                isDarkMode={isDarkMode}
+                onHover={() => preloadPage("/stats")}
               />
 
               <NavIcon
@@ -180,7 +198,7 @@ export const Header = memo(() => {
                 icon={<ChartBarIcon className="h-6 w-6" aria-hidden="true" />}
                 label="Actividad"
                 isDarkMode={isDarkMode}
-                onHover={() => preloadPage('/activity-logs')}
+                onHover={() => preloadPage("/activity-logs")}
               />
 
               <NavIcon
@@ -199,7 +217,11 @@ export const Header = memo(() => {
 
             {/* Botón de usuario - siempre visible (fuera del menú móvil) */}
             <div className="hidden md:block">
-              <UserProfile isDarkMode={isDarkMode} displayName={userDisplayName} onHover={() => preloadPage('/perfil')} />
+              <UserProfile
+                isDarkMode={isDarkMode}
+                displayName={userDisplayName}
+                onHover={() => preloadPage("/perfil")}
+              />
             </div>
 
             {/* Botón de menú móvil */}
@@ -211,13 +233,13 @@ export const Header = memo(() => {
               aria-controls="mobile-menu"
             >
               {isMenuOpen ? (
-                <XMarkIcon 
-                  className="h-6 w-6 text-gray-600 dark:text-gray-300" 
+                <XMarkIcon
+                  className="h-6 w-6 text-gray-600 dark:text-gray-300"
                   aria-hidden="true"
                 />
               ) : (
-                <Bars3Icon 
-                  className="h-6 w-6 text-gray-600 dark:text-gray-300" 
+                <Bars3Icon
+                  className="h-6 w-6 text-gray-600 dark:text-gray-300"
                   aria-hidden="true"
                 />
               )}
@@ -250,7 +272,11 @@ export const Header = memo(() => {
             <div className="flex flex-col h-full">
               {/* Encabezado del menú móvil */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                <span className={`text-lg font-semibold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
+                <span
+                  className={`text-lg font-semibold ${
+                    isDarkMode ? "text-gray-100" : "text-gray-800"
+                  }`}
+                >
                   Menú
                 </span>
                 <button
@@ -258,31 +284,51 @@ export const Header = memo(() => {
                   className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                   aria-label="Cerrar menú"
                 >
-                  <XMarkIcon className={`h-6 w-6 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`} />
+                  <XMarkIcon
+                    className={`h-6 w-6 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-600"
+                    }`}
+                  />
                 </button>
               </div>
 
               {/* Contenido del menú móvil */}
               <div className="flex-1 overflow-y-auto py-4">
                 <div className="space-y-2 px-4">
+                  {/* Botón de Estadísticas - VISIBLE PARA TODOS LOS USUARIOS */}
+                  <MobileNavItem
+                    href="/stats"
+                    icon={
+                      <ChartBarIcon className="h-6 w-6" aria-hidden="true" />
+                    }
+                    label="Estadísticas"
+                    isDarkMode={isDarkMode}
+                    onClick={closeMenu}
+                    onHover={() => preloadPage("/stats")}
+                  />
+
                   <MobileNavItem
                     href="/config"
-                    icon={<Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />}
+                    icon={
+                      <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />
+                    }
                     label="Configuración"
                     isDarkMode={isDarkMode}
                     onClick={closeMenu}
-                    onHover={() => preloadPage('/config')}
+                    onHover={() => preloadPage("/config")}
                   />
-                  
+
                   <MobileNavItem
                     href="/activity-logs"
-                    icon={<ChartBarIcon className="h-6 w-6" aria-hidden="true" />}
+                    icon={
+                      <ChartBarIcon className="h-6 w-6" aria-hidden="true" />
+                    }
                     label="Actividad"
                     isDarkMode={isDarkMode}
                     onClick={closeMenu}
-                    onHover={() => preloadPage('/activity-logs')}
+                    onHover={() => preloadPage("/activity-logs")}
                   />
-                  
+
                   <MobileNavItem
                     icon={<BellIcon className="h-6 w-6" aria-hidden="true" />}
                     label="Notificaciones"
@@ -296,26 +342,45 @@ export const Header = memo(() => {
 
                 {/* Perfil de usuario en móvil */}
                 <div className="mt-8 px-4">
-                  <div className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"} mb-2`}>
+                  <div
+                    className={`text-sm ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    } mb-2`}
+                  >
                     Cuenta
                   </div>
-                  <div className={`py-3 px-4 rounded-lg ${
-                    isDarkMode ? "bg-gray-700" : "bg-gray-100"
-                  }`}>
+                  <div
+                    className={`py-3 px-4 rounded-lg ${
+                      isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                    }`}
+                  >
                     <div className="flex items-center gap-3">
                       <UserCircleIcon className="h-6 w-6" aria-hidden="true" />
-                      <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>
+                      <span
+                        className={`text-sm font-medium ${
+                          isDarkMode ? "text-gray-200" : "text-gray-700"
+                        }`}
+                      >
                         {userDisplayName}
                       </span>
+                    </div>
+                    <div
+                      className={`text-xs mt-1 ${
+                        isDarkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
+                      Rol: {userRole}
                     </div>
                   </div>
                   <MobileNavItem
                     href="/perfil"
-                    icon={<Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />}
+                    icon={
+                      <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />
+                    }
                     label="Editar perfil"
                     isDarkMode={isDarkMode}
                     onClick={closeMenu}
-                    onHover={() => preloadPage('/perfil')}
+                    onHover={() => preloadPage("/perfil")}
                   />
                 </div>
               </div>
@@ -324,14 +389,13 @@ export const Header = memo(() => {
               <div className="p-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
                 <button
                   onClick={() => {
-                    // Lógica de cierre de sesión
-                    localStorage.removeItem('authToken');
-                    router.push('/login');
+                    localStorage.removeItem("authToken");
+                    router.push("/login");
                     closeMenu();
                   }}
                   className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg ${
-                    isDarkMode 
-                      ? "bg-red-600 hover:bg-red-700 text-white" 
+                    isDarkMode
+                      ? "bg-red-600 hover:bg-red-700 text-white"
                       : "bg-red-100 hover:bg-red-200 text-red-700"
                   } transition-colors`}
                 >
@@ -347,89 +411,90 @@ export const Header = memo(() => {
   );
 });
 
-Header.displayName = 'Header';
+Header.displayName = "Header";
 
 // Componentes auxiliares optimizados
-const NavIcon = memo(({ href, icon, label, isDarkMode, onClick, onHover }: NavIconProps) => {
-  const iconWithClass = (
-    <div className="flex items-center gap-1">
-      {icon}
-      <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 opacity-0 group-hover:opacity-100 translate-y-0 group-hover:translate-y-1 transition-all duration-200 whitespace-nowrap text-sm bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 px-2 py-1 rounded-md">
-        {label}
-        <div className="absolute w-2 h-2 bg-gray-800 dark:bg-gray-200 -top-1 left-1/2 -translate-x-1/2 rotate-45" />
-      </span>
-    </div>
-  );
+const NavIcon = memo(
+  ({ href, icon, label, isDarkMode, onClick, onHover }: NavIconProps) => {
+    const iconWithClass = (
+      <div className="flex items-center gap-1">
+        {icon}
+        <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 opacity-0 group-hover:opacity-100 translate-y-0 group-hover:translate-y-1 transition-all duration-200 whitespace-nowrap text-sm bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 px-2 py-1 rounded-md">
+          {label}
+          <div className="absolute w-2 h-2 bg-gray-800 dark:bg-gray-200 -top-1 left-1/2 -translate-x-1/2 rotate-45" />
+        </span>
+      </div>
+    );
 
-  return href ? (
-    <Link
-      href={href}
-      className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
-      prefetch={false}
-      onMouseEnter={onHover}
-    >
-      {iconWithClass}
-    </Link>
-  ) : (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
-      onMouseEnter={onHover}
-    >
-      {iconWithClass}
-    </button>
-  );
-});
+    return href ? (
+      <Link
+        href={href}
+        className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
+        prefetch={false}
+        onMouseEnter={onHover}
+      >
+        {iconWithClass}
+      </Link>
+    ) : (
+      <button
+        onClick={onClick}
+        className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
+        onMouseEnter={onHover}
+      >
+        {iconWithClass}
+      </button>
+    );
+  }
+);
 
-NavIcon.displayName = 'NavIcon';
+NavIcon.displayName = "NavIcon";
 
-const MobileNavItem = memo(({
-  href,
-  icon,
-  label,
-  isDarkMode,
-  onClick,
-  onHover,
-}: MobileNavItemProps) => {
-  const content = (
-    <div className="flex items-center gap-3">
-      {icon}
-      <span className={`text-sm ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>
-        {label}
-      </span>
-    </div>
-  );
+const MobileNavItem = memo(
+  ({ href, icon, label, isDarkMode, onClick, onHover }: MobileNavItemProps) => {
+    const content = (
+      <div className="flex items-center gap-3">
+        {icon}
+        <span
+          className={`text-sm ${
+            isDarkMode ? "text-gray-200" : "text-gray-700"
+          }`}
+        >
+          {label}
+        </span>
+      </div>
+    );
 
-  return href ? (
-    <Link
-      href={href}
-      onClick={onClick}
-      className={`py-3 px-4 rounded-lg ${
-        isDarkMode
-          ? "hover:bg-gray-700 text-gray-200"
-          : "hover:bg-gray-100 text-gray-700"
-      } transition-colors block`}
-      prefetch={false}
-      onMouseEnter={onHover}
-    >
-      {content}
-    </Link>
-  ) : (
-    <button
-      onClick={onClick}
-      className={`w-full text-left py-3 px-4 rounded-lg ${
-        isDarkMode
-          ? "hover:bg-gray-700 text-gray-200"
-          : "hover:bg-gray-100 text-gray-700"
-      } transition-colors`}
-      onMouseEnter={onHover}
-    >
-      {content}
-    </button>
-  );
-});
+    return href ? (
+      <Link
+        href={href}
+        onClick={onClick}
+        className={`py-3 px-4 rounded-lg ${
+          isDarkMode
+            ? "hover:bg-gray-700 text-gray-200"
+            : "hover:bg-gray-100 text-gray-700"
+        } transition-colors block`}
+        prefetch={false}
+        onMouseEnter={onHover}
+      >
+        {content}
+      </Link>
+    ) : (
+      <button
+        onClick={onClick}
+        className={`w-full text-left py-3 px-4 rounded-lg ${
+          isDarkMode
+            ? "hover:bg-gray-700 text-gray-200"
+            : "hover:bg-gray-100 text-gray-700"
+        } transition-colors`}
+        onMouseEnter={onHover}
+      >
+        {content}
+      </button>
+    );
+  }
+);
 
-MobileNavItem.displayName = 'MobileNavItem';
+MobileNavItem.displayName = "MobileNavItem";
 
 // Componente UserProfile actualizado
 interface UserProfileProps {
@@ -438,46 +503,46 @@ interface UserProfileProps {
   onHover?: () => void;
 }
 
-const UserProfile = memo(({ isDarkMode, displayName, onHover }: UserProfileProps) => (
-  <Link
-    href="/perfil"
-    className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold"
-    aria-label="Ver perfil de usuario"
-    prefetch={false}
-    onMouseEnter={onHover}
-  >
-    <UserCircleIcon
-      className={`h-8 w-8 ${
-        isDarkMode ? "text-gray-300" : "text-gray-600"
-      }`}
-      aria-hidden="true"
-    />
-    <span className="sr-only">Perfil de usuario</span>
-    <span
-      className={`hidden md:block text-sm font-medium truncate max-w-32 ${
-        isDarkMode ? "text-gray-200" : "text-gray-700"
-      }`}
-      title={displayName}
+const UserProfile = memo(
+  ({ isDarkMode, displayName, onHover }: UserProfileProps) => (
+    <Link
+      href="/perfil"
+      className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold"
+      aria-label="Ver perfil de usuario"
+      prefetch={false}
+      onMouseEnter={onHover}
     >
-      {displayName}
-    </span>
-  </Link>
-));
+      <UserCircleIcon
+        className={`h-8 w-8 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}
+        aria-hidden="true"
+      />
+      <span className="sr-only">Perfil de usuario</span>
+      <span
+        className={`hidden md:block text-sm font-medium truncate max-w-32 ${
+          isDarkMode ? "text-gray-200" : "text-gray-700"
+        }`}
+        title={displayName}
+      >
+        {displayName}
+      </span>
+    </Link>
+  )
+);
 
-UserProfile.displayName = 'UserProfile';
+UserProfile.displayName = "UserProfile";
 
 // Componente LogoutButton actualizado con funcionalidad real
 const LogoutButton = memo(({ isDarkMode }: { isDarkMode: boolean }) => {
   const router = useRouter();
-  
+
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem("authToken");
     // No removemos la preferencia del modo oscuro al hacer logout
-    router.push('/login');
+    router.push("/login");
   };
 
   return (
-    <button 
+    <button
       onClick={handleLogout}
       className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold"
       aria-label="Cerrar sesión"
@@ -499,7 +564,7 @@ const LogoutButton = memo(({ isDarkMode }: { isDarkMode: boolean }) => {
   );
 });
 
-LogoutButton.displayName = 'LogoutButton';
+LogoutButton.displayName = "LogoutButton";
 
 // Componente DarkModeButton
 interface DarkModeButtonProps {
@@ -507,35 +572,34 @@ interface DarkModeButtonProps {
   isDarkMode: boolean;
 }
 
-const DarkModeButton = memo(({ onToggleDarkMode, isDarkMode }: DarkModeButtonProps) => (
-  <button
-    onClick={onToggleDarkMode}
-    className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold"
-    aria-label={isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-  >
-    <div className="flex items-center gap-1">
-      {isDarkMode ? (
-        <SunIcon 
-          className="h-6 w-6 text-yellow-400" 
-          aria-hidden="true"
-        />
-      ) : (
-        <MoonIcon 
-          className="h-6 w-6 text-gray-600 dark:text-gray-300" 
-          aria-hidden="true"
-        />
-      )}
-      <span className="sr-only">
-        {isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-      </span>
-      <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 opacity-0 group-hover:opacity-100 translate-y-0 group-hover:translate-y-1 transition-all duration-200 whitespace-nowrap text-sm bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 px-2 py-1 rounded-md">
-        {isDarkMode ? "Modo claro" : "Modo oscuro"}
-        <div className="absolute w-2 h-2 bg-gray-800 dark:bg-gray-200 -top-1 left-1/2 -translate-x-1/2 rotate-45" />
-      </span>
-    </div>
-  </button>
-));
+const DarkModeButton = memo(
+  ({ onToggleDarkMode, isDarkMode }: DarkModeButtonProps) => (
+    <button
+      onClick={onToggleDarkMode}
+      className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold"
+      aria-label={isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+    >
+      <div className="flex items-center gap-1">
+        {isDarkMode ? (
+          <SunIcon className="h-6 w-6 text-yellow-400" aria-hidden="true" />
+        ) : (
+          <MoonIcon
+            className="h-6 w-6 text-gray-600 dark:text-gray-300"
+            aria-hidden="true"
+          />
+        )}
+        <span className="sr-only">
+          {isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+        </span>
+        <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 opacity-0 group-hover:opacity-100 translate-y-0 group-hover:translate-y-1 transition-all duration-200 whitespace-nowrap text-sm bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 px-2 py-1 rounded-md">
+          {isDarkMode ? "Modo claro" : "Modo oscuro"}
+          <div className="absolute w-2 h-2 bg-gray-800 dark:bg-gray-200 -top-1 left-1/2 -translate-x-1/2 rotate-45" />
+        </span>
+      </div>
+    </button>
+  )
+);
 
-DarkModeButton.displayName = 'DarkModeButton';
+DarkModeButton.displayName = "DarkModeButton";
 
 export default Header;
