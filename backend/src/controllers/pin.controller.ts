@@ -5,10 +5,17 @@ export class PinController {
   /**
    * Guarda o actualiza el PIN del usuario
    */
-  async savePin(req: Request, res: Response): Promise<void> {
+  savePin = async (req: Request, res: Response): Promise<void> => {
     try {
+      console.log('📌 Iniciando savePin controller');
       const { pin } = req.body;
-      const sAMAccountName = (req as any).user?.sAMAccountName; // Del token de autenticación
+      const sAMAccountName = (req as any).user?.sAMAccountName;
+
+      console.log('🔍 Datos recibidos:', { 
+        sAMAccountName, 
+        pinLength: pin?.length,
+        hasUser: !!(req as any).user 
+      });
 
       if (!sAMAccountName) {
         res.status(401).json({
@@ -35,7 +42,7 @@ export class PinController {
         return;
       }
 
-      // Validaciones de seguridad del PIN
+      // ✅ CORREGIDO: Llamar directamente a la función privada
       const validationError = this.validatePinSecurity(pin);
       if (validationError) {
         res.status(400).json({
@@ -45,6 +52,7 @@ export class PinController {
         return;
       }
 
+      console.log('🔐 Guardando PIN para:', sAMAccountName);
       const result = await pinService.saveUserPin(sAMAccountName, pin);
 
       if (result.success) {
@@ -65,14 +73,14 @@ export class PinController {
         error: "Error interno del servidor",
       });
     }
-  }
+  };
 
   /**
    * Elimina el PIN del usuario
    */
-  async removePin(req: Request, res: Response): Promise<void> {
+  removePin = async (req: Request, res: Response): Promise<void> => {
     try {
-      const sAMAccountName = (req as any).user?.sAMAccountName; // Del token de autenticación
+      const sAMAccountName = (req as any).user?.sAMAccountName;
 
       if (!sAMAccountName) {
         res.status(401).json({
@@ -102,14 +110,14 @@ export class PinController {
         error: "Error interno del servidor",
       });
     }
-  }
+  };
 
   /**
    * Verifica si el usuario tiene PIN configurado
    */
-  async checkPin(req: Request, res: Response): Promise<void> {
+  checkPin = async (req: Request, res: Response): Promise<void> => {
     try {
-      const sAMAccountName = (req as any).user?.sAMAccountName; // Del token de autenticación
+      const sAMAccountName = (req as any).user?.sAMAccountName;
 
       if (!sAMAccountName) {
         res.status(401).json({
@@ -133,13 +141,13 @@ export class PinController {
         error: "Error interno del servidor",
       });
     }
-  }
+  };
 
   /**
    * Verifica el PIN para recuperación de contraseña (sin autenticación)
    * Ahora acepta sAMAccountName o employeeID
    */
-  async verifyPinForRecovery(req: Request, res: Response): Promise<void> {
+  verifyPinForRecovery = async (req: Request, res: Response): Promise<void> => {
     try {
       const { identifier, pin } = req.body;
 
@@ -165,8 +173,8 @@ export class PinController {
         res.json({
           success: true,
           message: "PIN verificado correctamente",
-          userDN: result.userDN, // Para uso en recuperación de contraseña
-          userData: result.userData, // Datos del usuario para mostrar en frontend
+          userDN: result.userDN,
+          userData: result.userData,
         });
       } else {
         res.status(400).json({
@@ -181,12 +189,12 @@ export class PinController {
         error: "Error interno del servidor",
       });
     }
-  }
+  };
 
   /**
    * Busca usuario por identificador (para mostrar info en recuperación)
    */
-  async findUserForRecovery(req: Request, res: Response): Promise<void> {
+  findUserForRecovery = async (req: Request, res: Response): Promise<void> => {
     try {
       const { identifier } = req.body;
 
@@ -218,12 +226,12 @@ export class PinController {
         error: "Error interno del servidor",
       });
     }
-  }
+  };
 
   /**
    * Valida la seguridad del PIN (las mismas reglas que en el frontend)
    */
-  private validatePinSecurity(pin: string): string | null {
+  private validatePinSecurity = (pin: string): string | null => {
     // No puede ser el mismo dígito repetido
     if (/^(\d)\1{5}$/.test(pin)) {
       return "El PIN no puede ser el mismo dígito repetido 6 veces";
@@ -241,7 +249,7 @@ export class PinController {
     }
 
     return null;
-  }
+  };
 }
 
 export const pinController = new PinController();

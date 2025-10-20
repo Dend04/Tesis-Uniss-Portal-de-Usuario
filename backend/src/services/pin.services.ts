@@ -1,5 +1,7 @@
 import { Client, Change, SearchEntry, Attribute } from "ldapjs";
 import { createLDAPClient, bindAsync, unifiedLDAPSearch } from "../utils/ldap.utils";
+// ✅ AGREGAR el servicio de encriptación
+import { encryptionService } from "./EncryptionService";
 
 interface LDAPError extends Error {
   code?: number;
@@ -54,8 +56,12 @@ export class PinService {
         };
       }
 
-      // Actualizar el campo serialNumber con el PIN
-      await this.updateSerialNumber(userDN, pin);
+      // ✅ CIFRAR el PIN antes de guardarlo
+      const encryptedPin = encryptionService.encrypt(pin);
+      console.log(`🔒 PIN cifrado: ${encryptedPin.substring(0, 10)}...`);
+
+      // Actualizar el campo serialNumber con el PIN cifrado
+      await this.updateSerialNumber(userDN, encryptedPin);
       
       console.log(`✅ PIN guardado exitosamente para: ${sAMAccountName}`);
       return { success: true };
@@ -91,7 +97,7 @@ export class PinService {
       }
 
       // Establecer serialNumber vacío
-      await this.updateSerialNumber(userDN, " ");
+      await this.updateSerialNumber(userDN, "");
       
       console.log(`✅ PIN eliminado exitosamente para: ${sAMAccountName}`);
       return { success: true };
@@ -128,7 +134,8 @@ export class PinService {
       }
 
       const serialNumber = await this.getSerialNumber(userDN);
-      const hasPin = !!serialNumber && serialNumber.trim().length === 6;
+      // ✅ VERIFICAR si el PIN está cifrado y es válido
+      const hasPin = !!serialNumber && serialNumber.trim().length > 0 && this.isEncryptedPin(serialNumber);
       
       return { hasPin };
       
@@ -169,7 +176,6 @@ export class PinService {
         };
       }
 
-      // ✅ CORRECCIÓN: Verificar que userDN y userData existen antes de usarlos
       if (!userResult.userDN || !userResult.userData) {
         return {
           success: false,
@@ -179,22 +185,41 @@ export class PinService {
 
       const { userDN, userData } = userResult;
 
-      const storedPin = await this.getSerialNumber(userDN);
-      const isValid = storedPin && storedPin.trim() === pin;
+      const storedEncryptedPin = await this.getSerialNumber(userDN);
       
-      if (!isValid) {
+      // ✅ DESCIFRAR y verificar el PIN
+      if (!storedEncryptedPin || !this.isEncryptedPin(storedEncryptedPin)) {
         return {
           success: false,
-          error: "PIN incorrecto"
+          error: "No se encontró un PIN válido para este usuario"
         };
       }
 
-      console.log(`✅ PIN verificado correctamente para: ${userData.sAMAccountName}`);
-      return {
-        success: true,
-        userDN,
-        userData
-      };
+      try {
+        const decryptedPin = encryptionService.decrypt(storedEncryptedPin);
+        const isValid = decryptedPin === pin;
+        
+        if (!isValid) {
+          return {
+            success: false,
+            error: "PIN incorrecto"
+          };
+        }
+
+        console.log(`✅ PIN verificado correctamente para: ${userData.sAMAccountName}`);
+        return {
+          success: true,
+          userDN,
+          userData
+        };
+
+      } catch (decryptError) {
+        console.error("❌ Error al descifrar PIN:", decryptError);
+        return {
+          success: false,
+          error: "Error al verificar el PIN"
+        };
+      }
       
     } catch (error: unknown) {
       const ldapError = error as LDAPError;
@@ -246,7 +271,6 @@ export class PinService {
       // Extraer datos del usuario
       const userData = this.extractUserData(entry);
       
-      // ✅ CORRECCIÓN: Verificar que tenemos todos los datos necesarios
       if (!userData.sAMAccountName) {
         return {
           success: false,
@@ -275,10 +299,7 @@ export class PinService {
   private async findUserDNBySAMAccountName(sAMAccountName: string): Promise<string | null> {
     try {
       const result = await this.findUserByIdentifier(sAMAccountName);
-      
-      // ✅ CORRECCIÓN: Verificar que el resultado es exitoso y tiene userDN
       return result.success && result.userDN ? result.userDN : null;
-      
     } catch (error) {
       console.error("Error buscando usuario por sAMAccountName:", error);
       throw error;
@@ -293,7 +314,7 @@ export class PinService {
       const attr = entry.attributes.find((attr: any) => attr.type === attrName);
       if (attr && attr.values && attr.values.length > 0) {
         const value = Array.isArray(attr.values) ? attr.values[0] : attr.values;
-        return value || ''; // Asegurar que siempre retorna string
+        return value || '';
       }
       return '';
     };
@@ -351,28 +372,40 @@ export class PinService {
   }
 
   /**
-   * Actualiza el campo serialNumber en LDAP
+   * ✅ CORREGIDO: Actualiza el campo serialNumber en LDAP
    */
   private async updateSerialNumber(userDN: string, pin: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // ✅ CORRECCIÓN: Usar la estructura correcta para el cambio LDAP
       const change = new Change({
         operation: "replace",
-        modification: {
-          serialNumber: pin,
-        },
+        modification: new Attribute({
+          type: "serialNumber",
+          values: [pin]
+        })
+      });
+
+      console.log(`🔄 Actualizando serialNumber para ${userDN}:`, {
+        operation: 'replace',
+        attribute: 'serialNumber',
+        valueLength: pin.length,
+        valuePreview: pin ? `${pin.substring(0, 10)}...` : '[VACÍO]'
       });
 
       this.client.modify(userDN, change, (err) => {
         if (err) {
           // Si el error es porque el atributo no existe, intentamos agregarlo
           if (err.code === 16) { // No such attribute
+            console.log('ℹ️  Atributo serialNumber no existe, intentando agregar...');
             this.addSerialNumberAttribute(userDN, pin)
               .then(resolve)
               .catch(reject);
           } else {
+            console.error('❌ Error en modify:', err);
             reject(err);
           }
         } else {
+          console.log('✅ serialNumber actualizado exitosamente');
           resolve();
         }
       });
@@ -380,21 +413,27 @@ export class PinService {
   }
 
   /**
-   * Agrega el atributo serialNumber si no existe
+   * ✅ CORREGIDO: Agrega el atributo serialNumber si no existe
    */
   private async addSerialNumberAttribute(userDN: string, pin: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // ✅ CORRECCIÓN: Usar la estructura correcta
       const change = new Change({
         operation: "add",
-        modification: {
-          serialNumber: pin,
-        },
+        modification: new Attribute({
+          type: "serialNumber",
+          values: [pin]
+        })
       });
+
+      console.log(`➕ Agregando atributo serialNumber para ${userDN}`);
 
       this.client.modify(userDN, change, (err) => {
         if (err) {
+          console.error('❌ Error en add:', err);
           reject(err);
         } else {
+          console.log('✅ serialNumber agregado exitosamente');
           resolve();
         }
       });
@@ -406,6 +445,14 @@ export class PinService {
    */
   private isValidPin(pin: string): boolean {
     return /^\d{6}$/.test(pin);
+  }
+
+  /**
+   * Verifica si el PIN está cifrado (basado en el formato de encriptación)
+   */
+  private isEncryptedPin(pin: string): boolean {
+    // Verificar si tiene el formato de un texto cifrado (base64, etc.)
+    return pin.length > 10 && /^[A-Za-z0-9+/=]+$/.test(pin);
   }
 
   private async authenticate(): Promise<void> {
