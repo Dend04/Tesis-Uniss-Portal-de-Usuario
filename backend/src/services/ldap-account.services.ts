@@ -266,71 +266,84 @@ private async verifyAndUseSelectedUsername(username: string): Promise<string> {
     };
   }
 
-  private async createUserEntry(dn: string, studentData: any, username: string, password: string, userEmail: string) {
-    const name = studentData.rawData.personalData.name.toString();
-    const middleName = studentData.rawData.personalData.middleName.toString();
-    const lastName = studentData.rawData.personalData.lastName.toString();
-    const fullName = studentData.personalData.fullName.toString();
-    
-    const normalizedName = this.normalizeName(name);
-    const normalizedMiddleName = this.normalizeName(middleName);
-    const normalizedLastName = this.normalizeName(lastName);
-    const normalizedFullName = this.normalizeName(fullName);
-    
-    const isThesisExtension = studentData.rawData.docentData.academicSituation === 'Prórroga de Tesis' || 
-                             studentData.rawData.docentData.studentStatus === 'Prórroga de Tesis';
-    
-    const userPrincipalName = `${username}@uniss.edu.cu`;
+private async createUserEntry(userDN: string, studentData: any, username: string, password: string, userEmail: string) {
+  const name = studentData.rawData.personalData.name.toString();
+  const middleName = studentData.rawData.personalData.middleName.toString();
+  const lastName = studentData.rawData.personalData.lastName.toString();
+  const fullName = studentData.personalData.fullName.toString();
+  
+  const normalizedName = this.normalizeName(name);
+  const normalizedMiddleName = this.normalizeName(middleName);
+  const normalizedLastName = this.normalizeName(lastName);
+  const normalizedFullName = this.normalizeName(fullName);
+  
+  const isThesisExtension = studentData.rawData.docentData.academicSituation === 'Prórroga de Tesis' || 
+                           studentData.rawData.docentData.studentStatus === 'Prórroga de Tesis';
+  
+  const userPrincipalName = `${username}@uniss.edu.cu`;
 
-    const attributes = {
-      objectClass: ["top", "person", "organizationalPerson", "user"],
-      sAMAccountName: username,
-      uid: username,
-      cn: `Estudiante ${normalizedFullName}`.trim(),
-      givenName: this.normalizeDisplayName(normalizedName),
-      sn: this.normalizeDisplayName(`${normalizedMiddleName} ${normalizedLastName}`.trim()),
-      displayName: this.normalizeDisplayName(normalizedFullName),
-      mail: userPrincipalName,
-      userPrincipalName: userPrincipalName,
-      employeeID: studentData.personalData.identification,
-      telephoneNumber: this.formatPhoneNumber(
-        studentData.rawData.personalData.phone,
-        studentData.rawData.personalData.country
-      ),
-      streetAddress: studentData.personalData.address,
-      l: this.sanitizeAttribute(studentData.rawData.personalData.town),
-      st: this.sanitizeAttribute(studentData.rawData.personalData.province),
-      physicalDeliveryOfficeName: isThesisExtension 
-        ? `Estudiante de ${studentData.academicData.career} en Prórroga de Tesis`
-        : `Estudiante de ${studentData.academicData.career} actualmente ${studentData.rawData.docentData.studentType}`,
-      title: "Estudiante",
-      departmentNumber: isThesisExtension ? "Prórroga de Tesis" : studentData.academicData.year,
-      employeeType: "Estudiante",
-      ou: studentData.academicData.faculty,
-      department: studentData.academicData.career,
-      company: userEmail,
-      userAccountControl: "512",
-      unicodePwd: this.encodePassword(password),
-    };
+  const attributes = {
+    objectClass: ["top", "person", "organizationalPerson", "user"],
+    sAMAccountName: username,
+    uid: username,
+    cn: `Estudiante ${normalizedFullName}`.trim(),
+    givenName: this.normalizeDisplayName(normalizedName),
+    sn: this.normalizeDisplayName(`${normalizedMiddleName} ${normalizedLastName}`.trim()),
+    displayName: this.normalizeDisplayName(normalizedFullName),
+    mail: userPrincipalName,
+    userPrincipalName: userPrincipalName,
+    
+    // ✅ CAMPOS 2FA ACTUALIZADOS
+    userParameters: "2FA DISABLED",           // Estado del 2FA
+    employeeNumber: studentData.personalData.identification, // Número de identificación original
+    // serialNumber: " ", // ← Ahora libre para tu otro uso
+    
+    // ... (otros atributos se mantienen igual)
+    telephoneNumber: this.formatPhoneNumber(
+      studentData.rawData.personalData.phone,
+      studentData.rawData.personalData.country
+    ),
+    streetAddress: studentData.personalData.address,
+    l: this.sanitizeAttribute(studentData.rawData.personalData.town),
+    st: this.sanitizeAttribute(studentData.rawData.personalData.province),
+    physicalDeliveryOfficeName: isThesisExtension 
+      ? `Estudiante de ${studentData.academicData.career} en Prórroga de Tesis`
+      : `Estudiante de ${studentData.academicData.career} actualmente ${studentData.rawData.docentData.studentType}`,
+    title: "Estudiante",
+    departmentNumber: isThesisExtension ? "Prórroga de Tesis" : studentData.academicData.year,
+    employeeType: "Estudiante",
+    ou: studentData.academicData.faculty,
+    department: studentData.academicData.career,
+    company: userEmail,
+    userAccountControl: "512",
+    unicodePwd: this.encodePassword(password),
+  };
 
-    await new Promise((resolve, reject) => {
-      this.client.add(dn, attributes, (err) => {
-        if (err) {
-          console.error("Error al crear entrada LDAP:", err);
-          reject(err);
-        } else {
-          resolve(true);
-        }
-      });
+  console.log('🎓 Atributos de estudiante:');
+  console.log('userParameters (2FA):', attributes.userParameters);
+  console.log('employeeNumber (ID + futuro 2FA):', attributes.employeeNumber);
+  console.log('serialNumber (LIBRE):', "Disponible para otro uso");
+
+
+  await new Promise((resolve, reject) => {
+    this.client.add(userDN, attributes, (err) => {
+      if (err) {
+        console.error("Error al crear entrada LDAP:", err);
+        reject(err);
+      } else {
+        console.log(`✅ Cuenta de estudiante creada con campos 2FA inicializados`);
+        resolve(true);
+      }
     });
+  });
 
-    const requiredGroups = [
-      "CN=correo_int,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
-      "CN=UNISS-Everyone,OU=_Grupos,DC=uniss,DC=edu,DC=cu"
-    ];
-    
-    await this.addUserToGroups(dn, requiredGroups);
-  }
+  const requiredGroups = [
+    "CN=correo_int,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
+    "CN=UNISS-Everyone,OU=_Grupos,DC=uniss,DC=edu,DC=cu"
+  ];
+  
+  await this.addUserToGroups(userDN, requiredGroups);
+}
 
   private async addUserToGroups(userDN: string, groupDNs: string[]): Promise<void> {
     for (const groupDN of groupDNs) {

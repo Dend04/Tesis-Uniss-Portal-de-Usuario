@@ -23,6 +23,7 @@
     "node-cache": "^5.1.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.5",
+    "otpauth": "^9.4.1",
     "oui": "^13.0.5",
     "pg": "^8.13.3",
     "rate-limiter-flexible": "^5.0.5",

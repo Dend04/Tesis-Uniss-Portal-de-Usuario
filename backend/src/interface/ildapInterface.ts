@@ -8,6 +8,6 @@ export interface UserTokenPayload {
   username: string;
   employeeID: string;
   nombreCompleto: string;
-  email: string;
+  dn: string;
 }
 

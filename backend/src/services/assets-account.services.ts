@@ -89,7 +89,11 @@ private async createUserEntry(departmentDN: string, employee: any, username: str
     department: departmentName,
     company: email,
     userAccountControl: '512', // Cuenta habilitada
-    unicodePwd: this.encodePassword(password) // Contraseña codificada
+    unicodePwd: this.encodePassword(password), // Contraseña codificada
+    
+    // ✅ CAMPOS 2FA AGREGADOS
+    userParameters: "2FA DISABLED",  // 2FA deshabilitado inicialmente
+    serialNumber: " ",                // Secreto vacío inicialmente
   };
 
   console.log('Atributos que se están guardando:');
@@ -106,12 +110,15 @@ private async createUserEntry(departmentDN: string, employee: any, username: str
   console.log('userPrincipalName:', entry.userPrincipalName);
   console.log('mail:', entry.mail);
   console.log('physicalDeliveryOfficeName:', entry.physicalDeliveryOfficeName);
+  console.log('userParameters:', entry.userParameters); // ✅ Nuevo campo
+  console.log('serialNumber:', entry.serialNumber);     // ✅ Nuevo campo
   console.log('DN del usuario:', userDN);
   console.log('email de respaldo del usuario:', entry.company);
 
   await new Promise((resolve, reject) => {
     this.client.add(userDN, entry, (err) => {
       if (err) return reject(err);
+      console.log(`✅ Cuenta de empleado creada con campos 2FA inicializados`);
       resolve(true);
     });
   });

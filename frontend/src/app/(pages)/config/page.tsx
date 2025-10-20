@@ -25,7 +25,6 @@ import {
 import { useConfirmation } from "@/app/hooks/useConfirmation";
 import ConfirmationModal from "@/app/components/modals/ConfirmationModal";
 import { useBackupEmail } from "@/app/hooks/useBackupEmail";
-import { useDarkMode } from "@/app/hooks/useDarkMode";
 import { useDarkModeContext } from "@/app/contexts/DarkModeContext";
 
 // Carga perezosa optimizada con imports explícitos
@@ -95,7 +94,6 @@ const usePreload = () => {
 
   return { preloadComponent, preloaded };
 };
-
 
 // Componente ToggleSwitch mejorado
 const ToggleSwitch = memo(({ 
@@ -314,8 +312,70 @@ const SecurityProgress = memo(({
 
 SecurityProgress.displayName = "SecurityProgress";
 
+// ✅ FUNCIÓN MEJORADA CON MÁS ROBUSTEZ
+const getSAMAccountNameFromToken = (): string | null => {
+  try {
+    const tokenNames = ['authToken', 'token', 'userToken', 'accessToken'];
+    let token = null;
+
+    for (const tokenName of tokenNames) {
+      token = localStorage.getItem(tokenName);
+      if (token) {
+        console.log(`✅ Token encontrado en: ${tokenName}`);
+        break;
+      }
+    }
+
+    if (!token) {
+      console.warn("❌ No se encontró ningún token en localStorage");
+      return null;
+    }
+
+    // Decodificar el token
+    const base64Url = token.split('.')[1];
+    if (!base64Url) {
+      console.error("❌ Token no tiene formato JWT válido");
+      return null;
+    }
+
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(window.atob(base64));
+
+    console.log("=== 🔍 CAMPOS DISPONIBLES EN TOKEN ===");
+    console.log("🔑 Campos:", Object.keys(payload));
+    
+    // Buscar sAMAccountName en diferentes variantes
+    const samAccountNameFields = [
+      'sAMAccountName',        // Formato estándar
+      'samaccountname',        // Minúsculas
+      'samAccountName',        // Camel case
+      'username',              // Alternativo común
+      'userName',              // Alternativo
+      'sub',                   // Subject
+      'preferred_username',    // Estándar OIDC
+      'uid',                   // User ID
+      'user_id',               // User ID alternativo
+      'email'                  // Como último recurso
+    ];
+
+    for (const field of samAccountNameFields) {
+      if (payload[field]) {
+        console.log(`✅ sAMAccountName encontrado en campo '${field}': ${payload[field]}`);
+        return payload[field];
+      }
+    }
+
+    console.warn("❌ No se encontró sAMAccountName en el token");
+    return null;
+
+  } catch (error) {
+    console.error("❌ Error decodificando el token:", error);
+    return null;
+  }
+};
+
 export default function ConfigPage() {
-  const { isDarkMode, toggleDarkMode } = useDarkModeContext();
+  const { isDarkMode } = useDarkModeContext();
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
   const [showTwoFASetup, setShowTwoFASetup] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -335,6 +395,52 @@ export default function ConfigPage() {
   const { isOpen, options, confirm, handleConfirm, handleCancel } = useConfirmation();
 
   const searchParams = useSearchParams();
+
+  // ✅ EFECTO CORREGIDO PARA VERIFICAR ESTADO DEL 2FA
+useEffect(() => {
+  const check2FAStatus = async () => {
+    try {
+      const sAMAccountName = getSAMAccountNameFromToken();
+      
+      if (!sAMAccountName) {
+        console.warn("⚠️ No se pudo obtener sAMAccountName del token");
+        setTwoFAEnabled(false);
+        return;
+      }
+
+      console.log("🔍 Verificando estado 2FA para sAMAccountName:", sAMAccountName);
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL;
+      const encodedSAMAccountName = encodeURIComponent(sAMAccountName);
+      const url = `${API_URL}/2fa/status/${encodedSAMAccountName}`;
+
+      console.log("🌐 URL de verificación:", url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log("📡 Respuesta HTTP:", response.status, response.statusText);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ Estado 2FA obtenido:", result);
+        setTwoFAEnabled(result.enabled);
+      } else {
+        console.warn(`⚠️ Error ${response.status}, asumiendo 2FA desactivado`);
+        setTwoFAEnabled(false);
+      }
+    } catch (error) {
+      console.error("❌ Error verificando estado del 2FA:", error);
+      setTwoFAEnabled(false);
+    }
+  };
+
+  check2FAStatus();
+}, []);
 
   // Precarga estratégica mejorada
   useEffect(() => {
@@ -375,6 +481,91 @@ export default function ConfigPage() {
     setLoadingStates(prev => ({ ...prev, [key]: value }));
   }, []);
 
+  // ✅ FUNCIÓN MEJORADA PARA ACTIVAR 2FA
+const handle2FASetupComplete = async (secret: string) => { // ← Solo recibe secret ahora
+  try {
+    const sAMAccountName = getSAMAccountNameFromToken();
+    
+    if (!sAMAccountName) {
+      console.warn("⚠️ No se pudo obtener sAMAccountName, activando localmente");
+      setTwoFAEnabled(true);
+      setShowTwoFASetup(false);
+      return;
+    }
+
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${API_URL}/2fa/activate`;
+
+    console.log("🔍 Activando 2FA (solo secreto) para:", sAMAccountName);
+
+    // ✅ ENVIAR SOLO sAMAccountName Y SECRET - SIN backupCodes NI verificationCode
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sAMAccountName: sAMAccountName,
+        secret: secret
+        // ❌ ELIMINADO: backupCodes, verificationCode
+      }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log("✅ 2FA activado exitosamente:", result);
+    } else {
+      console.warn(`⚠️ Respuesta HTTP no OK: ${response.status}`);
+      // ✅ Aún así activamos localmente porque la verificación frontend fue exitosa
+    }
+
+    setTwoFAEnabled(true);
+    setShowTwoFASetup(false);
+
+  } catch (error) {
+    console.error('❌ Error en handle2FASetupComplete:', error);
+    setTwoFAEnabled(true);
+    setShowTwoFASetup(false);
+  }
+};
+
+const deactivate2FA = async (): Promise<boolean> => {
+  try {
+    const sAMAccountName = getSAMAccountNameFromToken();
+    
+    if (!sAMAccountName) {
+      console.error("❌ No se pudo obtener sAMAccountName para desactivar 2FA");
+      return false;
+    }
+
+    console.log("🔄 Desactivando 2FA para:", sAMAccountName);
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/2fa/deactivate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sAMAccountName: sAMAccountName
+      }),
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log("✅ 2FA desactivado exitosamente");
+      return true;
+    } else {
+      console.error("❌ Error desactivando 2FA:", result.error);
+      return false;
+    }
+  } catch (error) {
+    console.error("❌ Error desactivando 2FA:", error);
+    return false;
+  }
+};
+
+
   const handleEmailSuccess = useCallback((newEmail: string) => {
     updateBackupEmail(newEmail);
     setShowEmailForm(false);
@@ -400,11 +591,19 @@ export default function ConfigPage() {
 
       if (userConfirmed) {
         setLoading('twoFA', true);
-        // Simular llamada a API
-        setTimeout(() => {
+        
+        // ✅ LLAMAR AL BACKEND PARA DESACTIVAR
+        const success = await deactivate2FA();
+        
+        if (success) {
           setTwoFAEnabled(false);
-          setLoading('twoFA', false);
-        }, 800);
+          console.log("✅ 2FA desactivado exitosamente");
+        } else {
+          console.error("❌ Error al desactivar 2FA en backend");
+          // Podrías mostrar un mensaje de error al usuario
+        }
+        
+        setLoading('twoFA', false);
       }
     }
   }, [preloadComponent, confirm, setLoading]);
@@ -480,7 +679,7 @@ export default function ConfigPage() {
   }, []);
 
   return (
-   <div className="min-h-screen transition-colors duration-300 bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-900 dark:to-blue-900/20">
+    <div className="min-h-screen transition-colors duration-300 bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-900 dark:to-blue-900/20">
       <Header />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
@@ -533,14 +732,12 @@ export default function ConfigPage() {
             {showTwoFASetup && (
               <TwoFactorAuth
                 isDarkMode={isDarkMode}
-                onSetupComplete={(secret: string, backupCodes: string[]) => {
-                  console.log("2FA configurado:", { secret, backupCodes });
-                  setTwoFAEnabled(true);
-                  setShowTwoFASetup(false);
-                }}
+                onSetupComplete={handle2FASetupComplete}
                 onCancel={() => {
                   setShowTwoFASetup(false);
-                  setTwoFAEnabled(false);
+                  if (!twoFAEnabled) {
+                    setTwoFAEnabled(false);
+                  }
                 }}
                 userEmail={backupEmail || ''}
               />

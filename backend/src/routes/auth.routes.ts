@@ -6,6 +6,7 @@ import {
 } from "../controllers/auth.controllers";
 import { verifyTokenMiddleware } from "../middlewares/auth.middleware";
 
+
 const router = Router();
 
 // Rutas de autenticación básica

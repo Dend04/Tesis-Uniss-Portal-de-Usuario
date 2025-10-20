@@ -123,8 +123,8 @@ export const getVerificationCodeHTML = (userName: string, verificationCode: stri
             </ul>
         </div>
         
-        <p>Si tienes problemas con el código o no solicitaste este cambio, por favor contacta a nuestro equipo de soporte técnico:</p>
-        <p><strong>Soporte UNISS:</strong> soporte@uniss.edu.cu | +53 41 123456</p>
+        <p>Si tienes problemas con el código o no solicitaste este cambio, por favor contacte a nuestro equipo de soporte técnico:</p>
+        
         
         <p class="footer">
             © ${new Date().getFullYear()} Universidad de Sancti Spíritus "José Martí Pérez"<br>

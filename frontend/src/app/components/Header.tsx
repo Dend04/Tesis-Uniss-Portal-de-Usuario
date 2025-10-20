@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -12,6 +11,9 @@ import {
   MoonIcon,
   Bars3Icon,
   XMarkIcon,
+  ShieldCheckIcon, // Nuevo icono para admin
+  UsersIcon, // Icono para gestión de usuarios
+  CogIcon, // Icono para configuración del sistema
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useState, useCallback, memo, useRef, useEffect } from "react";
@@ -90,6 +92,9 @@ const getUserDataFromToken = () => {
     username: decoded.sAMAccountName,
     displayName: cleanedDisplayName,
     role: decoded.title, // Extraer el rol del token
+    isAdmin: decoded.title?.toLowerCase().includes("administrador") || 
+             decoded.role?.toLowerCase().includes("admin") || 
+             decoded.isAdmin === true, // Verificar si es administrador
   };
 };
 
@@ -99,6 +104,7 @@ export const Header = memo(() => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userDisplayName, setUserDisplayName] = useState<string>("Usuario");
   const [userRole, setUserRole] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false); // Nuevo estado para admin
   const router = useRouter();
   const preloadedPages = useRef(new Set<string>());
 
@@ -110,6 +116,9 @@ export const Header = memo(() => {
     }
     if (userData?.role) {
       setUserRole(userData.role);
+    }
+    if (userData?.isAdmin) {
+      setIsAdmin(userData.isAdmin);
     }
   }, []);
 
@@ -175,7 +184,13 @@ export const Header = memo(() => {
             {/* Menú para desktop - oculto en móviles */}
             <div className="hidden md:flex items-center gap-6" role="menubar">
               {/* Botón de Estadísticas - VISIBLE PARA TODOS LOS USUARIOS */}
-             
+              <NavIcon
+                href="/stats"
+                icon={<ChartPieIcon className="h-6 w-6" aria-hidden="true" />}
+                label="Estadísticas"
+                isDarkMode={isDarkMode}
+                onHover={() => preloadPage("/stats")}
+              />
 
               <NavIcon
                 href="/config"
@@ -185,14 +200,6 @@ export const Header = memo(() => {
                 onHover={() => preloadPage("/config")}
               />
 
-               <NavIcon
-                href="/stats"
-                icon={<ChartPieIcon className="h-6 w-6" aria-hidden="true" />}
-                label="Estadísticas"
-                isDarkMode={isDarkMode}
-                onHover={() => preloadPage("/stats")}
-              />
-
               <NavIcon
                 href="/activity-logs"
                 icon={<ChartBarIcon className="h-6 w-6" aria-hidden="true" />}
@@ -200,6 +207,41 @@ export const Header = memo(() => {
                 isDarkMode={isDarkMode}
                 onHover={() => preloadPage("/activity-logs")}
               />
+
+              {/* 🆕 OPCIONES DE ADMINISTRADOR - VISIBLES PARA TODOS (PARA PRUEBAS) */}
+              {/* 
+                PARA MOSTRAR SOLO A ADMINISTRADORES, CAMBIA ESTO A:
+              {isAdmin && (
+  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+              */}
+              <div className="flex items-center gap-2">
+                {/* Separador visual para opciones de admin */}
+                <div className={`h-6 w-px ${isDarkMode ? "bg-gray-600" : "bg-gray-300"}`} />
+                
+                <NavIcon
+                  href="/admin"
+                  icon={<ShieldCheckIcon className="h-6 w-6" aria-hidden="true" />}
+                  label="Panel Admin"
+                  isDarkMode={isDarkMode}
+                  onHover={() => preloadPage("/admin")}
+                />
+
+                <NavIcon
+                  href="/admin/users"
+                  icon={<UsersIcon className="h-6 w-6" aria-hidden="true" />}
+                  label="Gestión de Usuarios"
+                  isDarkMode={isDarkMode}
+                  onHover={() => preloadPage("/admin/users")}
+                />
+
+                <NavIcon
+                  href="/admin/system"
+                  icon={<CogIcon className="h-6 w-6" aria-hidden="true" />}
+                  label="Configuración Sistema"
+                  isDarkMode={isDarkMode}
+                  onHover={() => preloadPage("/admin/system")}
+                />
+              </div>
 
               <NavIcon
                 icon={<BellIcon className="h-6 w-6" aria-hidden="true" />}
@@ -220,6 +262,8 @@ export const Header = memo(() => {
               <UserProfile
                 isDarkMode={isDarkMode}
                 displayName={userDisplayName}
+                role={userRole}
+                isAdmin={isAdmin}
                 onHover={() => preloadPage("/perfil")}
               />
             </div>
@@ -329,6 +373,50 @@ export const Header = memo(() => {
                     onHover={() => preloadPage("/activity-logs")}
                   />
 
+                  {/* 🆕 OPCIONES DE ADMINISTRADOR EN MÓVIL - VISIBLES PARA TODOS (PARA PRUEBAS) */}
+                  {/* 
+                    PARA MOSTRAR SOLO A ADMINISTRADORES, CAMBIA ESTO A:
+                    {isAdmin && ( ... )}
+                  */}
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className={`text-xs font-semibold uppercase tracking-wider ${isDarkMode ? "text-gray-400" : "text-gray-500"} mb-2 px-4`}>
+                      Administración
+                    </div>
+                    
+                    <MobileNavItem
+                      href="/admin"
+                      icon={
+                        <ShieldCheckIcon className="h-6 w-6" aria-hidden="true" />
+                      }
+                      label="Panel Admin"
+                      isDarkMode={isDarkMode}
+                      onClick={closeMenu}
+                      onHover={() => preloadPage("/admin")}
+                    />
+
+                    <MobileNavItem
+                      href="/admin/users"
+                      icon={
+                        <UsersIcon className="h-6 w-6" aria-hidden="true" />
+                      }
+                      label="Gestión de Usuarios"
+                      isDarkMode={isDarkMode}
+                      onClick={closeMenu}
+                      onHover={() => preloadPage("/admin/users")}
+                    />
+
+                    <MobileNavItem
+                      href="/admin/system"
+                      icon={
+                        <CogIcon className="h-6 w-6" aria-hidden="true" />
+                      }
+                      label="Configuración Sistema"
+                      isDarkMode={isDarkMode}
+                      onClick={closeMenu}
+                      onHover={() => preloadPage("/admin/system")}
+                    />
+                  </div>
+
                   <MobileNavItem
                     icon={<BellIcon className="h-6 w-6" aria-hidden="true" />}
                     label="Notificaciones"
@@ -356,20 +444,29 @@ export const Header = memo(() => {
                   >
                     <div className="flex items-center gap-3">
                       <UserCircleIcon className="h-6 w-6" aria-hidden="true" />
-                      <span
-                        className={`text-sm font-medium ${
-                          isDarkMode ? "text-gray-200" : "text-gray-700"
-                        }`}
-                      >
-                        {userDisplayName}
-                      </span>
-                    </div>
-                    <div
-                      className={`text-xs mt-1 ${
-                        isDarkMode ? "text-gray-400" : "text-gray-500"
-                      }`}
-                    >
-                      Rol: {userRole}
+                      <div className="flex-1 min-w-0">
+                        <span
+                          className={`text-sm font-medium block truncate ${
+                            isDarkMode ? "text-gray-200" : "text-gray-700"
+                          }`}
+                        >
+                          {userDisplayName}
+                        </span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className={`text-xs ${
+                              isDarkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
+                            Rol: {userRole}
+                          </span>
+                          {isAdmin && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                              Admin
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <MobileNavItem
@@ -390,7 +487,7 @@ export const Header = memo(() => {
                 <button
                   onClick={() => {
                     localStorage.removeItem("authToken");
-                    router.push("/login");
+                    router.push("/");
                     closeMenu();
                   }}
                   className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg ${
@@ -500,11 +597,13 @@ MobileNavItem.displayName = "MobileNavItem";
 interface UserProfileProps {
   isDarkMode: boolean;
   displayName: string;
+  role: string;
+  isAdmin: boolean;
   onHover?: () => void;
 }
 
 const UserProfile = memo(
-  ({ isDarkMode, displayName, onHover }: UserProfileProps) => (
+  ({ isDarkMode, displayName, role, isAdmin, onHover }: UserProfileProps) => (
     <Link
       href="/perfil"
       className="flex items-center gap-2 group relative px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uniss-blue dark:focus:ring-uniss-gold"
@@ -517,14 +616,30 @@ const UserProfile = memo(
         aria-hidden="true"
       />
       <span className="sr-only">Perfil de usuario</span>
-      <span
-        className={`hidden md:block text-sm font-medium truncate max-w-32 ${
-          isDarkMode ? "text-gray-200" : "text-gray-700"
-        }`}
-        title={displayName}
-      >
-        {displayName}
-      </span>
+      <div className="hidden md:block text-right">
+        <span
+          className={`text-sm font-medium truncate max-w-32 block ${
+            isDarkMode ? "text-gray-200" : "text-gray-700"
+          }`}
+          title={displayName}
+        >
+          {displayName}
+        </span>
+        <div className="flex items-center gap-1 justify-end">
+          <span
+            className={`text-xs ${
+              isDarkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            {role}
+          </span>
+          {isAdmin && (
+            <span className="inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+              Admin
+            </span>
+          )}
+        </div>
+      </div>
     </Link>
   )
 );
@@ -538,7 +653,7 @@ const LogoutButton = memo(({ isDarkMode }: { isDarkMode: boolean }) => {
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     // No removemos la preferencia del modo oscuro al hacer logout
-    router.push("/login");
+    router.push("/");
   };
 
   return (

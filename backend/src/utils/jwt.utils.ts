@@ -3,14 +3,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// ✅ INTERFAZ ACTUALIZADA CON CAMPO title
+// ✅ INTERFAZ ACTUALIZADA CON dn Y SIN email
 export interface TokenPayload {
   sAMAccountName: string;
   username: string;
   employeeID: string;
   displayName?: string;
-  email?: string;
-  title?: string; // ✅ NUEVO CAMPO AGREGADO
+  title?: string;
+  dn: string; // ✅ NUEVO CAMPO - Distinguished Name
 }
 
 const JWT_CONFIG = {
@@ -42,21 +42,21 @@ export const verifyToken = (token: string): TokenPayload => {
   }
 };
 
-// ✅ FUNCIÓN ACTUALIZADA - INCLUYE title EN LOS TOKENS
+// ✅ FUNCIÓN ACTUALIZADA - INCLUYE dn Y SIN email
 export const generateTokens = (payload: TokenPayload) => {
   const accessToken = jwt.sign(
-    payload, // ✅ Ahora incluye el campo title
+    payload,
     JWT_CONFIG.secret,
     JWT_CONFIG.signOptions
   );
 
   const refreshToken = jwt.sign(
     {
-      // Para el refresh token, incluir campos esenciales + title
       username: payload.username,
       employeeID: payload.employeeID,
       sAMAccountName: payload.sAMAccountName,
-      title: payload.title // ✅ AGREGAR title AL REFRESH TOKEN
+      title: payload.title,
+      dn: payload.dn // ✅ AGREGAR dn AL REFRESH TOKEN
     },
     JWT_CONFIG.refreshSecret,
     JWT_CONFIG.refreshOptions
@@ -70,10 +70,11 @@ export interface RefreshTokenPayload {
   username: string;
   employeeID: string;
   sAMAccountName: string;
-  title?: string; // ✅ AGREGAR title
+  title?: string;
+  dn: string; // ✅ AGREGAR dn
 }
 
-// ✅ FUNCIÓN ACTUALIZADA - VERIFICAR REFRESH TOKEN CON title
+// ✅ FUNCIÓN ACTUALIZADA - VERIFICAR REFRESH TOKEN CON dn
 export const verifyRefreshToken = (token: string): RefreshTokenPayload => {
   try {
     return jwt.verify(
@@ -86,17 +87,18 @@ export const verifyRefreshToken = (token: string): RefreshTokenPayload => {
   }
 };
 
-// ✅ FUNCIÓN ACTUALIZADA - RENOVAR TOKENS MANTENIENDO title
+// ✅ FUNCIÓN ACTUALIZADA - RENOVAR TOKENS MANTENIENDO dn
 export const refreshTokens = (refreshToken: string): { accessToken: string; refreshToken: string } => {
   try {
     const decoded = verifyRefreshToken(refreshToken);
     
-    // Crear nuevo payload con todos los datos, incluyendo title
+    // Crear nuevo payload con todos los datos, incluyendo dn
     const newPayload: TokenPayload = {
       sAMAccountName: decoded.sAMAccountName,
       username: decoded.username,
       employeeID: decoded.employeeID,
-      title: decoded.title // ✅ MANTENER EL title EN LA RENOVACIÓN
+      title: decoded.title,
+      dn: decoded.dn // ✅ MANTENER EL dn EN LA RENOVACIÓN
     };
 
     return generateTokens(newPayload);

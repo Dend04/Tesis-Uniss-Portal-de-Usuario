@@ -32,9 +32,11 @@ const ModalLoading = () => (
   </div>
 );
 
+// ✅ INTERFACE ACTUALIZADA - Agregar verificationCode
+// ✅ INTERFACE ACTUALIZADA - Solo necesita el secret
 interface TwoFactorAuthProps {
   isDarkMode: boolean;
-  onSetupComplete: (secret: string, backupCodes: string[]) => void;
+  onSetupComplete: (secret: string) => void; // ← Solo el secreto ahora
   onCancel: () => void;
   userEmail: string;
 }
@@ -193,6 +195,8 @@ export default function TwoFactorAuth({
   const [retryCount, setRetryCount] = useState(0);
   const [lastAttemptCode, setLastAttemptCode] = useState("");
   const [copiedSecret, setCopiedSecret] = useState(false);
+  const [autoCloseTimer, setAutoCloseTimer] = useState<NodeJS.Timeout | null>(null);
+  const [qrScanned, setQrScanned] = useState(false);
 
   const getUserIdentifier = () => {
     try {
@@ -225,6 +229,69 @@ export default function TwoFactorAuth({
 
     return () => clearInterval(timer);
   }, []);
+
+  // ✅ EFECTO PARA DETECTAR AUTOMÁTICAMENTE CUANDO SE ESCANEA EL QR
+  useEffect(() => {
+    if (currentStep === 1 && !qrScanned) {
+      // Verificar cada 2 segundos si el usuario ha empezado a escribir en el campo de código
+      const checkForCodeInput = setInterval(() => {
+        // Esta es una simulación - en una app real podrías detectar de otras formas
+        const hasUserStartedTyping = verificationCode.length > 0;
+        
+        if (hasUserStartedTyping && !qrScanned) {
+          setQrScanned(true);
+          setCurrentStep(2);
+          clearInterval(checkForCodeInput);
+        }
+      }, 2000);
+
+      return () => clearInterval(checkForCodeInput);
+    }
+  }, [currentStep, qrScanned, verificationCode]);
+
+  // ✅ EFECTO PARA VERIFICACIÓN AUTOMÁTICA AL COMPLETAR 6 DÍGITOS
+  useEffect(() => {
+    if (verificationCode.length === 6 && currentStep === 2) {
+      // Pequeño delay para que el usuario vea que completó el código
+      const autoVerifyTimer = setTimeout(() => {
+        handleSetupComplete();
+      }, 500);
+
+      return () => clearTimeout(autoVerifyTimer);
+    }
+  }, [verificationCode, currentStep]);
+
+  // ✅ EFECTO PARA CIERRE AUTOMÁTICO EN ÉXITO
+  useEffect(() => {
+    if (currentStep === 3) {
+      // Limpiar timer anterior si existe
+      if (autoCloseTimer) {
+        clearTimeout(autoCloseTimer);
+      }
+
+      // Establecer nuevo timer para cerrar después de 10 segundos
+      const timer = setTimeout(() => {
+        onCancel();
+      }, 10000);
+
+      setAutoCloseTimer(timer);
+
+      return () => {
+        if (autoCloseTimer) {
+          clearTimeout(autoCloseTimer);
+        }
+      };
+    }
+  }, [currentStep, onCancel]);
+
+  // Limpiar timers al desmontar
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimer) {
+        clearTimeout(autoCloseTimer);
+      }
+    };
+  }, [autoCloseTimer]);
 
   // Precargar el modal cuando el usuario haga hover sobre el botón de información
   const preloadModal = useCallback(() => {
@@ -307,52 +374,59 @@ export default function TwoFactorAuth({
     }
   };
 
-  const handleSetupComplete = async () => {
-    setIsLoading(true);
-    setError("");
+  // ✅ FUNCIÓN MEJORADA - Con manejo de estado mejorado
+const handleSetupComplete = async () => {
+  if (verificationCode.length !== 6) return;
+  
+  setIsLoading(true);
+  setError("");
 
-    setLastAttemptCode(verificationCode);
+  setLastAttemptCode(verificationCode);
 
-    try {
-      const totp = new TOTP({
-        issuer: "Credenciales Uniss",
-        label: userIdentifier,
-        algorithm: "SHA1",
-        digits: 6,
-        period: 30,
-        secret: secret,
-      });
+  try {
+    const totp = new TOTP({
+      issuer: "Credenciales Uniss",
+      label: userIdentifier,
+      algorithm: "SHA1",
+      digits: 6,
+      period: 30,
+      secret: secret,
+    });
 
-      const isValid =
-        totp.validate({ token: verificationCode, window: 2 }) !== null;
+    // ✅ VERIFICACIÓN LOCAL SOLAMENTE
+    const isValid = totp.validate({ token: verificationCode, window: 2 }) !== null;
 
-      if (isValid) {
-        // Mostrar éxito antes de completar
-        setCurrentStep(3);
-        setTimeout(() => {
-          onSetupComplete(secret, backupCodes);
-        }, 1500);
-      } else {
-        if (retryCount < 2) {
-          setError(
-            `El código de verificación es incorrecto (Intento ${
-              retryCount + 1
-            }/3). Verifica que la hora de tu dispositivo esté sincronizada correctamente.`
-          );
-          setRetryCount((prev) => prev + 1);
-        } else {
-          setError(
-            "Código incorrecto después de múltiples intentos. Verifica que la hora de tu dispositivo esté sincronizada correctamente."
-          );
-        }
+    if (isValid) {
+      // Mostrar éxito inmediatamente
+      setCurrentStep(3);
+      
+      // ✅ ENVIAR SOLO EL SECRETO AL BACKEND - SIN backupCodes NI verificationCode
+      try {
+        await onSetupComplete(secret); // ← Solo el secreto ahora
+      } catch (backendError) {
+        console.error("Error activando en backend:", backendError);
+        // No revertimos el estado de éxito visual por error de backend
       }
-    } catch (err) {
-      setError("Error al verificar el código. Por favor intenta nuevamente.");
-    } finally {
-      setIsLoading(false);
+    } else {
+      if (retryCount < 2) {
+        setError(
+          `El código de verificación es incorrecto (Intento ${
+            retryCount + 1
+          }/3). Verifica que la hora de tu dispositivo esté sincronizada correctamente.`
+        );
+        setRetryCount((prev) => prev + 1);
+      } else {
+        setError(
+          "Código incorrecto después de múltiples intentos. Verifica que la hora de tu dispositivo esté sincronizada correctamente."
+        );
+      }
     }
-  };
-
+  } catch (err) {
+    setError("Error al verificar el código. Por favor intenta nuevamente.");
+  } finally {
+    setIsLoading(false);
+  }
+};
   const handleRetryWithSameCode = () => {
     if (lastAttemptCode && lastAttemptCode.length === 6) {
       setVerificationCode(lastAttemptCode);
@@ -368,12 +442,18 @@ export default function TwoFactorAuth({
     setVerificationCode("");
   };
 
+  // ✅ MANEJO MANUAL PARA PASAR AL SIGUIENTE PASO
+  const handleManualContinue = () => {
+    setCurrentStep(2);
+    setQrScanned(true);
+  };
+
   const steps = [
     {
       number: 1,
       title: "Escanea el código QR",
       description:
-        "Usa tu aplicación de autenticación para escanear este código",
+        "Usa tu aplicación de autenticación para escanear este código. Te llevaremos automáticamente al siguiente paso cuando detectemos que has empezado.",
       icon: <QrCodeIcon className="w-5 h-5" />,
       completed: currentStep > 1,
       active: currentStep === 1,
@@ -381,7 +461,7 @@ export default function TwoFactorAuth({
     {
       number: 2,
       title: "Verifica el código",
-      description: "Ingresa el código de 6 dígitos de tu aplicación",
+      description: "Ingresa el código de 6 dígitos de tu aplicación. La verificación será automática.",
       icon: <KeyIcon className="w-5 h-5" />,
       completed: currentStep > 2,
       active: currentStep === 2,
@@ -389,7 +469,7 @@ export default function TwoFactorAuth({
     {
       number: 3,
       title: "Configuración completada",
-      description: "La autenticación en dos pasos está activa",
+      description: "La autenticación en dos pasos está activa. Cerrando automáticamente...",
       icon: <CheckCircleIcon className="w-5 h-5" />,
       completed: currentStep === 3,
       active: currentStep === 3,
@@ -493,7 +573,7 @@ export default function TwoFactorAuth({
                       <ArrowPathIcon className="w-8 h-8 animate-spin" />
                     </div>
                   )}
-                </div>
+                </div> 
 
                 {/* Manual Setup Option */}
                 <div
@@ -550,7 +630,7 @@ export default function TwoFactorAuth({
                 {/* Action Buttons con opción de omitir */}
                 <div className="flex flex-col gap-3 w-full max-w-md">
                   <button
-                    onClick={() => setCurrentStep(2)}
+                    onClick={handleManualContinue}
                     disabled={!qrDataUrl}
                     className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
                       isDarkMode
@@ -561,7 +641,6 @@ export default function TwoFactorAuth({
                     Continuar a verificación
                   </button>
 
-                  {/* Nuevo botón "Omitir por ahora" */}
                   <button
                     type="button"
                     onClick={onCancel}
@@ -624,6 +703,10 @@ export default function TwoFactorAuth({
                     }`}
                   >
                     Ingresa el código de 6 dígitos
+                    <br />
+                    <span className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                      La verificación será automática al completar 6 dígitos
+                    </span>
                   </label>
 
                   <div className="relative">
@@ -642,7 +725,9 @@ export default function TwoFactorAuth({
                         isDarkMode
                           ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                           : "bg-white border-gray-300 text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                      } ${error ? "border-red-500 shake-animation" : ""}`}
+                      } ${error ? "border-red-500 shake-animation" : ""} ${
+                        verificationCode.length === 6 ? "border-green-500" : ""
+                      }`}
                       autoFocus
                     />
 
@@ -653,7 +738,7 @@ export default function TwoFactorAuth({
                       }`}
                     >
                       {verificationCode.length === 6
-                        ? "✓ Código completo"
+                        ? "✓ Código completo - Verificando..."
                         : `${verificationCode.length}/6 dígitos`}
                     </div>
                   </div>
@@ -738,7 +823,7 @@ export default function TwoFactorAuth({
                         Verificando...
                       </div>
                     ) : (
-                      "Verificar y activar"
+                      "Verificar manualmente"
                     )}
                   </button>
                 </div>
@@ -747,7 +832,7 @@ export default function TwoFactorAuth({
           </div>
         )}
 
-        {/* Step 3: Success */}
+        {/* Step 3: Success - SIMPLIFICADO */}
         {currentStep === 3 && (
           <div className="text-center space-y-6 animate-fadeIn">
             <div className="flex flex-col items-center gap-4">
@@ -769,30 +854,24 @@ export default function TwoFactorAuth({
                   }`}
                 >
                   La autenticación en dos pasos ha sido activada para tu cuenta.
+                  <br />
+                  <span className={`text-xs ${isDarkMode ? "text-gray-500" : "text-gray-400"}`}>
+                    Cerrando automáticamente en 10 segundos...
+                  </span>
                 </p>
               </div>
 
-              <div
-                className={`p-4 rounded-xl w-full max-w-md ${
-                  isDarkMode ? "bg-gray-700" : "bg-yellow-50"
+              {/* ✅ BOTÓN PARA CERRAR MANUALMENTE */}
+              <button
+                onClick={onCancel}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  isDarkMode
+                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
-                <h6
-                  className={`font-semibold text-sm mb-2 ${
-                    isDarkMode ? "text-yellow-400" : "text-yellow-800"
-                  }`}
-                >
-                  ⚠️ Guarda tus códigos de respaldo
-                </h6>
-                <p
-                  className={`text-xs ${
-                    isDarkMode ? "text-yellow-300" : "text-yellow-700"
-                  }`}
-                >
-                  Asegúrate de haber guardado los códigos de respaldo en un
-                  lugar seguro.
-                </p>
-              </div>
+                Cerrar ahora
+              </button>
             </div>
           </div>
         )}

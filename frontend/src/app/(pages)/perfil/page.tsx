@@ -219,7 +219,7 @@ export default function ProfilePage() {
 
     const token = localStorage.getItem("authToken");
     if (!token) {
-      router.push("/login");
+      router.push("/");
       return;
     }
 

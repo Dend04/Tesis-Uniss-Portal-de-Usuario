@@ -23,6 +23,7 @@ export const loginController = async (
       return;
     }
 
+    // Intentar autenticación directamente
     await authService.authenticateUser(username, password);
     const ldapUser = await userService.getUserData(username);
 
@@ -35,7 +36,7 @@ export const loginController = async (
       username: username.trim() || ldapUser.sAMAccountName,
       employeeID: ldapUser.employeeID || "",
       displayName: ldapUser.nombreCompleto,
-      email: ldapUser.email,
+      dn: ldapUser.dn,
       title: ldapUser.title,
     };
 
@@ -55,21 +56,22 @@ export const loginController = async (
   } catch (error: any) {
     console.error("❌ Error en login:", error.message);
 
-    if (
-      error.message.includes("no encontrado") ||
-      error.message.includes("no existe")
-    ) {
-      res
-        .status(404)
-        .json({ success: false, message: "Usuario no encontrado" });
-    } else if (error.message.includes("Credenciales inválidas")) {
-      res
-        .status(401)
-        .json({ success: false, message: "Credenciales inválidas" });
+    // Mensajes específicos basados en el error
+    if (error.message.includes("no encontrado")) {
+      res.status(404).json({ 
+        success: false, 
+        message: "Usuario no encontrado. Verifique su nombre de usuario." 
+      });
+    } else if (error.message.includes("Contraseña incorrecta")) {
+      res.status(401).json({ 
+        success: false, 
+        message: "Contraseña incorrecta. Verifique sus credenciales." 
+      });
     } else {
-      res
-        .status(500)
-        .json({ success: false, message: "Error interno del servidor" });
+      res.status(500).json({ 
+        success: false, 
+        message: "Error interno del servidor" 
+      });
     }
   }
 };

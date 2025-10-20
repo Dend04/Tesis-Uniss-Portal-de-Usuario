@@ -8,7 +8,10 @@ import Image from "next/image";
 import VerificationCodeForm from "@/app/components/forgot-password/VerificationCodeForm";
 import ResetPasswordForm from "@/app/components/forgot-password/ResetPasswordForm";
 import SuccessStep from "@/app/components/forgot-password/SuccessStep";
-import StepsIndicator, { Step, StepStatus } from "@/app/components/activate-account/StepsIndicator";
+import StepsIndicator, {
+  Step,
+  StepStatus,
+} from "@/app/components/activate-account/StepsIndicator";
 import UserIdentifierForm from "@/app/components/forgot-password/UserIdentifierForm";
 
 interface UserData {
@@ -26,7 +29,7 @@ export default function ForgotPasswordPage() {
   const [currentStep, setCurrentStep] = useState<StepType>("identify");
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userIdentifier, setUserIdentifier] = useState("");
-  const [verifiedCode, setVerifiedCode] = useState('');
+  const [verifiedCode, setVerifiedCode] = useState("");
   const containerRef = useRef(null);
 
   // Definir los steps del wizard
@@ -34,34 +37,36 @@ export default function ForgotPasswordPage() {
     {
       id: "identify",
       title: "Identificación",
-      status: (currentStep === "identify" 
-        ? "current" 
-        : ["verify", "reset", "success"].includes(currentStep) 
-        ? "complete" 
+      status: (currentStep === "identify"
+        ? "current"
+        : ["verify", "reset", "success"].includes(currentStep)
+        ? "complete"
         : "upcoming") as StepStatus,
     },
     {
       id: "verify",
       title: "Verificación",
-      status: (currentStep === "verify" 
-        ? "current" 
-        : ["reset", "success"].includes(currentStep) 
-        ? "complete" 
+      status: (currentStep === "verify"
+        ? "current"
+        : ["reset", "success"].includes(currentStep)
+        ? "complete"
         : "upcoming") as StepStatus,
     },
     {
       id: "reset",
       title: "Contraseña",
-      status: (currentStep === "reset" 
-        ? "current" 
-        : currentStep === "success" 
-        ? "complete" 
+      status: (currentStep === "reset"
+        ? "current"
+        : currentStep === "success"
+        ? "complete"
         : "upcoming") as StepStatus,
     },
     {
       id: "success",
       title: "Completado",
-      status: (currentStep === "success" ? "current" : "upcoming") as StepStatus,
+      status: (currentStep === "success"
+        ? "current"
+        : "upcoming") as StepStatus,
     },
   ];
 
@@ -73,7 +78,8 @@ export default function ForgotPasswordPage() {
   };
 
   // Manejar éxito en verificación de código
-   const handleCodeVerified = (code: string) => { // ✅ Acepta el código
+  const handleCodeVerified = (code: string) => {
+    // ✅ Acepta el código
     setVerifiedCode(code);
     setCurrentStep("reset");
   };
@@ -123,19 +129,20 @@ export default function ForgotPasswordPage() {
               )}
             </div>
           </motion.div>
-          
+
           <div className="px-2 sm:px-4">
             <StepsIndicator steps={steps} />
           </div>
-          
+
           {/* Paso 1: Identificación del usuario */}
           {currentStep === "identify" && (
             <UserIdentifierForm
               key="identify-step"
               onUserIdentified={handleUserIdentified}
+              flowType="email"
             />
           )}
-          
+
           {/* Paso 2: Verificación del código */}
           {currentStep === "verify" && userData && (
             <VerificationCodeForm
@@ -145,7 +152,7 @@ export default function ForgotPasswordPage() {
               onCodeVerified={handleCodeVerified}
             />
           )}
-          
+
           {/* Paso 3: Restablecimiento de contraseña */}
           {currentStep === "reset" && userData && (
             <ResetPasswordForm
@@ -157,12 +164,12 @@ export default function ForgotPasswordPage() {
               onPasswordReset={handlePasswordReset}
             />
           )}
-          
+
           {/* Paso 4: Éxito */}
           {currentStep === "success" && (
             <SuccessStep
               key="success-step"
-              onComplete={() => window.location.href = '/'}
+              onComplete={() => (window.location.href = "/")}
             />
           )}
         </AnimatePresence>

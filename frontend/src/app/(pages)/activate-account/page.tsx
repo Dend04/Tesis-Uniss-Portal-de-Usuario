@@ -214,7 +214,7 @@ export default function ActivationPage() {
       // Lógica anterior para cuando no hay verificación
       console.log("Correo de respaldo:", data.email);
       setTimeout(() => {
-        window.location.href = "/login";
+        window.location.href = "/";
       }, 1500);
     }
   };
@@ -229,8 +229,15 @@ export default function ActivationPage() {
   };
 
   // Función para cuando se completa el proceso 
-  const onCompleteActivation = async () => {
-    try {
+  const onCompleteActivation = async (tokenData: { accessToken: string; refreshToken: string }) => {
+     try {
+      if (tokenData.accessToken) {
+        localStorage.setItem('authToken', tokenData.accessToken);
+      }
+      if (tokenData.refreshToken) {
+        localStorage.setItem('refreshToken', tokenData.refreshToken);
+      }
+
       console.log('Enviando correo de bienvenida a:', verifiedEmail);
       
       const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/bienvenido`, {
@@ -251,12 +258,11 @@ export default function ActivationPage() {
       
       if (!emailResponse.ok) {
         console.warn('Correo no enviado, pero continuando:', emailResult.message);
-        // NO lanzar error, solo loguear advertencia
       } else {
         console.log('Correo de bienvenida enviado exitosamente');
       }
 
-      // Siempre redirigir al dashboard
+      // Redirigir al dashboard
       window.location.href = '/dashboard';
       
     } catch (error) {

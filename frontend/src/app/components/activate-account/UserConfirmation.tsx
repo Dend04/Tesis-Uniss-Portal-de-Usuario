@@ -8,7 +8,7 @@ interface UserConfirmationProps {
   email: string;
   username: string;
   userPrincipalName: string;
-  onComplete: () => void;
+  onComplete: (tokenData: { accessToken: string; refreshToken: string }) => void;
 }
 
 export default function UserConfirmation({
@@ -23,10 +23,33 @@ export default function UserConfirmation({
   const handleComplete = async () => {
     setIsCompleting(true);
     try {
-      await onComplete(); // Ahora esperamos a que complete
+      // Generar tokens para el usuario recién creado
+      const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/generate-token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username,
+          userPrincipalName: userPrincipalName,
+          fullName: userData.fullName,
+          userType: userData.type,
+          email: email
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error("Error generando token de acceso");
+      }
+
+      const tokenData = await tokenResponse.json();
+      
+      // Pasar los tokens al callback
+      await onComplete(tokenData);
     } catch (error) {
       console.error("Error:", error);
       // Incluso si hay error, permitimos la redirección
+      await onComplete({ accessToken: '', refreshToken: '' });
     } finally {
       setIsCompleting(false);
     }
@@ -126,7 +149,7 @@ export default function UserConfirmation({
         disabled={isCompleting}
         className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2.5 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium text-center shadow-md hover:shadow-lg disabled:opacity-50 text-sm sm:text-base"
       >
-        {isCompleting ? "Redirigiendo..." : "Ir al Dashboard"}
+        {isCompleting ? "Generando acceso..." : "Ir al Dashboard"}
       </button>
     </div>
   );

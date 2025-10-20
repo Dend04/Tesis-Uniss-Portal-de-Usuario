@@ -1,4 +1,3 @@
-// app/components/config/PinForm.tsx
 "use client";
 
 import { useState, useRef, useEffect, memo, useCallback } from "react";
@@ -8,9 +7,14 @@ interface PinFormProps {
   hasExistingPin: boolean;
   onSuccess: () => void;
   onCancel: () => void;
+  userData?: {
+    sAMAccountName: string;
+    employeeID: string;
+    displayName: string;
+  };
 }
 
-const PinForm = memo(({ isDarkMode, hasExistingPin, onSuccess, onCancel }: PinFormProps) => {
+const PinForm = memo(({ isDarkMode, hasExistingPin, onSuccess, onCancel, userData }: PinFormProps) => {
   const [pin, setPin] = useState<string[]>(Array(6).fill(""));
   const [confirmPin, setConfirmPin] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState("");
@@ -149,6 +153,7 @@ const PinForm = memo(({ isDarkMode, hasExistingPin, onSuccess, onCancel }: PinFo
     return null;
   }, []);
 
+  // ✅ FUNCIÓN ACTUALIZADA: handleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -179,15 +184,75 @@ const PinForm = memo(({ isDarkMode, hasExistingPin, onSuccess, onCancel }: PinFo
     }
 
     try {
-      // TODO: Llamar API para guardar el PIN
-      console.log("PIN a guardar:", fullPin);
+      // ✅ USAR LA API_URL DEL ENTORNO Y EL ENDPOINT CORRECTO
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5550/api';
       
-      // Simular llamada a API
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await fetch(`${apiUrl}/pin/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // ✅ INCLUIR CREDENCIALES PARA LAS COOKIES DE AUTENTICACIÓN
+        body: JSON.stringify({
+          pin: fullPin
+          // ✅ NO enviar employeeID - el backend lo obtendrá del token de autenticación
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || `Error ${response.status}`);
+      }
+
+      if (result.success) {
+        onSuccess();
+      } else {
+        setError(result.error || "Error al guardar el PIN");
+      }
+    } catch (err: any) {
+      console.error('Error al guardar PIN:', err);
       
-      onSuccess();
-    } catch (err) {
-      setError("Error al guardar el PIN. Por favor intenta nuevamente.");
+      if (err.message.includes('Network') || err.message.includes('Failed to fetch')) {
+        setError("Error de conexión. Por favor intenta nuevamente.");
+      } else {
+        setError(err.message || "Error al guardar el PIN");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ✅ NUEVA FUNCIÓN: Eliminar PIN existente
+  const handleRemovePin = async () => {
+    try {
+      setIsSubmitting(true);
+      setError("");
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5550/api';
+      
+      const response = await fetch(`${apiUrl}/pin/remove`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || `Error ${response.status}`);
+      }
+
+      if (result.success) {
+        onSuccess();
+      } else {
+        setError(result.error || "Error al eliminar el PIN");
+      }
+    } catch (err: any) {
+      console.error('Error al eliminar PIN:', err);
+      setError(err.message || "Error al eliminar el PIN");
     } finally {
       setIsSubmitting(false);
     }
@@ -382,30 +447,72 @@ const PinForm = memo(({ isDarkMode, hasExistingPin, onSuccess, onCancel }: PinFo
 
         {/* Botones de acción */}
         <div className="flex gap-3 pt-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isSubmitting}
-            className="flex-1 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 border border-gray-300 dark:border-gray-600"
-          >
-            {hasExistingPin ? "Mantener PIN actual" : "Omitir por ahora"}
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting || pin.join("").length !== 6 || confirmPin.join("").length !== 6}
-            className="flex-1 px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Guardando...
-              </>
-            ) : hasExistingPin ? (
-              "Actualizar PIN"
-            ) : (
-              "Guardar PIN"
-            )}
-          </button>
+          {hasExistingPin ? (
+            <>
+              <button
+                type="button"
+                onClick={handleRemovePin}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-3 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Eliminando...
+                  </>
+                ) : (
+                  "Eliminar PIN"
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 border border-gray-300 dark:border-gray-600"
+              >
+                Mantener PIN actual
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || pin.join("").length !== 6 || confirmPin.join("").length !== 6}
+                className="flex-1 px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Actualizando...
+                  </>
+                ) : (
+                  "Actualizar PIN"
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 border border-gray-300 dark:border-gray-600"
+              >
+                Omitir por ahora
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || pin.join("").length !== 6 || confirmPin.join("").length !== 6}
+                className="flex-1 px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Guardando...
+                  </>
+                ) : (
+                  "Guardar PIN"
+                )}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Información adicional */}

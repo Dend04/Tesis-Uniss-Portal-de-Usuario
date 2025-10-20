@@ -23,6 +23,9 @@ import passwordRoutes from "./routes/password.routes";
 import dualVerificationRoutes from './routes/dual-verification.routes';
 import logRoutes from "./routes/log.routes";
 import './jobs/passwordExpiryCron';
+import twoFARouter from './routes/2fa.routes';
+import pinRoutes from "./routes/pin.routes";
+import guestUserRoutes from "./routes/inviteAccount.routes";
 
 // Cargar variables de entorno desde el archivo .env
 dotenv.config();
@@ -80,6 +83,10 @@ app.use('/api/usernameOptions', usernameOptions);
 app.use("/api/password", passwordRoutes);
 app.use('/api/verify', dualVerificationRoutes);
 app.use("/api/log",logRoutes);
+app.use('/api/2fa', twoFARouter);
+app.use("/api/pin", pinRoutes);
+app.use('/api', guestUserRoutes);
+
 
 // Endpoint de health check para verificar que el servidor está funcionando
 app.get('/health', (_: Request, res: Response) => {

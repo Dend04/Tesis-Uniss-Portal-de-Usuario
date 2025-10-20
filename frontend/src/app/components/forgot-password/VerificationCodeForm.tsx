@@ -17,6 +17,31 @@ interface VerificationCodeFormProps {
   onCodeVerified: (code: string) => void
 }
 
+// Función para enmascarar el email de manera inteligente
+const maskEmail = (email: string): string => {
+  if (!email) return "";
+  
+  const [username, domain] = email.split('@');
+  if (!username || !domain) return email;
+
+  if (username.length <= 3) {
+    // Si el username tiene 3 o menos caracteres, mostrar solo el primero
+    const firstChar = username.substring(0, 1);
+    const asterisks = '*'.repeat(Math.max(username.length - 1, 1));
+    return `${firstChar}${asterisks}@${domain}`;
+  } else if (username.length <= 6) {
+    // Si el username tiene entre 4 y 6 caracteres, mostrar primeros 3 + asteriscos
+    const visiblePart = username.substring(0, 3);
+    const asterisks = '*'.repeat(username.length - 3);
+    return `${visiblePart}${asterisks}@${domain}`;
+  } else {
+    // Si el username tiene más de 6 caracteres, mostrar primeros 3 + ... + últimos 3
+    const firstPart = username.substring(0, 3);
+    const lastPart = username.substring(username.length - 3);
+    return `${firstPart}...${lastPart}@${domain}`;
+  }
+};
+
 export default function VerificationCodeForm({
   userData,
   onBack,
@@ -27,6 +52,9 @@ export default function VerificationCodeForm({
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  // Email enmascarado
+  const maskedEmail = maskEmail(userData.email);
 
   useEffect(() => {
     if (inputRefs.current[0]) {
@@ -149,7 +177,7 @@ const handleVerify = async (e: React.FormEvent) => {
           <p className="text-sm text-blue-800">
             <strong>Usuario:</strong> {userData.displayName || userData.sAMAccountName}
             <br />
-            <strong>Correo:</strong> {userData.email}
+            <strong>Correo:</strong> {maskedEmail}
           </p>
         </div>
         
