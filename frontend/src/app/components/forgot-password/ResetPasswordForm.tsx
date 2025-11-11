@@ -24,6 +24,7 @@ interface ResetPasswordFormProps {
   verifiedCode: string;
   onBack: () => void;
   onPasswordReset: () => void;
+  flowType?: 'email' | 'pin' | '2fa'; // ✅ Nuevo prop para identificar el flujo
 }
 
 const PasswordStrength = ({ 
@@ -76,6 +77,7 @@ export default function ResetPasswordForm({
   verifiedCode,
   onBack,
   onPasswordReset,
+  flowType = 'email' // ✅ Valor por defecto
 }: ResetPasswordFormProps) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -112,39 +114,105 @@ export default function ResetPasswordForm({
     setIsSubmitting(true);
 
     try {
-      // Llamar al endpoint de reset-password que creamos
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/reset-password`, {
+      let endpoint = "";
+      let requestBody = {};
+
+      // ✅ DETERMINAR ENDPOINT Y BODY SEGÚN EL FLUJO
+      switch (flowType) {
+        case 'pin':
+          endpoint = "/pin/reset-password";
+          requestBody = {
+            userIdentifier,
+            newPassword
+            // No necesita verifiedCode porque ya se verificó el PIN
+          };
+          break;
+
+        case '2fa':
+          endpoint = "/2fa/reset-password"; // ✅ Asumiendo que existe este endpoint
+          requestBody = {
+            userIdentifier,
+            newPassword
+            // Para 2FA, podrías necesitar el token si lo tienes
+          };
+          break;
+
+        case 'email':
+        default:
+          endpoint = "/email/reset-password";
+          requestBody = {
+            userIdentifier,
+            code: verifiedCode,
+            newPassword
+          };
+          break;
+      }
+
+      console.log(`🔄 Enviando request a: ${endpoint}`, { 
+        flowType, 
+        userIdentifier,
+        hasCode: flowType === 'email' ? !!verifiedCode : 'N/A'
+      });
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          userIdentifier,
-          code: verifiedCode,
-          newPassword,
-          // El código ya fue verificado en el paso anterior
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      const result = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al restablecer la contraseña");
+        throw new Error(result.message || `Error al restablecer la contraseña (${response.status})`);
       }
 
-      const result = await response.json();
-
       if (result.success) {
+        console.log("✅ Contraseña restablecida exitosamente");
         onPasswordReset();
       } else {
         throw new Error(result.message || "Error en el restablecimiento");
       }
     } catch (err: any) {
-      console.error("Error restableciendo contraseña:", err);
+      console.error("❌ Error restableciendo contraseña:", err);
       setError(err.message || "Error al restablecer la contraseña. Intente nuevamente.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // ✅ Obtener título, descripción y estilos según el flujo
+  const getFlowInfo = () => {
+    switch (flowType) {
+      case 'pin':
+        return {
+          title: "Nueva Contraseña - Método PIN",
+          description: "Establezca una nueva contraseña segura para su cuenta (verificado por PIN)",
+          badge: {
+            text: 'Verificado con PIN',
+            class: 'bg-purple-100 text-purple-800'
+          }
+        };
+      case '2fa':
+        return {
+          title: "Nueva Contraseña - Método 2FA", 
+          description: "Establezca una nueva contraseña segura para su cuenta (verificado por 2FA)",
+          badge: {
+            text: 'Verificado con 2FA',
+            class: 'bg-orange-100 text-orange-800'
+          }
+        };
+      default:
+        return {
+          title: "Nueva Contraseña",
+          description: "Establezca una nueva contraseña segura para su cuenta",
+          badge: null
+        };
+    }
+  };
+
+  const flowInfo = getFlowInfo();
 
   return (
     <motion.div
@@ -155,10 +223,29 @@ export default function ResetPasswordForm({
     >
       <div className="text-center mt-4 sm:mt-6 mb-4 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
-          Nueva Contraseña
+          {flowInfo.title}
         </h2>
         <p className="text-gray-600">
-          Establezca una nueva contraseña segura para su cuenta
+          {flowInfo.description}
+        </p>
+        
+        {/* ✅ Indicador del método de verificación */}
+        {flowInfo.badge && (
+          <div className={`mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${flowInfo.badge.class}`}>
+            {flowInfo.badge.text}
+          </div>
+        )}
+      </div>
+
+      {/* ✅ Información del usuario y método */}
+      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-6">
+        <p className="text-sm text-blue-800 font-medium">
+          <strong>Usuario:</strong> {userData.displayName || userData.sAMAccountName}
+        </p>
+        <p className="text-sm text-blue-600 mt-1">
+          <strong>Método:</strong> {flowType === 'email' ? 'Correo Electrónico' : 
+                                 flowType === 'pin' ? 'PIN de Seguridad' : 
+                                 'Autenticación de Dos Factores'}
         </p>
       </div>
 
@@ -180,11 +267,13 @@ export default function ResetPasswordForm({
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
               required
+              disabled={isSubmitting}
             />
             <button
               type="button"
               onClick={() => setShowNewPassword(!showNewPassword)}
               className="absolute right-2 sm:right-3 top-2 sm:top-3"
+              disabled={isSubmitting}
             >
               {showNewPassword ? (
                 <EyeSlashIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
@@ -212,11 +301,13 @@ export default function ResetPasswordForm({
                 passwordError ? "border-red-500" : "border-gray-300"
               }`}
               required
+              disabled={isSubmitting}
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="absolute right-2 sm:right-3 top-2 sm:top-3"
+              disabled={isSubmitting}
             >
               {showConfirmPassword ? (
                 <EyeSlashIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
@@ -255,6 +346,25 @@ export default function ResetPasswordForm({
           </button>
         </div>
       </form>
+
+      {/* ✅ Información adicional según el método */}
+      {flowType === 'pin' && (
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h4 className="font-semibold text-gray-800 text-sm mb-2">🔒 Seguridad del PIN</h4>
+          <p className="text-xs text-gray-600">
+            Su PIN de seguridad ha sido verificado correctamente. La nueva contraseña reemplazará la anterior de forma inmediata.
+          </p>
+        </div>
+      )}
+
+      {flowType === '2fa' && (
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h4 className="font-semibold text-gray-800 text-sm mb-2">🔐 Autenticación de Dos Factores</h4>
+          <p className="text-xs text-gray-600">
+            Su identidad ha sido verificada mediante autenticación de dos factores. La nueva contraseña será efectiva inmediatamente.
+          </p>
+        </div>
+      )}
     </motion.div>
   );
 }

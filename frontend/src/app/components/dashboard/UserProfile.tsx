@@ -2,6 +2,9 @@
 import { memo, useMemo, useState, useEffect, useCallback } from 'react';
 import { UserInfo } from '@/types';
 import IconLoader from '../IconLoader';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import EmployeeIDModal from '../modals/EmployeeIDModal';
+import EmailForm from '../config/EmailForm';
 
 // Mapa de iconos para reutilización
 const iconMap = {
@@ -13,11 +16,12 @@ const iconMap = {
   refresh: 'ArrowPathIcon'
 } as const;
 
-// Tipo para los items de información
+// ✅ CORRECCIÓN: Agregar la propiedad 'missing' a InfoItemConfig
 interface InfoItemConfig {
   icon: keyof typeof iconMap;
   label: string;
   value: string;
+  missing?: boolean; // ✅ AGREGAR ESTA LÍNEA
 }
 
 interface BackendUserData {
@@ -50,20 +54,6 @@ const carreraCodes: Record<string, string> = {
   'D': 'Desconocido',
   'ED': 'Enseñanza a Distancia',
   'Vn': 'Vespertino Nocturno'
-};
-
-// Función para expandir códigos de carrera
-const expandCarreraCode = (carrera: string): string => {
-  if (!carrera) return 'No disponible';
-  
-  const match = carrera.match(/\(([^)]+)\)$/);
-  if (match && match[1]) {
-    const code = match[1];
-    const expanded = carreraCodes[code] || code;
-    return carrera.replace(`(${code})`, `(${expanded})`);
-  }
-  
-  return carrera;
 };
 
 // Función de transformación de datos con valores por defecto
@@ -288,7 +278,7 @@ const useUserProfile = () => {
 
         if (!response.ok) {
           if (response.status === 401) {
-            localStorage.removeItem('authToken');
+            /* localStorage.removeItem('authToken'); */
             localStorage.removeItem('trabajador');
             throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
           }
@@ -315,21 +305,25 @@ const useUserProfile = () => {
 };
 
 // Componente memoizado optimizado
-const InfoItem = memo(({ icon, label, value, darkMode }: { 
+const InfoItem = memo(({ icon, label, value, darkMode, missing = false }: { 
   icon?: keyof typeof iconMap; 
   label: string; 
   value: string;
   darkMode: boolean;
+  missing?: boolean;
 }) => {
   const bgColor = darkMode ? "bg-gray-700" : "bg-gray-100";
   const textColor = darkMode ? "text-gray-100" : "text-gray-800";
   const labelColor = darkMode ? "text-gray-300" : "text-gray-600";
   const iconColor = darkMode ? "text-uniss-gold" : "text-uniss-blue";
+  const missingColor = "text-yellow-600 dark:text-yellow-400";
 
   return (
     <div
       role="listitem"
-      className={`flex items-start gap-4 p-4 rounded-xl ${bgColor} ${textColor} transition-all duration-200 hover:shadow-md`}
+      className={`flex items-start gap-4 p-4 rounded-xl ${bgColor} ${textColor} transition-all duration-200 hover:shadow-md relative ${
+        missing ? 'ring-2 ring-yellow-500' : ''
+      }`}
       aria-label={`${label}: ${value}`}
     >
       {icon && (
@@ -338,11 +332,33 @@ const InfoItem = memo(({ icon, label, value, darkMode }: {
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold ${labelColor} mb-1`}>
-          {label}
-        </p>
-        <div className="text-base font-medium break-words">
+        <div className="flex items-center gap-2 mb-1">
+          <p className={`text-sm font-semibold ${labelColor}`}>
+            {label}
+          </p>
+          {missing && (
+            <span className={`text-xs ${missingColor} font-medium flex items-center gap-1`}>
+              <ExclamationTriangleIcon className="w-3 h-3" />
+              Pendiente
+            </span>
+          )}
+        </div>
+        <div className={`text-base font-medium break-words ${missing ? missingColor : ''}`}>
           {value}
+          {missing && (
+            <button
+              onClick={() => {
+                if (label.includes('Carnet') || label.includes('Identificación')) {
+                  // Esto se manejará en el componente padre
+                } else if (label.includes('Correo Personal')) {
+                  // Esto se manejará en el componente padre
+                }
+              }}
+              className="ml-2 text-sm text-blue-500 hover:text-blue-600 underline"
+            >
+              Completar
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -369,6 +385,61 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
     hasDualOccupation,
     resetVerification 
   } = useDualVerification();
+
+  // ✅ ESTADOS PARA MODALES
+  const [showEmployeeIDModal, setShowEmployeeIDModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [needsEmployeeID, setNeedsEmployeeID] = useState(false);
+  const [needsEmail, setNeedsEmail] = useState(false);
+
+  // ✅ DETECTAR CAMPOS FALTANTES
+  useEffect(() => {
+    const checkMissingFields = () => {
+      const employeeIDMissing = !userInfo.id || 
+                               userInfo.id === 'ID no disponible' || 
+                               userInfo.id === '';
+      
+      const emailMissing = !userInfo.backupEmail || 
+                          userInfo.backupEmail === 'Correo personal no disponible' || 
+                          userInfo.backupEmail === '';
+
+      setNeedsEmployeeID(employeeIDMissing);
+      setNeedsEmail(emailMissing);
+
+      // Mostrar modales automáticamente si faltan campos
+      if (employeeIDMissing) {
+        setTimeout(() => setShowEmployeeIDModal(true), 1000);
+      } else if (emailMissing) {
+        setTimeout(() => setShowEmailModal(true), 1500);
+      }
+    };
+
+    if (userInfo) {
+      checkMissingFields();
+    }
+  }, [userInfo]);
+
+  // ✅ MANEJAR ÉXITO DE EMPLOYEE ID
+  const handleEmployeeIDSuccess = useCallback((employeeID: string) => {
+    setShowEmployeeIDModal(false);
+    setNeedsEmployeeID(false);
+    
+    // Recargar la página para actualizar los datos
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  }, []);
+
+  // ✅ MANEJAR ÉXITO DE EMAIL
+  const handleEmailSuccess = useCallback((newEmail: string) => {
+    setShowEmailModal(false);
+    setNeedsEmail(false);
+    
+    // Actualizar el userInfo localmente
+    // Nota: userInfo es inmutable, así que en realidad necesitaríamos
+    // actualizar el estado del componente padre o recargar los datos
+    window.location.reload();
+  }, []);
 
   const bgColor = isDarkMode ? "bg-gray-800" : "bg-white";
   const statusBgColor = isDarkMode ? "bg-gray-700 text-green-400" : "bg-green-100 text-green-800";
@@ -407,17 +478,51 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
     return userInfo.status || 'Usuario';
   };
 
+  // ✅ MOSTRAR BADGE SI FALTAN CAMPOS
+  const MissingFieldsBadge = () => {
+    if (!needsEmployeeID && !needsEmail) return null;
+
+    return (
+      <div className="absolute top-4 right-4">
+        <div className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white text-xs font-medium rounded-full animate-pulse">
+          <ExclamationTriangleIcon className="w-3 h-3" />
+          {needsEmployeeID && needsEmail ? 'Completar perfil' : 'Campo pendiente'}
+        </div>
+      </div>
+    );
+  };
+
   const getWorkerInfoItems = (): InfoItemConfig[] => [
-    { icon: 'identification', label: 'Identificación', value: userInfo.id || 'No disponible' },
+    { 
+      icon: 'identification', 
+      label: 'Identificación', 
+      value: userInfo.id || 'No disponible',
+      missing: needsEmployeeID 
+    },
     { icon: 'user', label: 'Nombre de Usuario', value: userInfo.username || 'No disponible' },
     { icon: 'email', label: 'Correo Institucional', value: userInfo.universityEmail || 'No disponible' },
-    { icon: 'user', label: 'Correo Personal', value: userInfo.backupEmail || 'No disponible' },
+    { 
+      icon: 'user', 
+      label: 'Correo Personal', 
+      value: userInfo.backupEmail || 'No disponible',
+      missing: needsEmail 
+    },
     { icon: 'clock', label: 'Último acceso', value: userInfo.lastLogin || 'Nunca' }
   ];
 
   const getStudentInfoItems = (): InfoItemConfig[] => [
-    { icon: 'identification', label: 'Carnet de Identidad', value: userInfo.id || 'No disponible' },
-    { icon: 'user', label: 'Correo Personal', value: userInfo.backupEmail || 'No disponible' },
+    { 
+      icon: 'identification', 
+      label: 'Carnet de Identidad', 
+      value: userInfo.id || 'No disponible',
+      missing: needsEmployeeID 
+    },
+    { 
+      icon: 'user', 
+      label: 'Correo Personal', 
+      value: userInfo.backupEmail || 'No disponible',
+      missing: needsEmail 
+    },
     { icon: 'email', label: 'Correo Institucional', value: userInfo.universityEmail || 'No disponible' },
     { icon: 'user', label: 'Nombre de Usuario', value: userInfo.username || 'No disponible' },
     { icon: 'clock', label: 'Último acceso', value: userInfo.lastLogin || 'Nunca' }
@@ -425,7 +530,64 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
 
   const infoItems = useMemo((): InfoItemConfig[] => {
     return userInfo.isEmployee ? getWorkerInfoItems() : getStudentInfoItems();
-  }, [userInfo]);
+  }, [userInfo, needsEmployeeID, needsEmail]);
+
+  // ✅ INFOITEM MEJORADO CON MANEJADORES DE CLICK
+  const EnhancedInfoItem = memo(({ item, index }: { 
+    item: InfoItemConfig; 
+    index: number;
+  }) => {
+    const handleClick = () => {
+      if (item.missing) {
+        if (item.label.includes('Carnet') || item.label.includes('Identificación')) {
+          setShowEmployeeIDModal(true);
+        } else if (item.label.includes('Correo Personal')) {
+          setShowEmailModal(true);
+        }
+      }
+    };
+
+    return (
+      <InfoItem
+        key={`${item.label}-${index}`}
+        icon={item.icon}
+        label={item.label}
+        value={item.value}
+        darkMode={isDarkMode}
+        missing={item.missing}
+      />
+    );
+  });
+
+  EnhancedInfoItem.displayName = 'EnhancedInfoItem';
+
+  const infoList = useMemo(() => (
+    <div className="space-y-4" role="list" aria-label="Información del usuario">
+      {infoItems.map((item, index) => (
+        <div 
+          key={`${item.label}-${index}`}
+          onClick={() => {
+            if (item.missing) {
+              if (item.label.includes('Carnet') || item.label.includes('Identificación')) {
+                setShowEmployeeIDModal(true);
+              } else if (item.label.includes('Correo Personal')) {
+                setShowEmailModal(true);
+              }
+            }
+          }}
+          className={item.missing ? 'cursor-pointer' : ''}
+        >
+          <InfoItem
+            icon={item.icon}
+            label={item.label}
+            value={item.value}
+            darkMode={isDarkMode}
+            missing={item.missing}
+          />
+        </div>
+      ))}
+    </div>
+  ), [infoItems, isDarkMode]);
 
   // ✅ CONTENIDO DEL PERFIL CON AVATAR COMPLETO
   const profileContent = useMemo(() => (
@@ -484,7 +646,7 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
           <div className="flex flex-col items-center gap-1">
             <span className="text-sm font-medium text-blue-500 flex items-center gap-1">
               <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-              Datos verificados en SIGENU
+              Graduado de la Universidad
             </span>
             {studentStatus && (
               <span className={`text-xs ${isGraduated ? 'text-orange-500' : 'text-green-500'} font-medium`}>
@@ -525,28 +687,43 @@ const UserProfile = memo(({ userInfo, isDarkMode, className = '' }: UserProfileP
     statusBgColor, buttonBgColor, resetVerification, getStatusText
   ]);
 
-  const infoList = useMemo(() => (
-    <div className="space-y-4" role="list" aria-label="Información del usuario">
-      {infoItems.map((item, index) => (
-        <InfoItem
-          key={`${item.label}-${index}`}
-          icon={item.icon}
-          label={item.label}
-          value={item.value}
-          darkMode={isDarkMode}
-        />
-      ))}
-    </div>
-  ), [infoItems, isDarkMode]);
-
   return (
-    <section
-      className={`lg:w-2/5 rounded-xl shadow-lg p-6 transition-colors ${bgColor} ${className} relative`}
-      aria-labelledby="user-info-heading"
-    >
-      {profileContent}
-      {infoList}
-    </section>
+    <>
+      <section
+        className={`lg:w-2/5 rounded-xl shadow-lg p-6 transition-colors ${bgColor} ${className} relative`}
+        aria-labelledby="user-info-heading"
+      >
+        <MissingFieldsBadge />
+        {profileContent}
+        {infoList}
+      </section>
+
+      {/* ✅ MODAL PARA EMPLOYEE ID */}
+      <EmployeeIDModal
+        isOpen={showEmployeeIDModal}
+        onClose={() => setShowEmployeeIDModal(false)}
+        onSuccess={handleEmployeeIDSuccess}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* ✅ MODAL PARA EMAIL */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-xl shadow-xl w-full max-w-2xl ${
+            isDarkMode ? "bg-gray-800" : "bg-white"
+          }`}>
+            <div className="p-6">
+              <EmailForm
+                isDarkMode={isDarkMode}
+                currentEmail={userInfo.backupEmail || ''}
+                onCancel={() => setShowEmailModal(false)}
+                onSuccess={handleEmailSuccess}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 });
 

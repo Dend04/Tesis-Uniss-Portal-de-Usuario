@@ -1,6 +1,5 @@
 import express from 'express';
-import { debugVerificationCodes, enviarAlertasManuales, generarReporteExpiración, getEmailStats, handleForgotPassword, sendChangeEmailVerificationCode, sendPasswordAlert, sendVerificationCodeChangeEmail, sendVerificationCodeEmailPassword, sendWelcomeEmailToUser, verEstadoCache, verifyAndUpdateEmail, verifyCode, verifyCodeAndResetPassword } from '../controllers/email.controller';
-import { sendWelcomeEmail } from '../services/emailService';
+import { checkUserExists, debugVerificationCodes, enviarAlertasManuales, generarReporteExpiración, getEmailStats, handleForgotPassword, sendChangeEmailVerificationCode, sendPasswordAlert, sendVerificationCodeChangeEmail, sendVerificationCodeEmailPassword, sendWelcomeEmailToUser, verEstadoCache, verifyAndUpdateEmail, verifyCode, verifyCodeAndResetPassword } from '../controllers/email.controller';
 import { verifyTokenMiddleware } from '../middlewares/auth.middleware';
 
 
@@ -27,5 +26,7 @@ router.get('/expiración/estado-cache', verEstadoCache);
 router.post('/forgot-password', handleForgotPassword);
 router.post('/reset-password', verifyCodeAndResetPassword);
 
+// ✅ NUEVA RUTA PARA VERIFICAR USUARIO
+router.get('/check-user/:identifier', checkUserExists);
 
 export default router;

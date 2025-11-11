@@ -1,12 +1,9 @@
-// app/forgot-password/2fa/page.tsx
+// app/forgot-password/2fa/page.tsx - VERSIÓN CORREGIDA
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import StepsIndicator, {
   Step,
@@ -34,8 +31,6 @@ export default function ForgotPassword2FAPage() {
   const [currentStep, setCurrentStep] = useState<StepType>("identify");
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userIdentifier, setUserIdentifier] = useState("");
-  const [no2FAError, setNo2FAError] = useState(false);
-  const [countdown, setCountdown] = useState(30);
   const containerRef = useRef(null);
 
   // Definir los steps del wizard
@@ -76,27 +71,14 @@ export default function ForgotPassword2FAPage() {
     },
   ];
 
-  // Countdown para redirección automática
-  useEffect(() => {
-    if (no2FAError && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (no2FAError && countdown === 0) {
-      handleManualRedirect();
-    }
-  }, [no2FAError, countdown]);
-
-  // Manejar éxito en identificación de usuario
+  // ✅ CORREGIDO: Manejar éxito en identificación de usuario
   const handleUserIdentified = async (data: UserData, identifier: string) => {
     setUserData(data);
     setUserIdentifier(identifier);
-
-    // Verificar si el usuario tiene 2FA configurado
-    if (data.has2FA) {
-      setCurrentStep("verify-2fa");
-    } else {
-      setNo2FAError(true);
-    }
+    
+    // ✅ EL UserIdentifierForm YA verificó que el usuario tiene 2FA
+    // Pasamos directamente al paso de verificación 2FA
+    setCurrentStep("verify-2fa");
   };
 
   // Manejar éxito en verificación de 2FA
@@ -112,11 +94,6 @@ export default function ForgotPassword2FAPage() {
     setTimeout(() => {
       window.location.href = "/";
     }, 3000);
-  };
-
-  // Redirigir manualmente si no tiene 2FA
-  const handleManualRedirect = () => {
-    window.location.href = "/forgot-password";
   };
 
   // Corrección para la animación del logo
@@ -164,8 +141,8 @@ export default function ForgotPassword2FAPage() {
             <StepsIndicator steps={steps} />
           </div>
 
-          {/* Paso 1: Identificación del usuario */}
-          {currentStep === "identify" && !no2FAError && (
+          {/* ✅ CORREGIDO: Solo mostrar UserIdentifierForm en el paso 1 */}
+          {currentStep === "identify" && (
             <UserIdentifierForm
               key="identify-step"
               onUserIdentified={handleUserIdentified}
@@ -173,42 +150,7 @@ export default function ForgotPassword2FAPage() {
             />
           )}
 
-          {/* Mensaje de error cuando el usuario no tiene 2FA */}
-          {no2FAError && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="px-4 md:px-8 py-8 text-center"
-            >
-              <ExclamationTriangleIcon className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                2FA No Configurado
-              </h2>
-              <p className="text-gray-600 mb-6">
-                No puedes usar este método para cambiar tu contraseña porque no
-                has configurado la autenticación de dos factores.
-              </p>
-              <p className="text-gray-500 text-sm mb-6">
-                Serás redirigido automáticamente a la página de recuperación en{" "}
-                <span className="font-bold">{countdown} segundos</span>.
-              </p>
-
-              <div className="space-y-3">
-                <button
-                  onClick={handleManualRedirect}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Volver Ahora
-                </button>
-
-                <p className="text-xs text-gray-500">
-                  O espera a ser redirigido automáticamente...
-                </p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Paso 2: Verificación del código 2FA */}
+          {/* ✅ CORREGIDO: Solo mostrar TwoFactorVerification si tenemos userData */}
           {currentStep === "verify-2fa" && userData && (
             <TwoFactorVerification
               key="verify-2fa-step"
@@ -228,6 +170,7 @@ export default function ForgotPassword2FAPage() {
               verifiedCode="2fa-verified"
               onBack={() => setCurrentStep("verify-2fa")}
               onPasswordReset={handlePasswordReset}
+              flowType="2fa"
             />
           )}
 

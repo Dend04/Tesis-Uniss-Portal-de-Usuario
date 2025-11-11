@@ -1,5 +1,6 @@
 // src/utils/ldap.utils.ts
 import ldap, {
+  Change,
   Client,
   SearchEntry as LdapSearchEntry,
   SearchCallbackResponse,
@@ -17,6 +18,11 @@ export interface LDAPConnectionPool {
   getConnection(): Promise<LDAPClient>;
   releaseConnection(client: LDAPClient): void;
   closeAll(): void;
+}
+
+export interface LdapAttribute {
+  type: string;
+  values: string | string[];
 }
 
 /**
@@ -539,15 +545,24 @@ export interface LDAPConfig {
  * Obtiene la configuración LDAP desde variables de entorno
  * @returns Configuración LDAP
  */
-export const getLDAPConfig = (): LDAPConfig => ({
-  url: process.env.LDAP_URL || "ldaps://10.16.13.8:636",
-  bindDN:
-    process.env.LDAP_ADMIN_DN ||
-    "CN=api-user,OU=ServiceAccounts,DC=uniss,DC=edu,DC=cu",
-  password: process.env.LDAP_ADMIN_PASSWORD || "securePassword123",
-  baseDN: "DC=uniss,DC=edu,DC=cu",
-  timeout: 30000,
-});
+export const getLDAPConfig = (): LDAPConfig => {
+  const ldapAdminDN = process.env.LDAP_ADMIN_DN;
+  const ldapAdminPassword = process.env.LDAP_ADMIN_PASSWORD;
+  const ldapUrl = process.env.LDAP_URL;
+
+  if (!ldapAdminDN || !ldapAdminPassword || !ldapUrl) {
+    throw new Error("❌ Configuración LDAP incompleta en variables de entorno");
+  }
+
+
+  return {
+    url: ldapUrl,
+    bindDN: ldapAdminDN, // ✅ MISMO USUARIO QUE CREACIÓN
+    password: ldapAdminPassword, // ✅ MISMA CONTRASEÑA
+    baseDN: process.env.LDAP_BASE_DN_Propio || "DC=uniss,DC=edu,DC=cu",
+    timeout: 30000,
+  };
+};
 
 /**
  * Crea una conexión LDAP con la configuración proporcionada
@@ -595,4 +610,101 @@ export const checkConnection = async (client: Client): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Verifica si un usuario ya es miembro de un grupo LDAP
+ * @param userDN DN del usuario
+ * @param groupDN DN del grupo
+ * @returns Promesa que resuelve a true si el usuario es miembro del grupo
+ */
+export async function isUserInGroup(userDN: string, groupDN: string): Promise<boolean> {
+  const pool = getLDAPPool();
+  let client: LDAPClient | null = null;
+  
+  try {
+    client = await pool.getConnection();
+    
+    return new Promise((resolve, reject) => {
+      client!.search(groupDN, {
+        scope: 'base',
+        filter: '(objectClass=group)',
+        attributes: ['member']
+      }, (err, res) => {
+        if (err) {
+          return reject(err);
+        }
+
+        let isMember = false;
+        
+        res.on('searchEntry', (entry) => {
+          const memberAttr = entry.attributes.find((attr: LdapAttribute) => attr.type === 'member');
+          if (memberAttr && memberAttr.values) {
+            // ✅ CORREGIDO: Manejar tanto string como string[]
+            const members = Array.isArray(memberAttr.values) 
+              ? memberAttr.values 
+              : [memberAttr.values];
+            
+            isMember = members.some((member: string) => 
+              member.toLowerCase() === userDN.toLowerCase()
+            );
+          }
+        });
+        
+        res.on('error', (error) => {
+          reject(error);
+        });
+        
+        res.on('end', () => {
+          resolve(isMember);
+        });
+      });
+    });
+  } finally {
+    if (client) {
+      pool.releaseConnection(client);
+    }
+  }
+}
+
+/**
+ * Agrega un usuario a un grupo LDAP
+ * @param userDN DN del usuario a agregar
+ * @param groupDN DN del grupo destino
+ * @returns Promesa que se resuelve cuando la operación es completada
+ */
+export async function addUserToGroup(userDN: string, groupDN: string): Promise<void> {
+  const pool = getLDAPPool();
+  let client: LDAPClient | null = null;
+  
+  try {
+    client = await pool.getConnection();
+    
+    return new Promise((resolve, reject) => {
+      const change = new Change({
+        operation: 'add',
+        modification: {
+          member: userDN
+        }
+      });
+
+      client!.modify(groupDN, change, (err) => {
+        if (err) {
+          // Si el usuario ya es miembro (LDAP constraint violation)
+          if (err.name === 'ConstraintViolationError' || err.code === 19) {
+            console.log(`✅ Usuario ya es miembro del grupo: ${groupDN}`);
+            resolve();
+          } else {
+            reject(err);
+          }
+        } else {
+          resolve();
+        }
+      });
+    });
+  } finally {
+    if (client) {
+      pool.releaseConnection(client);
+    }
+  }
+}
 

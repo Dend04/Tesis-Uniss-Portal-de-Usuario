@@ -1,0 +1,72 @@
+// prisma/bd_local.prisma
+generator client_portal {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client_portal"
+}
+
+datasource portal {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_PORTAL")
+}
+
+// ... tus modelos permanecen igual ...
+model Dispositivo {
+  id        Int      @id @default(autoincrement())
+  mac       String   @unique
+  nombre    String?
+  tipo      TipoDispositivo
+  username  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  logs Log[]
+
+  @@map("dispositivo")
+}
+
+model Log {
+  id           Int        @id @default(autoincrement())
+  accion       String
+  username     String
+  ip           String?
+  userAgent    String?
+  dispositivo  String?
+  exitoso      Boolean    @default(true)
+  detalles     String?
+  createdAt    DateTime   @default(now())
+
+  dispositivoId Int?
+  dispositivoRel Dispositivo? @relation(fields: [dispositivoId], references: [id])
+
+  @@map("log")
+}
+
+model Notificacion {
+  id          Int        @id @default(autoincrement())
+  titulo      String
+  mensaje     String
+  username    String
+  leida       Boolean    @default(false)
+  tipo        TipoNotificacion @default(INFORMATIVA)
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  leidaAt     DateTime?
+
+  @@map("notificacion")
+}
+
+enum TipoDispositivo {
+  CELULAR
+  TABLET
+  LAPTOP
+  PC
+  MINI_PC
+  OTRO
+}
+
+enum TipoNotificacion {
+  INFORMATIVA
+  ADVERTENCIA
+  URGENTE
+  SISTEMA
+}

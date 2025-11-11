@@ -374,6 +374,20 @@ const getSAMAccountNameFromToken = (): string | null => {
   }
 };
 
+// ✅ FUNCIÓN PARA OBTENER TOKEN DE AUTENTICACIÓN
+const getAuthToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+
+  const tokenNames = ['authToken', 'token', 'userToken', 'accessToken'];
+  for (const tokenName of tokenNames) {
+    const token = localStorage.getItem(tokenName);
+    if (token) {
+      return token;
+    }
+  }
+  return null;
+};
+
 export default function ConfigPage() {
   const { isDarkMode } = useDarkModeContext();
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
@@ -382,6 +396,7 @@ export default function ConfigPage() {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showPinForm, setShowPinForm] = useState(false);
   const [hasPin, setHasPin] = useState(false);
+  const [pinLoading, setPinLoading] = useState(true); // ✅ NUEVO: estado de carga del PIN
   const [loadingStates, setLoadingStates] = useState({
     twoFA: false,
     pin: false,
@@ -397,50 +412,95 @@ export default function ConfigPage() {
   const searchParams = useSearchParams();
 
   // ✅ EFECTO CORREGIDO PARA VERIFICAR ESTADO DEL 2FA
-useEffect(() => {
-  const check2FAStatus = async () => {
-    try {
-      const sAMAccountName = getSAMAccountNameFromToken();
-      
-      if (!sAMAccountName) {
-        console.warn("⚠️ No se pudo obtener sAMAccountName del token");
+  useEffect(() => {
+    const check2FAStatus = async () => {
+      try {
+        const sAMAccountName = getSAMAccountNameFromToken();
+        
+        if (!sAMAccountName) {
+          console.warn("⚠️ No se pudo obtener sAMAccountName del token");
+          setTwoFAEnabled(false);
+          return;
+        }
+
+        console.log("🔍 Verificando estado 2FA para sAMAccountName:", sAMAccountName);
+
+        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+        const encodedSAMAccountName = encodeURIComponent(sAMAccountName);
+        const url = `${API_URL}/2fa/status/${encodedSAMAccountName}`;
+
+        console.log("🌐 URL de verificación:", url);
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        console.log("📡 Respuesta HTTP:", response.status, response.statusText);
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log("✅ Estado 2FA obtenido:", result);
+          setTwoFAEnabled(result.enabled);
+        } else {
+          console.warn(`⚠️ Error ${response.status}, asumiendo 2FA desactivado`);
+          setTwoFAEnabled(false);
+        }
+      } catch (error) {
+        console.error("❌ Error verificando estado del 2FA:", error);
         setTwoFAEnabled(false);
-        return;
       }
+    };
 
-      console.log("🔍 Verificando estado 2FA para sAMAccountName:", sAMAccountName);
+    check2FAStatus();
+  }, []);
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      const encodedSAMAccountName = encodeURIComponent(sAMAccountName);
-      const url = `${API_URL}/2fa/status/${encodedSAMAccountName}`;
+  // ✅ NUEVO EFECTO: VERIFICAR ESTADO DEL PIN AL CARGAR LA PÁGINA
+  useEffect(() => {
+    const checkPinStatus = async () => {
+      try {
+        setPinLoading(true);
+        console.log("🔍 Verificando estado del PIN...");
 
-      console.log("🌐 URL de verificación:", url);
+        const token = getAuthToken();
+        if (!token) {
+          console.warn("❌ No se pudo obtener el token de autenticación");
+          setHasPin(false);
+          setPinLoading(false);
+          return;
+        }
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      console.log("📡 Respuesta HTTP:", response.status, response.statusText);
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log("✅ Estado 2FA obtenido:", result);
-        setTwoFAEnabled(result.enabled);
-      } else {
-        console.warn(`⚠️ Error ${response.status}, asumiendo 2FA desactivado`);
-        setTwoFAEnabled(false);
+        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+        const response = await fetch(`${API_URL}/pin/check`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+        });
+
+        console.log("📡 Respuesta del servidor (PIN):", response.status);
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log("✅ Estado del PIN obtenido:", result);
+          setHasPin(result.hasPin);
+        } else {
+          console.warn(`⚠️ Error ${response.status}, asumiendo PIN no configurado`);
+          setHasPin(false);
+        }
+      } catch (error) {
+        console.error("❌ Error verificando estado del PIN:", error);
+        setHasPin(false);
+      } finally {
+        setPinLoading(false);
       }
-    } catch (error) {
-      console.error("❌ Error verificando estado del 2FA:", error);
-      setTwoFAEnabled(false);
-    }
-  };
+    };
 
-  check2FAStatus();
-}, []);
+    checkPinStatus();
+  }, []);
 
   // Precarga estratégica mejorada
   useEffect(() => {
@@ -482,89 +542,85 @@ useEffect(() => {
   }, []);
 
   // ✅ FUNCIÓN MEJORADA PARA ACTIVAR 2FA
-const handle2FASetupComplete = async (secret: string) => { // ← Solo recibe secret ahora
-  try {
-    const sAMAccountName = getSAMAccountNameFromToken();
-    
-    if (!sAMAccountName) {
-      console.warn("⚠️ No se pudo obtener sAMAccountName, activando localmente");
+  const handle2FASetupComplete = async (secret: string) => {
+    try {
+      const sAMAccountName = getSAMAccountNameFromToken();
+      
+      if (!sAMAccountName) {
+        console.warn("⚠️ No se pudo obtener sAMAccountName, activando localmente");
+        setTwoFAEnabled(true);
+        setShowTwoFASetup(false);
+        return;
+      }
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL;
+      const url = `${API_URL}/2fa/activate`;
+
+      console.log("🔍 Activando 2FA (solo secreto) para:", sAMAccountName);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sAMAccountName: sAMAccountName,
+          secret: secret
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ 2FA activado exitosamente:", result);
+      } else {
+        console.warn(`⚠️ Respuesta HTTP no OK: ${response.status}`);
+      }
+
       setTwoFAEnabled(true);
       setShowTwoFASetup(false);
-      return;
+
+    } catch (error) {
+      console.error('❌ Error en handle2FASetupComplete:', error);
+      setTwoFAEnabled(true);
+      setShowTwoFASetup(false);
     }
+  };
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
-    const url = `${API_URL}/2fa/activate`;
+  const deactivate2FA = async (): Promise<boolean> => {
+    try {
+      const sAMAccountName = getSAMAccountNameFromToken();
+      
+      if (!sAMAccountName) {
+        console.error("❌ No se pudo obtener sAMAccountName para desactivar 2FA");
+        return false;
+      }
 
-    console.log("🔍 Activando 2FA (solo secreto) para:", sAMAccountName);
+      console.log("🔄 Desactivando 2FA para:", sAMAccountName);
 
-    // ✅ ENVIAR SOLO sAMAccountName Y SECRET - SIN backupCodes NI verificationCode
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        sAMAccountName: sAMAccountName,
-        secret: secret
-        // ❌ ELIMINADO: backupCodes, verificationCode
-      }),
-    });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/2fa/deactivate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sAMAccountName: sAMAccountName
+        }),
+      });
 
-    if (response.ok) {
       const result = await response.json();
-      console.log("✅ 2FA activado exitosamente:", result);
-    } else {
-      console.warn(`⚠️ Respuesta HTTP no OK: ${response.status}`);
-      // ✅ Aún así activamos localmente porque la verificación frontend fue exitosa
-    }
-
-    setTwoFAEnabled(true);
-    setShowTwoFASetup(false);
-
-  } catch (error) {
-    console.error('❌ Error en handle2FASetupComplete:', error);
-    setTwoFAEnabled(true);
-    setShowTwoFASetup(false);
-  }
-};
-
-const deactivate2FA = async (): Promise<boolean> => {
-  try {
-    const sAMAccountName = getSAMAccountNameFromToken();
-    
-    if (!sAMAccountName) {
-      console.error("❌ No se pudo obtener sAMAccountName para desactivar 2FA");
+      
+      if (result.success) {
+        console.log("✅ 2FA desactivado exitosamente");
+        return true;
+      } else {
+        console.error("❌ Error desactivando 2FA:", result.error);
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Error desactivando 2FA:", error);
       return false;
     }
-
-    console.log("🔄 Desactivando 2FA para:", sAMAccountName);
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/2fa/deactivate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        sAMAccountName: sAMAccountName
-      }),
-    });
-
-    const result = await response.json();
-    
-    if (result.success) {
-      console.log("✅ 2FA desactivado exitosamente");
-      return true;
-    } else {
-      console.error("❌ Error desactivando 2FA:", result.error);
-      return false;
-    }
-  } catch (error) {
-    console.error("❌ Error desactivando 2FA:", error);
-    return false;
-  }
-};
-
+  };
 
   const handleEmailSuccess = useCallback((newEmail: string) => {
     updateBackupEmail(newEmail);
@@ -592,7 +648,6 @@ const deactivate2FA = async (): Promise<boolean> => {
       if (userConfirmed) {
         setLoading('twoFA', true);
         
-        // ✅ LLAMAR AL BACKEND PARA DESACTIVAR
         const success = await deactivate2FA();
         
         if (success) {
@@ -600,7 +655,6 @@ const deactivate2FA = async (): Promise<boolean> => {
           console.log("✅ 2FA desactivado exitosamente");
         } else {
           console.error("❌ Error al desactivar 2FA en backend");
-          // Podrías mostrar un mensaje de error al usuario
         }
         
         setLoading('twoFA', false);
@@ -608,6 +662,7 @@ const deactivate2FA = async (): Promise<boolean> => {
     }
   }, [preloadComponent, confirm, setLoading]);
 
+  // ✅ ACTUALIZADO: handlePinToggle para eliminar el PIN llamando a la API
   const handlePinToggle = useCallback(async (enabled: boolean) => {
     if (enabled) {
       setLoading('pin', true);
@@ -627,28 +682,84 @@ const deactivate2FA = async (): Promise<boolean> => {
 
       if (userConfirmed) {
         setLoading('pin', true);
-        // Simular llamada a API
-        setTimeout(() => {
-          setHasPin(false);
+        
+        try {
+          const token = getAuthToken();
+          if (!token) {
+            throw new Error('No autenticado');
+          }
+
+          const API_URL = process.env.NEXT_PUBLIC_API_URL;
+          const response = await fetch(`${API_URL}/pin/remove`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              setHasPin(false);
+              console.log("✅ PIN eliminado exitosamente");
+            } else {
+              console.error("❌ Error al eliminar PIN:", result.error);
+            }
+          } else {
+            console.error("❌ Error en la respuesta al eliminar PIN");
+          }
+        } catch (error) {
+          console.error("❌ Error al eliminar PIN:", error);
+        } finally {
           setLoading('pin', false);
-        }, 800);
+        }
       }
     }
   }, [preloadComponent, confirm, setLoading]);
 
-  const handlePinSuccess = useCallback(() => {
-    setHasPin(true);
-    setShowPinForm(false);
-    setLoading('pin', false);
+  // ✅ ACTUALIZADO: handlePinSuccess para verificar el estado del PIN después de guardar
+  const handlePinSuccess = useCallback(async () => {
+    // Después de guardar, verificar el estado actual del PIN
+    setLoading('pin', true);
+    
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error('No autenticado');
+      }
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${API_URL}/pin/check`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setHasPin(result.hasPin);
+        console.log(`✅ Estado del PIN actualizado: ${result.hasPin ? 'CONFIGURADO' : 'NO CONFIGURADO'}`);
+      } else {
+        console.warn('No se pudo verificar el estado del PIN después de guardar');
+        // Asumimos que se guardó correctamente
+        setHasPin(true);
+      }
+    } catch (error) {
+      console.error("Error verificando estado del PIN después de guardar:", error);
+      // Asumimos que se guardó correctamente
+      setHasPin(true);
+    } finally {
+      setShowPinForm(false);
+      setLoading('pin', false);
+    }
   }, [setLoading]);
 
   const handlePinCancel = useCallback(() => {
     setShowPinForm(false);
     setLoading('pin', false);
-    if (!hasPin) {
-      setShowPinForm(false);
-    }
-  }, [hasPin, setLoading]);
+  }, [setLoading]);
 
   // Memoizar descripciones y estados
   const emailDescription = useMemo(() => {
@@ -657,19 +768,29 @@ const deactivate2FA = async (): Promise<boolean> => {
     return backupEmail || "No configurado - Agregue un correo de respaldo";
   }, [backupEmail, emailLoading, emailError]);
 
+  // ✅ ACTUALIZADO: pinDescription para incluir estado de carga
   const pinDescription = useMemo(() => {
+    if (pinLoading) {
+      return "Verificando estado del PIN...";
+    }
     if (hasPin) {
       return "PIN de seguridad configurado. Puede usarlo para recuperar su contraseña en caso de olvido.";
     }
     return "Configure un PIN de 6 dígitos para recuperar su contraseña en caso de olvido. Esta opción es opcional pero recomendada.";
-  }, [hasPin]);
+  }, [hasPin, pinLoading]);
 
-  // Determinar el estado del correo - CORREGIDO
+  // Determinar el estado del correo
   const getEmailStatus = useCallback(() => {
     if (emailLoading) return 'inactive';
     if (emailError) return 'inactive';
     return backupEmail ? 'active' : 'inactive';
   }, [backupEmail, emailLoading, emailError]);
+
+  // ✅ NUEVO: Determinar el estado del PIN
+  const getPinStatus = useCallback(() => {
+    if (pinLoading) return 'inactive';
+    return hasPin ? 'active' : 'recommended';
+  }, [hasPin, pinLoading]);
 
   // Determinar el estado para otros elementos
   const getSecurityStatus = useCallback((enabled: boolean, recommended?: boolean) => {
@@ -709,8 +830,11 @@ const deactivate2FA = async (): Promise<boolean> => {
           </div>
         </div>
 
-        {/* Barra de progreso de seguridad - MODIFICADA */}
-        <SecurityProgress twoFAEnabled={twoFAEnabled} hasPin={hasPin} />
+        {/* Barra de progreso de seguridad - ACTUALIZADA con estado real del PIN */}
+        <SecurityProgress 
+          twoFAEnabled={twoFAEnabled} 
+          hasPin={hasPin && !pinLoading} 
+        />
 
         <div className="space-y-6">
           {/* Autenticación en dos pasos */}
@@ -744,17 +868,17 @@ const deactivate2FA = async (): Promise<boolean> => {
             )}
           </ConfigItem>
 
-          {/* PIN de seguridad */}
+          {/* ✅ PIN de seguridad - ACTUALIZADO con estado real */}
           <ConfigItem
             icon={<KeyIcon className="w-6 h-6" />}
             title="PIN de Seguridad"
             description={pinDescription}
-            status={getSecurityStatus(hasPin, true)}
+            status={getPinStatus()}
             action={
               <ToggleSwitch
                 enabled={hasPin || showPinForm}
                 setEnabled={handlePinToggle}
-                loading={loadingStates.pin}
+                loading={loadingStates.pin || pinLoading}
               />
             }
             onHover={() => preloadComponent("pin")}

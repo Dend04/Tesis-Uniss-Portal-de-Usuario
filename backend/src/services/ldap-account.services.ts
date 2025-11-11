@@ -566,8 +566,12 @@ private async createUserEntry(userDN: string, studentData: any, username: string
 
   private formatPhoneNumber(phone: string, country: string): string {
     const countryCodes: { [key: string]: string } = {
-      Cuba: "+53",
+     Cuba: "+53",
       "United States": "+1",
+      Argentina: "+54",
+      Belgium:"+32",
+      Brazil:"+55",
+      Ecuador:"+593",
       Spain: "+34",
       Mexico: "+52",
       Germany: "+49",
@@ -575,6 +579,10 @@ private async createUserEntry(userDN: string, studentData: any, username: string
       Portugal: "+351",
       "United Kingdom": "+44",
       Russia: "+7",
+      Venezuela:"+58",
+      Japan:"+81",
+      Italy:"+39",
+      Haiti:"+509",
       Chile: "+56",
       Uruguay: "+598",
       Angola: "+244",

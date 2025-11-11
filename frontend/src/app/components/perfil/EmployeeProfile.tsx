@@ -97,7 +97,7 @@ const EmployeeProfile = ({
                         <>
                             <InfoItem
                                 icon={<TicketIcon className="h-7 w-7" />}
-                                label="Código de Ticket del Almuerzo"
+                                label="Pin del Empleado"
                                 value={employee.Id_Empleado}
                                 highlight
                                 isDarkMode={isDarkMode}

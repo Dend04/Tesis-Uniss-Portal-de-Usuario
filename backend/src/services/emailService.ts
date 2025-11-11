@@ -7,6 +7,7 @@ import { getNewEmailHTML } from "../templates/newEmail";
 import { getPasswordExpiryAlertHTML } from "../templates/alertTemplates";
 import { getChangeEmailHTML } from "../templates/changeEmail";
 import { searchLDAPUserForEmail } from "../utils/ldap.utils";
+import { unifiedLDAPSearch } from "../utils/ldap.utils";
 
 const validateEmail = (email: string): void => {
   if (!email || typeof email !== "string" || !email.includes("@")) {
@@ -149,10 +150,10 @@ export const sendEmailNew = async (
 };
 
 export const sendChangeEmailVerification = async (
-  email: string, // ✅ Ahora este es el NUEVO correo (destino)
+  email: string,
   userName: string,
   verificationCode: string,
-  newEmail: string // ✅ Este es el mismo nuevo correo (para mostrar en el template)
+  newEmail: string
 ): Promise<SMTPTransport.SentMessageInfo> => {
   try {
     validateEmail(email);
@@ -170,7 +171,7 @@ export const sendChangeEmailVerification = async (
 
     const opcionesCorreo = {
       from: process.env.SMTP_FROM,
-      to: email, // ✅ Se envía al NUEVO correo
+      to: email,
       subject: "Código de Verificación - Cambio de Correo UNISS",
       html: contenidoHtml,
     };
@@ -187,24 +188,19 @@ export const sendChangeEmailVerification = async (
   }
 };
 
-/**
- * Busca un usuario por sAMAccountName o employeeID y obtiene su email desde el campo company
- */
-// En tu archivo de servicios (user.services.ts o emailService.ts)
-// En tu función findUserBySAMOrEmployeeID
-export async function findUserBySAMOrEmployeeID(identifier: string): Promise<{
+// Servicio para buscar usuario por sAMAccountName o employeeID
+export const findUserBySAMOrEmployeeID = async (identifier: string): Promise<{
   email: string;
   displayName?: string;
   sAMAccountName?: string;
   employeeID?: string;
   userPrincipalName?: string;
   dn: string;
-  accountStatus: "active" | "expired" | "locked" | "disabled"; // ✅ Nuevo campo
-}> {
+  accountStatus: "active" | "expired" | "locked" | "disabled";
+}> => {
   try {
     const filter = `(|(sAMAccountName=${identifier})(employeeID=${identifier}))`;
 
-    // ✅ Incluir atributos de estado de cuenta
     const attributes = [
       "company",
       "displayName",
@@ -215,7 +211,7 @@ export async function findUserBySAMOrEmployeeID(identifier: string): Promise<{
       "distinguishedName",
       "userAccountControl",
       "lockoutTime",
-      "pwdLastSet", // ← Atributos de estado
+      "pwdLastSet",
     ];
 
     const users = await searchLDAPUserForEmail(filter, attributes);
@@ -226,7 +222,6 @@ export async function findUserBySAMOrEmployeeID(identifier: string): Promise<{
 
     const user = users[0];
 
-    // ✅ Determinar estado de la cuenta
     const accountStatus = determineAccountStatus(user);
 
     if (accountStatus === "disabled") {
@@ -248,38 +243,86 @@ export async function findUserBySAMOrEmployeeID(identifier: string): Promise<{
       employeeID: user.employeeID,
       userPrincipalName: user.userPrincipalName,
       dn: user.distinguishedName,
-      accountStatus, // ✅ Incluir estado en la respuesta
+      accountStatus,
     };
   } catch (error) {
     console.error("Error en findUserBySAMOrEmployeeID:", error);
     throw error;
   }
-}
+};
 
-// ✅ Función para determinar el estado de la cuenta
+// Función para determinar el estado de la cuenta
 function determineAccountStatus(
   user: any
 ): "active" | "expired" | "locked" | "disabled" {
-  // Verificar si la cuenta está deshabilitada
   const userAccountControl = user.userAccountControl || 0;
   if (userAccountControl & 0x0002) {
-    // ACCOUNTDISABLE flag
     return "disabled";
   }
 
-  // Verificar si está bloqueada
   const lockoutTime = user.lockoutTime || 0;
   if (lockoutTime > 0) {
     return "locked";
   }
 
-    // En AD, cuando pwdLastSet = 0, significa que la contraseña debe cambiarse en el próximo login
   const pwdLastSet = user.pwdLastSet || 0;
   if (pwdLastSet === 0) {
     return "expired";
   }
 
-  // Para contraseñas expiradas, generalmente se considera "active"
-  // porque el usuario puede cambiarla
   return "active";
+}
+
+// Servicio para verificar si un usuario existe usando búsqueda unificada
+export const verifyUserExists = async (identifier: string): Promise<{
+  exists: boolean;
+  user?: {
+    displayName?: string;
+    sAMAccountName?: string;
+    employeeID?: string;
+    userPrincipalName?: string;
+    email?: string;
+    dn: string;
+  };
+  error?: string;
+}> => {
+  try {
+    const filter = `(|(sAMAccountName=${identifier})(employeeID=${identifier}))`;
+    const attributes = [
+      "displayName",
+      "sAMAccountName",
+      "employeeID",
+      "userPrincipalName",
+      "company",
+      "distinguishedName"
+    ];
+
+    const users = await unifiedLDAPSearch(filter, attributes);
+
+    if (users.length === 0) {
+      return {
+        exists: false,
+        error: "Usuario no encontrado"
+      };
+    }
+
+    const user = users[0];
+    return {
+      exists: true,
+      user: {
+        displayName: user.displayName,
+        sAMAccountName: user.sAMAccountName,
+        employeeID: user.employeeID,
+        userPrincipalName: user.userPrincipalName,
+        email: user.company,
+        dn: user.distinguishedName
+      }
+    };
+  } catch (error) {
+    console.error("Error en verifyUserExists:", error);
+    return {
+      exists: false,
+      error: `Error al buscar usuario: ${(error as Error).message}`
+    };
+  }
 }

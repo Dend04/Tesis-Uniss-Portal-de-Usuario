@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '.prisma/client_asset';
 import { UserEntriesBuilder } from '../services/assets-account.services';
 
 const prisma = new PrismaClient();

@@ -1,10 +1,11 @@
 // src/routes/dispositivosRoutes.ts
 import { Router } from 'express';
-import { getDeviceManufacturer } from '../controllers/dispositivo.controller';
+import { dispositivoController } from '../controllers/dispositivo.controller';
+
 
 const router = Router();
 
 // GET /api/devices/manufacturer/:mac
-router.get('/manufacturer/:mac', getDeviceManufacturer);
+router.get('/mac/:mac/fabricante', dispositivoController.getDeviceManufacturer);
 
 export default router;

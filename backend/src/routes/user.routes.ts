@@ -1,6 +1,6 @@
 // src/routes/users.routes.ts
 import { Router } from 'express';
-import { getUserAuditLogs, getUserAuditLogsAdmin, getUserDetails, getUserProfile, searchUsers } from '../controllers/users.controllers';
+import { getUserAuditLogs, getUserAuditLogsAdmin, getUserDetails, getUserProfile, searchUsers } from '../controllers/user.controllers';
 import { verifyTokenMiddleware } from '../middlewares/auth.middleware';
 
 

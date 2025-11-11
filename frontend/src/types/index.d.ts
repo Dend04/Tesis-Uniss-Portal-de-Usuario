@@ -19,8 +19,12 @@ export interface UserInfo {
   isEmployee?: boolean;
 }
   
-  export interface Device {
-    type: "phone" | "laptop" | "tablet" | "pc";
-    mac: string;
-    model: string;
-  }
+export interface Device {
+  id: string; 
+  mac: string;
+  nombre: string;
+  tipo: 'CELULAR' | 'TABLET' | 'LAPTOP' | 'PC' | 'MINI_PC' | 'OTRO';
+  username?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}

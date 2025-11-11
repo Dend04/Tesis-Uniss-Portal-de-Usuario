@@ -2,6 +2,20 @@
 
 import { useState, useRef, useEffect, memo, useCallback } from "react";
 
+// Al inicio de tu PinForm, después de los imports, agrega:
+const getAuthToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+
+  const tokenNames = ["authToken", "token", "userToken", "accessToken"];
+  for (const tokenName of tokenNames) {
+    const token = localStorage.getItem(tokenName);
+    if (token) {
+      return token;
+    }
+  }
+  return null;
+};
+
 interface PinFormProps {
   isDarkMode: boolean;
   hasExistingPin: boolean;
@@ -273,10 +287,7 @@ const PinForm = memo(
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:5550/api";
 
         // ✅ OBTENER TOKEN
-        const token =
-          localStorage.getItem("authToken") ||
-          sessionStorage.getItem("authToken") ||
-          getCookie("authToken");
+        const token = getAuthToken();
 
         const headers: HeadersInit = {
           "Content-Type": "application/json",

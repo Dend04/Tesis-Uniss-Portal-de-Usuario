@@ -1,12 +1,9 @@
 // app/forgot-password/pin/page.tsx
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import StepsIndicator, {
   Step,
@@ -33,8 +30,6 @@ export default function ForgotPasswordPinPage() {
   const [currentStep, setCurrentStep] = useState<StepType>("identify");
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userIdentifier, setUserIdentifier] = useState("");
-  const [noPinError, setNoPinError] = useState(false);
-  const [countdown, setCountdown] = useState(30);
   const containerRef = useRef(null);
 
   // Definir los steps del wizard
@@ -75,47 +70,12 @@ export default function ForgotPasswordPinPage() {
     },
   ];
 
-  // Countdown para redirección automática
-  useEffect(() => {
-    if (noPinError && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (noPinError && countdown === 0) {
-      handleManualRedirect();
-    }
-  }, [noPinError, countdown]);
-
   // Manejar éxito en identificación de usuario
   const handleUserIdentified = async (data: UserData, identifier: string) => {
     setUserData(data);
     setUserIdentifier(identifier);
-
-    try {
-      // Verificar si el usuario tiene PIN configurado
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${API_URL}/pin/check`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-
-        if (result.hasPin) {
-          setCurrentStep("verify-pin");
-        } else {
-          setNoPinError(true);
-        }
-      } else {
-        setNoPinError(true);
-      }
-    } catch (error) {
-      console.error("Error verificando PIN:", error);
-      setNoPinError(true);
-    }
+    // El UserIdentifierForm ya verificó que el usuario tiene PIN
+    setCurrentStep("verify-pin");
   };
 
   // Manejar éxito en verificación de PIN
@@ -131,11 +91,6 @@ export default function ForgotPasswordPinPage() {
     setTimeout(() => {
       window.location.href = "/";
     }, 3000);
-  };
-
-  // Redirigir manualmente si no hay PIN
-  const handleManualRedirect = () => {
-    window.location.href = "/forgot-password";
   };
 
   // Corrección para la animación del logo
@@ -184,47 +139,12 @@ export default function ForgotPasswordPinPage() {
           </div>
 
           {/* Paso 1: Identificación del usuario */}
-          {currentStep === "identify" && !noPinError && (
+          {currentStep === "identify" && (
             <UserIdentifierForm
               key="identify-step"
               onUserIdentified={handleUserIdentified}
               flowType="pin"
             />
-          )}
-
-          {/* Mensaje de error cuando el usuario no tiene PIN */}
-          {noPinError && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="px-4 md:px-8 py-8 text-center"
-            >
-              <ExclamationTriangleIcon className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                PIN No Configurado
-              </h2>
-              <p className="text-gray-600 mb-6">
-                No puedes usar este método para cambiar tu contraseña porque no
-                has configurado un PIN de seguridad.
-              </p>
-              <p className="text-gray-500 text-sm mb-6">
-                Serás redirigido automáticamente a la página de recuperación en{" "}
-                <span className="font-bold">{countdown} segundos</span>.
-              </p>
-
-              <div className="space-y-3">
-                <button
-                  onClick={handleManualRedirect}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Volver Ahora
-                </button>
-
-                <p className="text-xs text-gray-500">
-                  O espera a ser redirigido automáticamente...
-                </p>
-              </div>
-            </motion.div>
           )}
 
           {/* Paso 2: Verificación del PIN */}
@@ -246,6 +166,7 @@ export default function ForgotPasswordPinPage() {
               verifiedCode="pin-verified"
               onBack={() => setCurrentStep("verify-pin")}
               onPasswordReset={handlePasswordReset}
+              flowType="pin"
             />
           )}
 

@@ -14,4 +14,10 @@ router.get("/check", verifyTokenMiddleware, pinController.checkPin);
 router.post("/verify-for-recovery", pinController.verifyPinForRecovery);
 router.post("/find-user", pinController.findUserForRecovery);
 
+// ✅ NUEVA RUTA: Verificar si un usuario tiene PIN configurado (sin autenticación)
+router.post("/check-user-has-pin", pinController.checkUserHasPin);
+
+// ✅ NUEVA RUTA: Restablecer contraseña con PIN (sin autenticación)
+router.post("/reset-password", pinController.resetPasswordWithPIN);
+
 export default router;

@@ -7,14 +7,16 @@ import {
   sendEmailNew,
   sendChangeEmailVerification,
   findUserBySAMOrEmployeeID,
+  verifyUserExists
 } from "../services/emailService";
 import { verificationStorage } from "../services/verificationStorage";
 import { passwordExpiryService } from "../services/passwordExpiryService";
 import { cacheService } from "../utils/cache.utils";
-import { AuthenticatedRequest } from "../types/express";
+
 import { LDAPEmailUpdateService } from "../services/ldap-email-update.services";
 import { searchLDAPUserForEmail } from "../utils/ldap.utils";
 import { passwordService } from "../services/password.services";
+import { AuthenticatedRequest } from "../types/express";
 
 // Almacenamiento temporal de códigos de verificación
 const verificationCodes = new Map<
@@ -27,18 +29,17 @@ const generateVerificationCode = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-
 export const sendWelcomeEmailToUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
     const { 
-      to,           // ← correo de respaldo
-      username,      // ← nombre de usuario
-      userPrincipalName, // ← correo institucional
-      fullName,      // ← nombre completo
-      userType       // ← tipo de usuario
+      to,
+      username,
+      userPrincipalName,
+      fullName,
+      userType
     } = req.body;
 
     if (!to) {
@@ -49,13 +50,12 @@ export const sendWelcomeEmailToUser = async (
       return;
     }
 
-    // Usa el nuevo servicio en lugar de sendWelcomeEmail
     const info = await sendWelcomeEmail(
-      to,           // email destino
-      fullName,     // nombre para el saludo
-      userType,     // tipo de usuario
-      username,     // nombre de usuario
-      userPrincipalName // correo institucional
+      to,
+      fullName,
+      userType,
+      username,
+      userPrincipalName
     );
 
     res.status(200).json({
@@ -109,22 +109,27 @@ export const sendVerificationCodeEmailPassword = async (
       });
       return;
     }
-    // Generar un código de verificación aleatorio de 6 dígitos
+    
     const verificationCode = generateVerificationCode();
-    // Guardar el código con fecha de expiración (10 minutos)
     verificationStorage.setCode(email, verificationCode, 10 * 60 * 1000);
-    // Enviar el código por correo usando el servicio
+    
+    // ✅ MOSTRAR CÓDIGO EN CONSOLA PARA DESARROLLO
+    console.log(`📧 CÓDIGO DE VERIFICACIÓN enviado a ${email}: ${verificationCode}`);
+    console.log(`👤 Usuario: ${userName || "No especificado"}`);
+    console.log(`⏰ Expira: 10 minutos`);
+    
     const info = await sendVerificationCodeService(
       email,
       userName || "Usuario",
       verificationCode
     );
+    
     res.status(200).json({
       success: true,
       message: "Código de verificación enviado",
       email: email,
       userName: userName || "Usuario",
-      code: verificationCode, // Solo para depuración, no en producción
+      code: verificationCode,
       emailStats: {
         count: emailCounter.getCount(),
         remaining: emailCounter.getRemaining(),
@@ -156,23 +161,21 @@ export const sendPasswordAlert = async (
       return;
     }
 
-    // ✅ AGREGAR: Determinar el tipo de alerta basado en daysLeft
     const getAlertTypeFromDays = (days: number): string => {
       if (days === 7) return 'primera-alerta';
       if (days === 3) return 'alerta-urgente';
       if (days === 1) return 'alerta-final';
       if (days === 0) return 'cuenta-suspendida';
-      return 'primera-alerta'; // valor por defecto
+      return 'primera-alerta';
     };
 
     const alertType = getAlertTypeFromDays(daysLeft || 5);
 
-    // ✅ CORREGIR: Pasar los 4 argumentos requeridos
     const info = await sendPasswordExpiryAlert(
       email,
       userName || "Usuario",
       daysLeft || 5,
-      alertType // ← ESTE ERA EL PARÁMETRO FALTANTE
+      alertType
     );
 
     res.status(200).json({
@@ -181,7 +184,7 @@ export const sendPasswordAlert = async (
       email: email,
       userName: userName || "Usuario",
       daysLeft: daysLeft || 5,
-      alertType: alertType, // ← También devolver en la respuesta
+      alertType: alertType,
       emailStats: {
         count: emailCounter.getCount(),
         remaining: emailCounter.getRemaining(),
@@ -198,13 +201,12 @@ export const sendPasswordAlert = async (
   }
 };
 
-// Función auxiliar para determinar el tipo de alerta
 function getAlertTypeFromDays(daysLeft: number): string {
   if (daysLeft === 7) return 'primera-alerta';
   if (daysLeft === 3) return 'alerta-urgente';
   if (daysLeft === 1) return 'alerta-final';
   if (daysLeft === 0) return 'cuenta-suspendida';
-  return 'primera-alerta'; // valor por defecto
+  return 'primera-alerta';
 }
 
 export const sendVerificationCodeChangeEmail = async (
@@ -223,11 +225,13 @@ export const sendVerificationCodeChangeEmail = async (
     }
 
     const verificationCode = generateVerificationCode();
-
-    // Guardar el código con fecha de expiración (10 minutos)
     verificationStorage.setCode(email, verificationCode, 10 * 60 * 1000);
 
-    // Enviar el código por correo usando el servicio
+    // ✅ MOSTRAR CÓDIGO EN CONSOLA PARA DESARROLLO
+    console.log(`📧 CÓDIGO DE VERIFICACIÓN (cambio email) enviado a ${email}: ${verificationCode}`);
+    console.log(`👤 Usuario: ${userName || "No especificado"}`);
+    console.log(`⏰ Expira: 10 minutos`);
+
     const info = await sendEmailNew(email, userName || "Usuario", verificationCode);
 
     res.status(200).json({
@@ -263,7 +267,6 @@ export const verifyCode = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Buscar el código de verificación
     const storedData = verificationStorage.getCode(email);
 
     if (!storedData) {
@@ -274,7 +277,6 @@ export const verifyCode = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Verificar si el código coincide
     if (storedData.code !== code) {
       res.status(400).json({
         success: false,
@@ -282,9 +284,6 @@ export const verifyCode = async (req: Request, res: Response): Promise<void> => 
       });
       return;
     }
-
-    // ✅ CORREGIDO: NO eliminar el código aquí
-    // verificationStorage.deleteCode(email); // ← ELIMINAR ESTA LÍNEA
 
     res.status(200).json({
       success: true,
@@ -299,7 +298,6 @@ export const verifyCode = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-// En tu archivo de controlador (email.controller.ts)
 export const debugVerificationCodes = async (
   req: Request,
   res: Response
@@ -328,21 +326,17 @@ export const generarReporteExpiración = async (
   res: Response
 ): Promise<void> => {
   try {
-    // 1. Obtener el parámetro 'baseDN' de la consulta (ej: ?baseDN=propio)
     const { baseDN } = req.query;
     console.log(`📊 Generando reporte manual usando baseDN: ${baseDN}`);
     
-    // 2. Pasar el parámetro al servicio. Asumiendo que modificaste tu servicio para aceptarlo.
     const reporte = await passwordExpiryService.generarReporteExpiración(baseDN as string);
     
-    // ... el resto de tu código (guardar en caché, enviar respuesta) ...
     cacheService.guardarUsuarios('rango7Dias', reporte.rango7Dias);
-    // ...
 
     res.status(200).json({
       success: true,
       message: "Reporte de expiración generado exitosamente",
-      baseDNUtilizada: baseDN, // Para confirmar en la respuesta cuál se usó
+      baseDNUtilizada: baseDN,
       reporte: reporte.resumen,
       cacheEstado: cacheService.obtenerEstadoCache(),
       timestamp: new Date().toISOString()
@@ -387,7 +381,7 @@ export const enviarAlertasManuales = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { grupos } = req.body; // ['rango7Dias', 'rango3Dias', 'rango1Dia', 'expirados']
+    const { grupos } = req.body;
     const gruposAEnviar = grupos || ['rango7Dias', 'rango3Dias', 'rango1Dia', 'expirados'];
     
     console.log('📧 Iniciando envío manual de alertas...', gruposAEnviar);
@@ -485,7 +479,6 @@ export const sendChangeEmailVerificationCode = async (
       return;
     }
 
-    // Validar que el nuevo correo no sea institucional
     if (newEmail.toLowerCase().endsWith('@uniss.edu.cu')) {
       res.status(400).json({
         success: false,
@@ -494,7 +487,6 @@ export const sendChangeEmailVerificationCode = async (
       return;
     }
 
-    // Validar formato del nuevo correo
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
       res.status(400).json({
@@ -505,16 +497,20 @@ export const sendChangeEmailVerificationCode = async (
     }
 
     const verificationCode = generateVerificationCode();
-
-    // Guardar el código con fecha de expiración (10 minutos) usando el NUEVO correo como clave
     verificationStorage.setCode(newEmail, verificationCode, 10 * 60 * 1000);
 
-    // ✅ CORRECCIÓN: Enviar el código al NUEVO correo, no al actual
+    // ✅ MOSTRAR CÓDIGO EN CONSOLA PARA DESARROLLO
+    console.log(`📧 CÓDIGO DE VERIFICACIÓN (cambio email) enviado a ${newEmail}: ${verificationCode}`);
+    console.log(`👤 Usuario: ${userName || "No especificado"}`);
+    console.log(`📨 Correo actual: ${email}`);
+    console.log(`📬 Nuevo correo: ${newEmail}`);
+    console.log(`⏰ Expira: 10 minutos`);
+
     const info = await sendChangeEmailVerification(
-      newEmail,           // ← Cambiado: enviar al NUEVO correo
+      newEmail,
       userName || "Usuario", 
       verificationCode,
-      newEmail         // ← Este parámetro se usa en el template para mostrar el correo que se está verificando
+      newEmail
     );
 
     res.status(200).json({
@@ -539,13 +535,14 @@ export const sendChangeEmailVerificationCode = async (
   }
 };
 
-// ✅ CONTROLADOR CORREGIDO: Verificar código y actualizar correo
 export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise<void> => {
   try {
     const { newEmail, code } = req.body;
 
-
+    // ✅ SOLUCIÓN: Usar la extensión global de Express que ya definiste
+    // TypeScript ya debería reconocer req.user gracias a tu declare global
     const userId = req.user?.sAMAccountName;
+    
     if (!userId) {
       res.status(401).json({
         success: false,
@@ -554,16 +551,23 @@ export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise
       return;
     }
     
+    // ✅ PRIMERO verificar el código
+    const storedData = verificationStorage.getCode(newEmail);
+    if (!storedData || storedData.code !== code) {
+      res.status(400).json({
+        success: false,
+        message: "Código de verificación inválido o expirado",
+      });
+      return;
+    }
+
     let ldapUsers;
     try {
-      // Busca al usuario por su sAMAccountName
+      // Buscar usuario en LDAP
       const filter = `(&(objectClass=user)(sAMAccountName=${userId}))`;
-      // Especifica los atributos que necesitas
       const attributes = ['distinguishedName', 'sAMAccountName', 'mail', 'userPrincipalName'];
       
       ldapUsers = await searchLDAPUserForEmail(filter, attributes);
-      
-      console.log(`📊 Resultados de búsqueda LDAP: ${ldapUsers.length} usuarios encontrados`);
       
       if (ldapUsers.length === 0) {
         res.status(404).json({
@@ -573,9 +577,27 @@ export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise
         return;
       }
       
-      // Verifica qué atributos tiene el usuario
-      const user = ldapUsers[0];
-      
+      // ✅ ACTUALIZAR EL CORREO EN LDAP
+      const ldapUpdateService = new LDAPEmailUpdateService();
+      const updateResult = await ldapUpdateService.updateUserEmail(userId, newEmail);
+
+      if (!updateResult.success) {
+        res.status(500).json({
+          success: false,
+          message: updateResult.message,
+        });
+        return;
+      }
+
+      // ✅ ELIMINAR CÓDIGO SOLO DESPUÉS DE ÉXITO
+      verificationStorage.deleteCode(newEmail);
+
+      res.status(200).json({
+        success: true,
+        message: "Correo actualizado exitosamente",
+        newEmail: newEmail,
+      });
+
     } catch (ldapError: any) {
       res.status(500).json({
         success: false,
@@ -584,26 +606,6 @@ export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise
       });
       return;
     }
-
-    // ✅ ACTUALIZAR EL CORREO EN LDAP
-    const ldapUpdateService = new LDAPEmailUpdateService();
-    const updateResult = await ldapUpdateService.updateUserEmail(userId, newEmail);
-
-    if (!updateResult.success) {
-      res.status(500).json({
-        success: false,
-        message: updateResult.message,
-      });
-      return;
-    }
-
-    verificationStorage.deleteCode(newEmail);
-
-    res.status(200).json({
-      success: true,
-      message: "Correo actualizado exitosamente",
-      newEmail: newEmail,
-    });
 
   } catch (error: any) {
     console.error("💥 Error en verifyAndUpdateEmail:", error);
@@ -629,16 +631,18 @@ export const handleForgotPassword = async (req: Request, res: Response): Promise
 
     console.log(`🔐 Solicitud de recuperación para: ${userIdentifier}`);
 
-    // 1. Buscar al usuario en LDAP
     const user = await findUserBySAMOrEmployeeID(userIdentifier);
     
-    // 2. Generar código de verificación
     const verificationCode = generateVerificationCode();
-    
-    // 3. Guardar el código en el almacenamiento
     verificationStorage.setCode(user.email, verificationCode, 10 * 60 * 1000);
     
-    // 4. Enviar el código por correo
+    // ✅ MOSTRAR CÓDIGO EN CONSOLA PARA DESARROLLO
+    console.log(`📧 CÓDIGO DE VERIFICACIÓN (recuperación) enviado a ${user.email}: ${verificationCode}`);
+    console.log(`👤 Usuario: ${user.displayName || user.sAMAccountName}`);
+    console.log(`👤 sAMAccountName: ${user.sAMAccountName}`);
+    console.log(`🆔 EmployeeID: ${user.employeeID}`);
+    console.log(`⏰ Expira: 10 minutos`);
+    
     const info = await sendVerificationCodeService(
       user.email,
       user.displayName || "Usuario",
@@ -647,18 +651,16 @@ export const handleForgotPassword = async (req: Request, res: Response): Promise
 
     console.log(`✅ Código enviado a: ${user.email}`);
 
-    // 5. ✅ CORREGIDO: Incluir todos los datos del usuario en la respuesta
     res.status(200).json({
       success: true,
       message: "Código de verificación enviado con éxito",
-      // ✅ Incluir todos los datos que el frontend necesita
       email: user.email,
       displayName: user.displayName,
       sAMAccountName: user.sAMAccountName,
       employeeID: user.employeeID,
       userPrincipalName: user.userPrincipalName,
       dn: user.dn,
-      accountStatus: user.accountStatus, // ✅ Incluir el estado de la cuenta
+      accountStatus: user.accountStatus,
       emailStats: {
         count: emailCounter.getCount(),
         remaining: emailCounter.getRemaining(),
@@ -676,26 +678,23 @@ export const handleForgotPassword = async (req: Request, res: Response): Promise
   }
 };
 
-export const verifyCodeAndResetPassword = async (req: Request, res: Response) => {
+export const verifyCodeAndResetPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userIdentifier, code, newPassword } = req.body;
     
-    // 1. Buscar usuario y verificar código (sin eliminarlo aún)
     const user = await findUserBySAMOrEmployeeID(userIdentifier);
     const storedData = verificationStorage.getCode(user.email);
     
     if (!storedData || storedData.code !== code) {
-     res.status(400).json({
+      res.status(400).json({
         success: false,
         message: "Código de verificación no encontrado o ha expirado"
       });
-      return
+      return;
     }
     
-    // 2. Restablecer contraseña en LDAP
     await passwordService.resetPassword(user.dn, newPassword);
     
-    // 3. ✅ SOLO AHORA eliminar el código (después del éxito)
     verificationStorage.deleteCode(user.email);
     
     res.status(200).json({
@@ -703,7 +702,50 @@ export const verifyCodeAndResetPassword = async (req: Request, res: Response) =>
       message: "Contraseña restablecida exitosamente"
     });
     
-  } catch (error) {
-    // Manejar error
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Error al restablecer contraseña",
+      error: error.message
+    });
+  }
+};
+
+// Controlador para verificar si un usuario existe
+export const checkUserExists = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { identifier } = req.params;
+
+    if (!identifier) {
+      res.status(400).json({
+        success: false,
+        message: "Se requiere un identificador de usuario"
+      });
+      return;
+    }
+
+    const result = await verifyUserExists(identifier);
+
+    if (!result.exists) {
+      res.status(404).json({
+        success: false,
+        message: result.error || "Usuario no encontrado"
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Usuario encontrado",
+      user: result.user
+    });
+
+  } catch (error: any) {
+    console.error("Error en checkUserExists:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error al verificar usuario",
+      error: error.message
+    });
   }
 };

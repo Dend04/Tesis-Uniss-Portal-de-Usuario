@@ -183,14 +183,14 @@ export const Header = memo(() => {
           <div className="flex items-center gap-4">
             {/* Menú para desktop - oculto en móviles */}
             <div className="hidden md:flex items-center gap-6" role="menubar">
-              {/* Botón de Estadísticas - VISIBLE PARA TODOS LOS USUARIOS */}
-              <NavIcon
+              {/* BOTÓN DE ESTADÍSTICAS - COMENTADO TEMPORALMENTE */}
+              {/* <NavIcon
                 href="/stats"
                 icon={<ChartPieIcon className="h-6 w-6" aria-hidden="true" />}
                 label="Estadísticas"
                 isDarkMode={isDarkMode}
                 onHover={() => preloadPage("/stats")}
-              />
+              /> */}
 
               <NavIcon
                 href="/config"
@@ -208,14 +208,9 @@ export const Header = memo(() => {
                 onHover={() => preloadPage("/activity-logs")}
               />
 
-              {/* 🆕 OPCIONES DE ADMINISTRADOR - VISIBLES PARA TODOS (PARA PRUEBAS) */}
+              {/* OPCIONES DE ADMINISTRADOR - COMENTADAS TEMPORALMENTE */}
               {/* 
-                PARA MOSTRAR SOLO A ADMINISTRADORES, CAMBIA ESTO A:
-              {isAdmin && (
-  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-              */}
               <div className="flex items-center gap-2">
-                {/* Separador visual para opciones de admin */}
                 <div className={`h-6 w-px ${isDarkMode ? "bg-gray-600" : "bg-gray-300"}`} />
                 
                 <NavIcon
@@ -242,6 +237,7 @@ export const Header = memo(() => {
                   onHover={() => preloadPage("/admin/system")}
                 />
               </div>
+              */}
 
               <NavIcon
                 icon={<BellIcon className="h-6 w-6" aria-hidden="true" />}
@@ -339,8 +335,8 @@ export const Header = memo(() => {
               {/* Contenido del menú móvil */}
               <div className="flex-1 overflow-y-auto py-4">
                 <div className="space-y-2 px-4">
-                  {/* Botón de Estadísticas - VISIBLE PARA TODOS LOS USUARIOS */}
-                  <MobileNavItem
+                  {/* BOTÓN DE ESTADÍSTICAS - COMENTADO TEMPORALMENTE EN MÓVIL */}
+                  {/* <MobileNavItem
                     href="/stats"
                     icon={
                       <ChartBarIcon className="h-6 w-6" aria-hidden="true" />
@@ -349,7 +345,7 @@ export const Header = memo(() => {
                     isDarkMode={isDarkMode}
                     onClick={closeMenu}
                     onHover={() => preloadPage("/stats")}
-                  />
+                  /> */}
 
                   <MobileNavItem
                     href="/config"
@@ -373,11 +369,8 @@ export const Header = memo(() => {
                     onHover={() => preloadPage("/activity-logs")}
                   />
 
-                  {/* 🆕 OPCIONES DE ADMINISTRADOR EN MÓVIL - VISIBLES PARA TODOS (PARA PRUEBAS) */}
+                  {/* OPCIONES DE ADMINISTRADOR EN MÓVIL - COMENTADAS TEMPORALMENTE */}
                   {/* 
-                    PARA MOSTRAR SOLO A ADMINISTRADORES, CAMBIA ESTO A:
-                    {isAdmin && ( ... )}
-                  */}
                   <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                     <div className={`text-xs font-semibold uppercase tracking-wider ${isDarkMode ? "text-gray-400" : "text-gray-500"} mb-2 px-4`}>
                       Administración
@@ -416,6 +409,7 @@ export const Header = memo(() => {
                       onHover={() => preloadPage("/admin/system")}
                     />
                   </div>
+                  */}
 
                   <MobileNavItem
                     icon={<BellIcon className="h-6 w-6" aria-hidden="true" />}

@@ -21,6 +21,7 @@ interface UserData {
   employeeID?: string;
   userPrincipalName?: string;
   dn: string;
+  accountStatus?: string;
 }
 
 type StepType = "identify" | "verify" | "reset" | "success";
@@ -79,7 +80,6 @@ export default function ForgotPasswordPage() {
 
   // Manejar éxito en verificación de código
   const handleCodeVerified = (code: string) => {
-    // ✅ Acepta el código
     setVerifiedCode(code);
     setCurrentStep("reset");
   };
@@ -140,6 +140,9 @@ export default function ForgotPasswordPage() {
               key="identify-step"
               onUserIdentified={handleUserIdentified}
               flowType="email"
+              title="Recuperar Contraseña por Email"
+              description="Ingrese su nombre de usuario o carnet de identidad"
+              customNote="Se enviará un código de verificación al correo electrónico de respaldo o personal que usted suministró al crear su cuenta."
             />
           )}
 
@@ -162,6 +165,7 @@ export default function ForgotPasswordPage() {
               verifiedCode={verifiedCode}
               onBack={() => setCurrentStep("verify")}
               onPasswordReset={handlePasswordReset}
+              flowType="email"
             />
           )}
 

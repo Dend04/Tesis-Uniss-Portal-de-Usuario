@@ -1,7 +1,9 @@
+// services/pin.services.ts - Versión completa con el nuevo método
 import { Client, Change, SearchEntry, Attribute } from "ldapjs";
 import { createLDAPClient, bindAsync, unifiedLDAPSearch } from "../utils/ldap.utils";
 // ✅ AGREGAR el servicio de encriptación
 import { encryptionService } from "./EncryptionService";
+import { passwordService } from "./password.services";
 
 interface LDAPError extends Error {
   code?: number;
@@ -80,7 +82,7 @@ export class PinService {
   }
 
   /**
-   * Elimina el PIN del usuario (establece campo serialNumber vacío)
+   * ✅ CORREGIDO: Elimina el PIN del usuario (establece campo serialNumber con un espacio)
    */
   async removeUserPin(sAMAccountName: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -96,8 +98,8 @@ export class PinService {
         };
       }
 
-      // Establecer serialNumber vacío
-      await this.updateSerialNumber(userDN, "");
+      // ✅ CORRECCIÓN: Establecer serialNumber con un espacio en lugar de vacío
+      await this.updateSerialNumber(userDN, " ");
       
       console.log(`✅ PIN eliminado exitosamente para: ${sAMAccountName}`);
       return { success: true };
@@ -134,8 +136,11 @@ export class PinService {
       }
 
       const serialNumber = await this.getSerialNumber(userDN);
-      // ✅ VERIFICAR si el PIN está cifrado y es válido
-      const hasPin = !!serialNumber && serialNumber.trim().length > 0 && this.isEncryptedPin(serialNumber);
+      // ✅ VERIFICAR si el PIN está cifrado y es válido (excluyendo el espacio)
+      const hasPin = !!serialNumber && 
+                    serialNumber.trim().length > 0 && 
+                    serialNumber !== " " && 
+                    this.isEncryptedPin(serialNumber);
       
       return { hasPin };
       
@@ -187,8 +192,8 @@ export class PinService {
 
       const storedEncryptedPin = await this.getSerialNumber(userDN);
       
-      // ✅ DESCIFRAR y verificar el PIN
-      if (!storedEncryptedPin || !this.isEncryptedPin(storedEncryptedPin)) {
+      // ✅ DESCIFRAR y verificar el PIN (excluyendo el espacio)
+      if (!storedEncryptedPin || storedEncryptedPin === " " || !this.isEncryptedPin(storedEncryptedPin)) {
         return {
           success: false,
           error: "No se encontró un PIN válido para este usuario"
@@ -233,6 +238,135 @@ export class PinService {
       this.safeUnbind();
     }
   }
+
+ /**
+   * ✅ CORREGIDO: Restablece la contraseña usando el PasswordService probado
+   */
+  async resetPasswordWithPIN(userIdentifier: string, newPassword: string): Promise<{ 
+    success: boolean; 
+    error?: string;
+    message?: string;
+  }> {
+    try {
+      console.log(`🔐 Iniciando reset de contraseña con PIN para: ${userIdentifier}`);
+
+      // Buscar el usuario
+      const userResult = await this.findUserByIdentifier(userIdentifier);
+      
+      if (!userResult.success || !userResult.userDN || !userResult.userData) {
+        return { 
+          success: false, 
+          error: userResult.error || "Usuario no encontrado"
+        };
+      }
+
+      const { userDN, userData } = userResult;
+
+      console.log(`🔍 Usuario encontrado: ${userData.sAMAccountName}, DN: ${userDN}`);
+
+      // ✅ USAR EL PASSWORD SERVICE EXISTENTE en lugar de cambiar directamente
+      try {
+        console.log(`🔄 Cambiando contraseña usando PasswordService...`);
+        await passwordService.resetPassword(userDN, newPassword);
+
+        console.log(`✅ Contraseña cambiada exitosamente para: ${userData.sAMAccountName}`);
+
+        return {
+          success: true,
+          message: "Contraseña restablecida exitosamente"
+        };
+
+      } catch (passwordError: any) {
+        console.error('❌ Error en passwordService.resetPassword:', passwordError);
+        
+        // ✅ MANEJO ESPECÍFICO DE ERRORES DE AD
+        let errorMessage = 'Error al cambiar la contraseña';
+        
+        if (passwordError.message.includes('Políticas de contraseña')) {
+          errorMessage = passwordError.message;
+        } else if (passwordError.message.includes('historial')) {
+          errorMessage = 'La nueva contraseña no puede ser igual a una contraseña anterior';
+        } else if (passwordError.code === 53 || passwordError.lde_message?.includes('constraint')) {
+          errorMessage = 'La contraseña no cumple con los requisitos de complejidad del dominio. Asegúrese de usar una combinación de mayúsculas, minúsculas, números y caracteres especiales.';
+        } else if (passwordError.code === 50) {
+          errorMessage = 'Política de contraseña insuficiente. La contraseña podría ser demasiado corta o no cumplir con los requisitos de historial.';
+        } else if (passwordError.code === 19) {
+          errorMessage = 'Violación de políticas de contraseña. La contraseña no cumple con los requisitos de complejidad establecidos.';
+        } else if (passwordError.message.includes('denegado') || passwordError.code === 52) {
+          errorMessage = 'No se tienen los permisos necesarios para cambiar esta contraseña. Contacte al administrador del sistema.';
+        }
+
+        return {
+          success: false,
+          error: errorMessage
+        };
+      }
+
+    } catch (error: any) {
+      console.error("❌ Error en resetPasswordWithPIN:", error);
+      
+      return {
+        success: false,
+        error: "Error interno del servidor al restablecer la contraseña"
+      };
+    }
+  }
+  /**
+   * ✅ NUEVO: Cambia la contraseña del usuario en AD
+   */
+private async changeUserPassword(userDN: string, newPassword: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // ✅ CORRECCIÓN: Usar la misma codificación que en LDAPAccountService
+    const encodedPassword = this.encodePassword(newPassword);
+    
+    const change = new Change({
+      operation: "replace",
+      modification: {
+        type: "unicodePwd",
+        values: [encodedPassword]
+      }
+    });
+
+    console.log(`🔄 Cambiando contraseña para: ${userDN}`);
+    console.log(`🔐 Contraseña codificada correctamente para AD`);
+
+    this.client.modify(userDN, change, (err) => {
+      if (err) {
+        console.error('❌ Error al cambiar contraseña:', err);
+        
+        // ✅ Manejar errores específicos de AD
+        if (err.code === 53) {
+          reject(new Error("La contraseña no cumple con los requisitos de complejidad del dominio"));
+        } else if (err.code === 19) {
+          reject(new Error("La contraseña no cumple con la política de contraseñas del dominio"));
+        } else if (err.code === 50) {
+          reject(new Error("Acceso denegado. No tiene permisos para cambiar esta contraseña"));
+        } else {
+          reject(new Error(`Error al cambiar contraseña: ${err.message} (Código: ${err.code})`));
+        }
+      } else {
+        console.log('✅ Contraseña cambiada exitosamente');
+        resolve();
+      }
+    });
+  });
+}
+
+  /**
+   * ✅ NUEVO: Codifica la contraseña para LDAP (formato unicodePwd)
+   */
+private encodePassword(password: string): Buffer {
+  const passwordString = `"${password}"`;
+  const passwordBuffer = Buffer.from(passwordString, 'utf16le');
+  
+  console.log(`🔐 Codificando contraseña:`, {
+    originalLength: password.length,
+    encodedLength: passwordBuffer.length,
+    encodedHex: passwordBuffer.toString('hex').substring(0, 32) + '...'
+  });
+  
+  return passwordBuffer;
+}
 
   /**
    * Busca usuario por sAMAccountName o employeeID
@@ -389,7 +523,7 @@ export class PinService {
         operation: 'replace',
         attribute: 'serialNumber',
         valueLength: pin.length,
-        valuePreview: pin ? `${pin.substring(0, 10)}...` : '[VACÍO]'
+        valuePreview: pin === " " ? '[ESPACIO]' : (pin ? `${pin.substring(0, 10)}...` : '[VACÍO]')
       });
 
       this.client.modify(userDN, change, (err) => {
@@ -448,11 +582,11 @@ export class PinService {
   }
 
   /**
-   * Verifica si el PIN está cifrado (basado en el formato de encriptación)
+   * ✅ CORREGIDO: Verifica si el PIN está cifrado (basado en el formato de encriptación)
    */
   private isEncryptedPin(pin: string): boolean {
-    // Verificar si tiene el formato de un texto cifrado (base64, etc.)
-    return pin.length > 10 && /^[A-Za-z0-9+/=]+$/.test(pin);
+    // Verificar si tiene el formato de un texto cifrado (base64, etc.) y no es un espacio
+    return pin !== " " && pin.length > 10 && /^[A-Za-z0-9+/=]+$/.test(pin);
   }
 
   private async authenticate(): Promise<void> {

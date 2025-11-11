@@ -1,6 +1,9 @@
-// controllers/2fa.controller.ts
 import { Request, Response } from 'express';
 import { ldap2FAService } from '../services/ldap-2fa.services';
+import { ForgotPassword2FAService } from '../services/forgotPassword2FA.services';
+
+// ✅ CREAR INSTANCIA DEL SERVICIO
+const forgotPassword2FAService = new ForgotPassword2FAService();
 
 /**
  * ✅ ACTIVAR 2FA - SIMPLIFICADO
@@ -106,6 +109,108 @@ export const deactivate2FAController = async (req: Request, res: Response): Prom
     res.status(500).json({ 
       success: false,
       error: 'Error desactivando 2FA'
+    });
+  }
+};
+
+/**
+ * ✅ CONTROLADOR CORREGIDO PARA VERIFICAR USUARIO EN RECUPERACIÓN CON 2FA
+ * Compatible con el componente frontend UserIdentifierForm
+ */
+export const check2FAUserStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { identifier } = req.body;
+
+    console.log('🔐 Verificando usuario para recuperación 2FA:', identifier);
+
+    if (!identifier) {
+      res.status(400).json({
+        success: false,
+        error: 'Se requiere un identificador (usuario o carnet)'
+      });
+      return;
+    }
+
+    // ✅ CORREGIDO: Usar la instancia en lugar de la clase
+    const result = await forgotPassword2FAService.checkUser(identifier);
+
+    console.log('📊 Resultado de checkUser:', result);
+
+    if (!result.success || !result.user) {
+      res.status(404).json({
+        success: false,
+        error: result.error || 'Usuario no encontrado'
+      });
+      return;
+    }
+
+    // ✅ ESTRUCTURA COMPATIBLE CON EL FRONTEND - INCLUIR TODOS LOS CAMPOS NECESARIOS
+    const response = {
+      success: true,
+      userData: {
+        email: result.user.email,
+        displayName: result.user.displayName,
+        sAMAccountName: result.user.sAMAccountName,
+        employeeID: result.user.employeeID || result.user.sAMAccountName,
+        dn: result.user.dn,
+        has2FA: result.user.has2FA,
+        // ✅ INCLUIR LOS CAMPOS ESPECÍFICOS PARA 2FA
+        employeeNumber: result.user.employeeNumber,
+        userParameters: result.user.userParameters
+      }
+    };
+
+    console.log('✅ Respuesta 2FA completa para frontend:', response);
+
+    res.json(response);
+
+  } catch (error) {
+    console.error('❌ Error en check2FAUserStatus:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error del servidor al verificar usuario'
+    });
+  }
+};
+
+/**
+ * ✅ VALIDAR CÓDIGO 2FA DURANTE RECUPERACIÓN
+ */
+export const verify2FACodeRecovery = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { identifier, code } = req.body;
+
+    console.log('🔢 Verificando código 2FA para:', identifier);
+
+    if (!identifier || !code) {
+      res.status(400).json({
+        success: false,
+        error: 'Identificador y código son requeridos'
+      });
+      return;
+    }
+
+    // ✅ CORREGIDO: Usar la instancia en lugar de la clase
+    const result = await forgotPassword2FAService.verifyCode(identifier, code);
+
+    if (!result.success) {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: result.message
+    });
+
+  } catch (error) {
+    console.error('❌ Error en verify2FACodeRecovery:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error del servidor al verificar código'
     });
   }
 };

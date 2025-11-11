@@ -1,51 +1,46 @@
 version: '3.8'
 services:
-  zookeeper:
-    image: quay.io/debezium/zookeeper:2.4
-    container_name: zookeeper
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-postgres
     ports:
-      - "2181:2181"
-
-  kafka:
-    image: quay.io/debezium/kafka:2.4
-    container_name: kafka
-    ports:
-      - "9092:9092"
-    depends_on:
-      - zookeeper
+      - "5672:5672"
+      - "15672:15672"
     environment:
-      - ZOOKEEPER_CONNECT=zookeeper:2181
-
-  connect:
-    image: quay.io/debezium/connect:2.4
-    container_name: connect
-    ports:
-      - "8083:8083"
-    depends_on:
-      - kafka
-      - sqlserver  
-    environment:
-      - BOOTSTRAP_SERVERS=kafka:9092
-      - GROUP_ID=1
-      - CONFIG_STORAGE_TOPIC=connect_configs
-      - OFFSET_STORAGE_TOPIC=connect_offsets
-      - STATUS_STORAGE_TOPIC=connect_statuses
-
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2019-latest
-    container_name: sqlserver
-    hostname: sqlserver 
-    ports:
-      - "1433:1433"
-    env_file:
-      - .env  
-    environment:
-      - ACCEPT_EULA=${ACCEPT_EULA}
-      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
-      - MSSQL_PID=${MSSQL_PID}
-      - MSSQL_AGENT_ENABLED=${MSSQL_AGENT_ENABLED}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
     volumes:
-      - sqlserver_data:/var/opt/mssql
+      - rabbitmq_postgres_data:/var/lib/rabbitmq
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  cdc-postgres:
+    build: ./cdc-service
+    container_name: cdc-postgres
+    depends_on:
+      - rabbitmq
+      - postgres
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
+      - DATABASE_TYPE=postgres
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - CDC_INTERVAL=${CDC_INTERVAL}
+      - MONITORED_TABLES=student
+      - STUDENT_MONITORED_COLUMNS=${STUDENT_MONITORED_COLUMNS}
+    volumes:
+      - ./cdc-service:/app
+    restart: unless-stopped
 
 volumes:
-  sqlserver_data:
+  rabbitmq_postgres_data:
+  postgres_data:

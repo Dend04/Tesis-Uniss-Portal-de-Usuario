@@ -26,6 +26,13 @@ import './jobs/passwordExpiryCron';
 import twoFARouter from './routes/2fa.routes';
 import pinRoutes from "./routes/pin.routes";
 import guestUserRoutes from "./routes/inviteAccount.routes";
+import usersRoutes from "./routes/users.routes";
+import forgotPassword2FARoutes from './routes/forgotPassword2FA.routes';
+import forgotPassword2FATop from './routes/totp-verification.routes';
+import portalRoutes from './routes/portal.routes';
+import updateAccount from './routes/updateAccount.routes'
+import groupRoutes from './routes/groups.route';
+
 
 // Cargar variables de entorno desde el archivo .env
 dotenv.config();
@@ -86,7 +93,12 @@ app.use("/api/log",logRoutes);
 app.use('/api/2fa', twoFARouter);
 app.use("/api/pin", pinRoutes);
 app.use('/api', guestUserRoutes);
-
+app.use('/api/users', usersRoutes);
+app.use('/api/2fa', forgotPassword2FARoutes);
+app.use('/api/2fa', forgotPassword2FATop);
+app.use('/api/portal', portalRoutes);
+app.use('/api/updateAccount', updateAccount);
+app.use('/api/groups', groupRoutes);
 
 // Endpoint de health check para verificar que el servidor está funcionando
 app.get('/health', (_: Request, res: Response) => {

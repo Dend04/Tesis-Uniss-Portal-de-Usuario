@@ -186,7 +186,7 @@ export default function EmailForm({
 
         if (response.status === 401) {
           const errorText = await response.text();
-          localStorage.removeItem('authToken');
+        /*   localStorage.removeItem('authToken'); */
           setErrorMessage("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
           return;
         }

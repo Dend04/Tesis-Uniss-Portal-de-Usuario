@@ -1,0 +1,44 @@
+version: '3.8'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-sqlserver
+    ports:
+      - "5673:5672"    
+      - "15673:15672"  
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq_sqlserver_data:/var/lib/rabbitmq
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=${ACCEPT_EULA}
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+      - MSSQL_PID=${MSSQL_PID}
+      - MSSQL_AGENT_ENABLED=${MSSQL_AGENT_ENABLED}
+
+  cdc-sqlserver:
+    build: ./cdc-service
+    container_name: cdc-sqlserver
+    depends_on:
+      - rabbitmq
+      - sqlserver
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
+      - DATABASE_TYPE=sqlserver
+      - DATABASE_URL=Server=sqlserver;Database=${SQLSERVER_DB_NAME};User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=true;
+      - CDC_INTERVAL=${CDC_INTERVAL}
+      - MONITORED_TABLES=Empleado_Gral
+      - EMPLEADO_GRAL_MONITORED_COLUMNS=${EMPLEADO_GRAL_MONITORED_COLUMNS}
+    volumes:
+      - ./cdc-service:/app
+    restart: unless-stopped
+
+volumes:
+  rabbitmq_sqlserver_data:

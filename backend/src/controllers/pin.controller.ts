@@ -250,6 +250,133 @@ export class PinController {
 
     return null;
   };
+
+  /**
+   * ✅ NUEVO: Verifica si un usuario tiene PIN configurado (para recuperación)
+   * No requiere autenticación - se usa en flujo de recuperación
+   */
+  checkUserHasPin = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { identifier } = req.body;
+
+      if (!identifier) {
+        res.status(400).json({
+          success: false,
+          error: "Identificador (usuario o carnet) es requerido",
+        });
+        return;
+      }
+
+      console.log('🔍 Verificando estado PIN para:', identifier);
+
+      // Buscar usuario primero
+      const userResult = await pinService.findUserByIdentifier(identifier);
+      if (!userResult.success || !userResult.userData) {
+        res.status(400).json({
+          success: false,
+          error: userResult.error || "Usuario no encontrado",
+        });
+        return;
+      }
+
+      // Verificar si tiene PIN
+      const pinResult = await pinService.hasUserPin(userResult.userData.sAMAccountName);
+      
+      res.json({
+        success: true,
+        hasPin: pinResult.hasPin,
+        userData: userResult.userData,
+        error: pinResult.error,
+      });
+
+    } catch (error) {
+      console.error("Error en checkUserHasPin controller:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor",
+      });
+    }
+  };
+
+  /**
+ * Restablece la contraseña usando el flujo de PIN
+ */
+resetPasswordWithPIN = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { userIdentifier, newPassword } = req.body;
+
+      console.log('🔐 Iniciando resetPasswordWithPIN:', { 
+        userIdentifier, 
+        passwordLength: newPassword?.length 
+      });
+
+      // Validaciones básicas
+      if (!userIdentifier || !newPassword) {
+        res.status(400).json({
+          success: false,
+          error: "Identificador de usuario y nueva contraseña son requeridos"
+        });
+        return;
+      }
+
+      // Validaciones de contraseña (igual que en el frontend)
+      if (newPassword.length < 8) {
+        res.status(400).json({
+          success: false,
+          error: "La contraseña debe tener al menos 8 caracteres"
+        });
+        return;
+      }
+
+      // Validar complejidad básica
+      const hasUpperCase = /[A-Z]/.test(newPassword);
+      const hasLowerCase = /[a-z]/.test(newPassword);
+      const hasNumbers = /\d/.test(newPassword);
+      const hasSymbols = /[^A-Za-z0-9]/.test(newPassword);
+
+      if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSymbols) {
+        res.status(400).json({
+          success: false,
+          error: "La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial"
+        });
+        return;
+      }
+
+      console.log('🔄 Restableciendo contraseña para:', userIdentifier);
+      
+      // ✅ USAR EL SERVICIO CORREGIDO
+      const result = await pinService.resetPasswordWithPIN(userIdentifier, newPassword);
+
+      if (result.success) {
+        console.log('✅ Contraseña restablecida exitosamente');
+        res.json({
+          success: true,
+          message: result.message || "Contraseña restablecida exitosamente"
+        });
+      } else {
+        console.log('❌ Error al restablecer contraseña:', result.error);
+        
+        // ✅ Distinguir entre errores de validación y errores del servidor
+        const statusCode = result.error?.includes("no encontrado") || 
+                          result.error?.includes("seguridad") || 
+                          result.error?.includes("caracteres") ||
+                          result.error?.includes("complejidad") ||
+                          result.error?.includes("política") ? 400 : 500;
+        
+        res.status(statusCode).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error en resetPasswordWithPIN controller:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor al restablecer la contraseña"
+      });
+    }
+  };
 }
+
 
 export const pinController = new PinController();

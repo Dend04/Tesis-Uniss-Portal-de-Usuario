@@ -18,6 +18,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   XCircleIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 
 interface UserDetails {
@@ -39,16 +40,22 @@ interface UserDetails {
   province?: string;
   town?: string;
   country?: string;
+  
   // Campos específicos de empleados
   employeeType?: string;
   office?: string;
+  
   // Campos específicos de estudiantes
   studentType?: string;
   academicSituation?: string;
   courseType?: string;
-  // Campos de seguridad
-  serialNumber: string; // Para determinar si tiene PIN activado
-  userParameters?: string;
+  
+  // Campos de seguridad y LDAP
+  userParameters: string;
+  serialNumber: string;
+  description?: string;
+  userAccountControl: string;
+  
   // Información adicional de LDAP
   displayName?: string;
   givenName?: string;
@@ -58,6 +65,7 @@ interface UserDetails {
   employeeID?: string;
   userPrincipalName?: string;
   mail?: string;
+  employeeNumber?: string;
 }
 
 export default function UserViewPage() {
@@ -76,19 +84,24 @@ export default function UserViewPage() {
         // Simular llamada a la API para obtener detalles del usuario
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Datos de ejemplo basados en la estructura de LDAP
+        // Datos de ejemplo basados en la estructura real de LDAP
+        const isStudent = Math.random() > 0.5;
+        const has2FA = Math.random() > 0.5;
+        const hasPIN = Math.random() > 0.5;
+        const isActive = Math.random() > 0.2;
+
         const mockUser: UserDetails = {
           id: `user-${Math.random().toString(36).substr(2, 9)}`,
           username: username,
           fullName: "Usuario Ejemplo Apellido",
           email: `${username}@uniss.edu.cu`,
-          role: Math.random() > 0.5 ? "Estudiante" : "Docente",
+          role: isStudent ? "Estudiante" : "Docente",
           department: "TI",
-          year: Math.floor(Math.random() * 6) + 1,
-          career: "Ingeniería Informática",
+          year: isStudent ? Math.floor(Math.random() * 6) + 1 : undefined,
+          career: isStudent ? "Ingeniería Informática" : undefined,
           identityCard: `910${Math.random().toString().slice(2, 11)}`,
           faculty: "Ciencias Técnicas",
-          status: "active",
+          status: isActive ? "active" : Math.random() > 0.5 ? "baja" : "prorroga",
           createdAt: new Date(Date.now() - Math.random() * 31536000000).toISOString(),
           lastLogin: Math.random() > 0.3 ? new Date(Date.now() - Math.random() * 86400000).toISOString() : undefined,
           phone: "+5351234567",
@@ -96,24 +109,34 @@ export default function UserViewPage() {
           province: "Sancti Spíritus",
           town: "Sancti Spíritus",
           country: "Cuba",
+          
           // Campos específicos
-          employeeType: "Docente",
-          office: "Oficina 101",
-          studentType: "Curso Diurno",
-          academicSituation: "Regular",
-          courseType: "Presencial",
-          // Campos de seguridad - Esto determinará si tiene PIN activado
-          serialNumber: Math.random() > 0.5 ? "secret_value_here" : " ", // Espacio = no activado
-          userParameters: "2FA DISABLED",
+          employeeType: isStudent ? undefined : "Docente",
+          office: isStudent ? undefined : "Oficina 101",
+          studentType: isStudent ? "Curso Diurno" : undefined,
+          academicSituation: isStudent ? "Regular" : undefined,
+          courseType: isStudent ? "Presencial" : undefined,
+          
+          // Campos de seguridad - Basados en la estructura real
+          userParameters: has2FA ? "2FA ENABLED" : "2FA DISABLED",
+          serialNumber: hasPIN ? "encrypted_pin_value_here" : " ",
+          description: isStudent 
+            ? "Estudiante de Ingeniería Informática actualmente en curso diurno"
+            : "Docente del departamento de TI",
+          userAccountControl: isActive ? "512" : "514",
+          
           // Campos LDAP
           displayName: "Usuario Ejemplo Apellido",
           givenName: "Usuario",
           sn: "Ejemplo Apellido",
-          title: "Docente",
-          physicalDeliveryOfficeName: "Docente de Ingeniería Informática",
+          title: isStudent ? "Estudiante" : "Docente",
+          physicalDeliveryOfficeName: isStudent 
+            ? "Estudiante de Ingeniería Informática actualmente en curso diurno"
+            : "Docente de Ingeniería Informática",
           employeeID: `910${Math.random().toString().slice(2, 11)}`,
           userPrincipalName: `${username}@uniss.edu.cu`,
           mail: `${username}@uniss.edu.cu`,
+          employeeNumber: `910${Math.random().toString().slice(2, 11)}`,
         };
 
         setUser(mockUser);
@@ -129,7 +152,20 @@ export default function UserViewPage() {
     }
   }, [username]);
 
+  // Determinar si tiene 2FA activado
+  const has2FA = user?.userParameters?.toUpperCase().includes("2FA ENABLED");
+  
+  // Determinar si tiene PIN activado (serialNumber no vacío y no es solo espacio)
   const hasActivePIN = user?.serialNumber && user.serialNumber.trim() !== "" && user.serialNumber !== " ";
+
+  // Determinar estado de la cuenta basado en userAccountControl
+  const getAccountStatus = () => {
+    switch (user?.userAccountControl) {
+      case "512": return { text: "Cuenta Habilitada", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" };
+      case "514": return { text: "Cuenta Deshabilitada", color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" };
+      default: return { text: "Estado Desconocido", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" };
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -191,6 +227,8 @@ export default function UserViewPage() {
     );
   }
 
+  const accountStatus = getAccountStatus();
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
@@ -221,6 +259,15 @@ export default function UserViewPage() {
               <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(user.status)}`}>
                 {getStatusText(user.status)}
               </span>
+              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${accountStatus.color}`}>
+                {accountStatus.text}
+              </span>
+              {has2FA && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-sm font-semibold rounded-full">
+                  <ShieldCheckIcon className="h-4 w-4" />
+                  2FA Activado
+                </span>
+              )}
               {hasActivePIN && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-sm font-semibold rounded-full">
                   <ShieldCheckIcon className="h-4 w-4" />
@@ -402,11 +449,37 @@ export default function UserViewPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Estado
+                    Estado de la Cuenta
+                  </label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${accountStatus.color}`}>
+                    {accountStatus.text}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Estado Académico/Laboral
                   </label>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(user.status)}`}>
                     {getStatusText(user.status)}
                   </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Autenticación de Dos Factores (2FA)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {has2FA ? (
+                      <>
+                        <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                        <span className="text-green-700 dark:text-green-400">Activado</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircleIcon className="h-5 w-5 text-gray-400" />
+                        <span className="text-gray-500 dark:text-gray-400">Desactivado</span>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -461,6 +534,61 @@ export default function UserViewPage() {
                   </label>
                   <p className="text-gray-900 dark:text-white text-sm">{user.employeeID}</p>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Employee Number
+                  </label>
+                  <p className="text-gray-900 dark:text-white text-sm">{user.employeeNumber}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    userAccountControl
+                  </label>
+                  <p className="text-gray-900 dark:text-white text-sm font-mono">{user.userAccountControl}</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Descripción y Campos Adicionales */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+            >
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <DocumentTextIcon className="h-6 w-6 text-blue-600" />
+                Información Adicional
+              </h2>
+              <div className="space-y-3">
+                {user.description && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Descripción
+                    </label>
+                    <p className="text-gray-900 dark:text-white text-sm">{user.description}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    physicalDeliveryOfficeName
+                  </label>
+                  <p className="text-gray-900 dark:text-white text-sm">{user.physicalDeliveryOfficeName}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    userParameters
+                  </label>
+                  <p className="text-gray-900 dark:text-white text-sm font-mono">{user.userParameters}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    serialNumber
+                  </label>
+                  <p className="text-gray-900 dark:text-white text-sm font-mono break-all">
+                    {hasActivePIN ? "••••••••••" : user.serialNumber}
+                  </p>
+                </div>
               </div>
             </motion.div>
 
@@ -468,7 +596,7 @@ export default function UserViewPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.6 }}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
             >
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">

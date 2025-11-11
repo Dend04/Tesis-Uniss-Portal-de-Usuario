@@ -1130,3 +1130,34 @@ Validation Error Count: 1
     at TLSSocket.emit (node:domain:489:12)
     at addChunk (node:internal/streams/readable:561:12)
     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-10-30 14:04:28 [error]: Error al actualizar employeeID: Usuario denamorado no encontrado en LDAP
+2025-10-30 14:14:37 [error]: Error al actualizar employeeID: Usuario denamorado no encontrado en LDAP
+2025-10-30 14:15:46 [error]: Error al actualizar employeeID: No Such Object
+2025-10-30 14:20:43 [error]: Error al actualizar employeeID: No Such Object
+2025-10-30 14:23:11 [error]: Error al actualizar employeeID: No se tienen permisos para modificar CN=Dairon Enamorado Bringuez,OU=5to,OU=CRD,OU=Ingenieria_informatica,OU=Fac. Ciencias Técnicas y Económicas,OU=Pregrado,OU=Estudiantes,OU=UNISS_Users,DC=uniss,DC=edu,DC=cu
+2025-10-30 14:48:56 [error]: Error al actualizar employeeID: Token inválido o expirado
+2025-10-31 13:16:50 [error]: Error al actualizar employeeID: Usuario denamorado no encontrado en LDAP
+2025-10-31 14:01:45 [error]: Error al actualizar employeeID: Usuario denamorado no encontrado en LDAP
+2025-10-31 14:14:48 [error]: Error al actualizar employeeID: Usuario denamorado no encontrado en LDAP
+2025-10-31 14:21:18 [error]: Error al actualizar employeeID: Usuario denamorado no encontrado en LDAP
+2025-10-31 14:28:15 [error]: Error al actualizar employeeID: No Such Object
+2025-10-31 14:32:11 [error]: Error al actualizar employeeID: No Such Object
+2025-10-31 14:46:15 [error]: Error al actualizar employeeID: No Such Object
+2025-10-31 14:56:19 [error]: Error al actualizar employeeID: decoded.replace is not a function
+2025-10-31 14:59:56 [error]: Error al actualizar employeeID: No Such Object
+2025-10-31 15:03:02 [error]: Error al actualizar employeeID: No Such Object
+2025-11-04 08:58:57 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 09:01:32 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 09:01:32 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 09:03:58 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 09:03:58 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 09:04:59 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 09:04:59 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 09:05:06 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 09:05:06 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 09:07:20 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 09:07:20 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 11:04:09 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 11:04:36 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-04 11:10:13 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-04 16:20:19 [error]: Error verificando token: Token inválido o expirado
