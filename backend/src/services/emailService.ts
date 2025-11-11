@@ -6,7 +6,7 @@ import { getVerificationCodeHTML } from "../templates/verificationCode";
 import { getNewEmailHTML } from "../templates/newEmail";
 import { getPasswordExpiryAlertHTML } from "../templates/alertTemplates";
 import { getChangeEmailHTML } from "../templates/changeEmail";
-import { searchLDAPUserForEmail } from "../utils/ldap.utils";
+import { searchLDAPUserForEmail, unifiedLDAPSearchImproved } from "../utils/ldap.utils";
 import { unifiedLDAPSearch } from "../utils/ldap.utils";
 
 const validateEmail = (email: string): void => {
@@ -16,8 +16,15 @@ const validateEmail = (email: string): void => {
 };
 
 // Configuración del transporte SMTP local
+// Configuración del transporte SMTP local con verificación
 const createEmailTransport = (): Transporter => {
-  return nodemailer.createTransport({
+  console.log(`🔧 CONFIGURANDO TRANSPORTE SMTP`);
+  console.log(`   Host: ${process.env.SMTP_HOST || "10.16.1.5"}`);
+  console.log(`   Port: ${process.env.SMTP_PORT || "25"}`);
+  console.log(`   User: ${process.env.SMTP_USER ? 'CONFIGURADO' : 'NO CONFIGURADO'}`);
+  console.log(`   From: ${process.env.SMTP_FROM}`);
+  
+  const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || "10.16.1.5",
     port: parseInt(process.env.SMTP_PORT || "25"),
     secure: false,
@@ -31,8 +38,33 @@ const createEmailTransport = (): Transporter => {
     },
     ignoreTLS: false,
     requireTLS: false,
+    debug: true, // 👈 ACTIVA MODO DEBUG
+    logger: {
+      // 👈 LOGGER PERSONALIZADO - CORREGIDO
+      debug: (message: string) => {
+        console.log(`🐛 SMTP Debug: ${message}`);
+      },
+      info: (message: string) => {
+        console.log(`📨 SMTP Info: ${message}`);
+      },
+      warn: (message: string) => {
+        console.log(`⚠️ SMTP Warn: ${message}`);
+      },
+      error: (message: string) => {
+        console.error(`💥 SMTP Error: ${message}`);
+      }
+    }
   } as SMTPTransport.Options);
+
+  // ✅ MANEJAR EVENTOS DE ERROR (solo este evento está disponible)
+  transporter.on('error', (error: Error) => {
+    console.error(`💥 SMTP Connection Error: ${error.message}`);
+  });
+
+  return transporter;
 };
+
+
 
 export const sendWelcomeEmail = async (
   email: string,
@@ -91,14 +123,29 @@ export const sendVerificationCode = async (
   verificationCode: string
 ): Promise<SMTPTransport.SentMessageInfo> => {
   try {
+    console.log(`📧 INICIANDO ENVÍO DE CÓDIGO DE VERIFICACIÓN`);
+    console.log(`   Para: ${to}`);
+    console.log(`   Usuario: ${userName}`);
+    console.log(`   Código: ${verificationCode}`);
+
     validateEmail(to);
 
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('❌ ERROR: Configuración SMTP incompleta');
       throw new Error("Configuración de email incompleta");
     }
 
+    console.log(`✅ Configuración SMTP válida`);
+    
     const transportador = createEmailTransport();
+    
+    // ✅ VERIFICAR CONEXIÓN SMTP ANTES DE ENVIAR
+    console.log(`🔍 Verificando conexión SMTP...`);
+    await transportador.verify();
+    console.log(`✅ Conexión SMTP verificada - servidor listo`);
+
     const contenidoHtml = getVerificationCodeHTML(userName, verificationCode);
+    console.log(`✅ HTML del correo generado`);
 
     const opcionesCorreo = {
       from: process.env.SMTP_FROM,
@@ -107,10 +154,36 @@ export const sendVerificationCode = async (
       html: contenidoHtml,
     };
 
+    console.log(`📨 Enviando correo a través de SMTP...`);
+    
     const info = await transportador.sendMail(opcionesCorreo);
+    
+    console.log(`✅ CORREO APARENTEMENTE ENVIADO`);
+    console.log(`   Message ID: ${info.messageId}`);
+    console.log(`   Response: ${info.response}`);
+    console.log(`   Accepted: ${info.accepted}`); // Destinatarios aceptados
+    console.log(`   Rejected: ${info.rejected}`);  // Destinatarios rechazados
+    console.log(`   Pending: ${info.pending}`);    // Destinatarios pendientes
+    
+    // ✅ VERIFICAR SI EL CORREO FUE REALMENTE ACEPTADO
+    if (info.accepted && info.accepted.length > 0) {
+      console.log(`🎯 Correo aceptado por el servidor SMTP para: ${info.accepted.join(', ')}`);
+    } else {
+      console.warn(`⚠️ Correo NO fue aceptado por el servidor SMTP`);
+    }
+    
+    if (info.rejected && info.rejected.length > 0) {
+      console.error(`❌ Correo rechazado para: ${info.rejected.join(', ')}`);
+    }
+    
     emailCounter.increment();
+    console.log(`📊 Contador de emails: ${emailCounter.getCount()}`);
+    
     return info;
   } catch (error) {
+    console.error(`💥 ERROR CRÍTICO AL ENVIAR CORREO:`, error);
+    console.error(`   Destinatario: ${to}`);
+    console.error(`   Código que no se envió: ${verificationCode}`);
     throw new Error(
       `Error al enviar código de verificación: ${(error as Error).message}`
     );
@@ -297,7 +370,7 @@ export const verifyUserExists = async (identifier: string): Promise<{
       "distinguishedName"
     ];
 
-    const users = await unifiedLDAPSearch(filter, attributes);
+    const users = await unifiedLDAPSearchImproved(filter, attributes);
 
     if (users.length === 0) {
       return {

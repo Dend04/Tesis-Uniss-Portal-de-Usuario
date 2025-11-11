@@ -31,14 +31,13 @@ const deviceSchema = {
   }
 };
 
-// ✅ INTERFAZ ACTUALIZADA
 interface AddDeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (data: Omit<Device, 'id'>) => Promise<void>; // ✅ Hacer opcional
-  onSuccess?: () => void; // ✅ Nueva prop para notificar éxito
+  onSuccess?: () => void;
   device?: Device | null;
   isDarkMode: boolean;
+  deviceCount: number; // ✅ NUEVO: Contador de dispositivos
 }
 
 interface DeviceFormData {
@@ -47,7 +46,7 @@ interface DeviceFormData {
   mac: string;
 }
 
-// ✅ FUNCIÓN PARA OBTENER EL TOKEN
+// ✅ FUNCIÓN MEJORADA PARA OBTENER EL TOKEN
 const getAuthToken = (): string => {
   if (typeof window === 'undefined') return '';
   try {
@@ -58,13 +57,57 @@ const getAuthToken = (): string => {
   }
 };
 
+// ✅ FUNCIÓN PARA MANEJAR ERRORES DE LA API
+const handleApiError = (error: any, setError: any) => {
+  if (error instanceof Error) {
+    const message = error.message;
+    
+    if (message.includes('401')) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'Sesión expirada. Por favor, inicia sesión nuevamente.'
+      });
+    } else if (message.includes('409') || message.includes('ya existe')) {
+      setError('mac', { 
+        type: 'manual', 
+        message: 'Esta dirección MAC ya está registrada en otro dispositivo.'
+      });
+    } else if (message.includes('400') && message.includes('Límite')) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'Límite alcanzado. Máximo 4 dispositivos por usuario.'
+      });
+    } else if (message.includes('500')) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'Error del servidor. Por favor, intenta más tarde.'
+      });
+    } else if (message.includes('NetworkError') || message.includes('Failed to fetch')) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'Error de conexión. Verifica tu internet.'
+      });
+    } else {
+      setError('root', { 
+        type: 'manual', 
+        message: `Error: ${message}`
+      });
+    }
+  } else {
+    setError('root', { 
+      type: 'manual', 
+      message: 'Error desconocido al crear dispositivo'
+    });
+  }
+};
+
 export default function AddDeviceModal({ 
   isOpen, 
   onClose, 
-  onSave,
-  onSuccess, // ✅ Nueva prop
+  onSuccess,
   device,
-  isDarkMode
+  isDarkMode,
+  deviceCount // ✅ NUEVO: Recibir contador
 }: AddDeviceModalProps) {
   const { 
     register, 
@@ -104,23 +147,32 @@ export default function AddDeviceModal({
     }
   }, [isOpen, device, setValue, reset, clearErrors]);
 
-  // ✅ FUNCIÓN ONSUBMIT - SOLO CREACIÓN
+  // ✅ VERIFICAR LÍMITE ANTES DE ENVIAR
+  const canAddDevice = deviceCount < 4;
+
+  // ✅ FUNCIÓN ONSUBMIT MEJORADA
   const onSubmit: SubmitHandler<DeviceFormData> = async (data) => {
+    // Verificar límite antes de enviar
+    if (!canAddDevice) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'Límite alcanzado. Máximo 4 dispositivos por usuario.'
+      });
+      return;
+    }
+
     try {
       const token = getAuthToken();
       if (!token) {
         throw new Error('No se encontró token de autenticación');
       }
 
-      // ✅ HEADERS CORRECTOS
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/portal/dispositivos`, {
         method: 'POST',
-        headers: headers,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           mac: data.mac,
           nombre: data.nombre,
@@ -129,38 +181,45 @@ export default function AddDeviceModal({
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        let errorMessage = errorData.error || `Error ${response.status}: ${response.statusText}`;
+        
+        // Mensajes específicos por código de error
+        switch (response.status) {
+          case 400:
+            if (errorMessage.includes('Límite')) {
+              errorMessage = 'Límite alcanzado. Máximo 4 dispositivos por usuario.';
+            } else if (errorMessage.includes('MAC')) {
+              errorMessage = 'Esta dirección MAC ya está registrada.';
+            }
+            break;
+          case 401:
+            errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+            break;
+          case 409:
+            errorMessage = 'Esta dirección MAC ya está registrada en otro dispositivo.';
+            break;
+          case 500:
+            errorMessage = 'Error del servidor. Por favor, intenta más tarde.';
+            break;
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      // ✅ NOTIFICAR ÉXITO Y CERRAR
+      // ✅ ÉXITO - LIMPIAR Y CERRAR
       reset();
-      onSuccess?.(); // ✅ Llamar onSuccess si existe
+      onSuccess?.();
       onClose();
       
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message.includes('401')) {
-          setError('root', { 
-            type: 'manual', 
-            message: 'Sesión expirada. Por favor, inicia sesión nuevamente.'
-          });
-        } else {
-          setError('root', { 
-            type: 'manual', 
-            message: `Error al crear dispositivo: ${error.message}`
-          });
-        }
-      } else {
-        setError('root', { 
-          type: 'manual', 
-          message: 'Error desconocido al crear dispositivo'
-        });
-      }
+      handleApiError(error, setError);
     }
   };
 
   const handleClose = () => {
     reset();
+    clearErrors();
     onClose();
   };
 
@@ -176,12 +235,11 @@ export default function AddDeviceModal({
         aria-modal="true"
         aria-labelledby="device-modal-title"
       >
-        {/* ... (el resto del JSX permanece igual) ... */}
         <div className="flex justify-between items-center mb-6">
           <h2 id="device-modal-title" className={`text-2xl font-bold ${
             isDarkMode ? "text-white" : "text-gray-900"
           }`}>
-            {device ? 'Editar dispositivo' : 'Agregar dispositivo'}
+            Agregar dispositivo
           </h2>
           <button
             onClick={handleClose}
@@ -195,6 +253,14 @@ export default function AddDeviceModal({
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
+
+        {/* ✅ ALERTA DE LÍMITE */}
+        {!canAddDevice && (
+          <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg" role="alert">
+            <p className="font-medium">Límite alcanzado</p>
+            <p className="text-sm">Ya tienes 4 dispositivos registrados. Elimina uno para agregar otro.</p>
+          </div>
+        )}
 
         <form 
           onSubmit={handleSubmit(onSubmit)} 
@@ -216,6 +282,7 @@ export default function AddDeviceModal({
                   : "bg-white border-gray-300 text-gray-900 focus:border-uniss-blue"
               }`}
               aria-required="true"
+              disabled={!canAddDevice}
             >
               <option value="CELULAR">📱 Teléfono</option>
               <option value="LAPTOP">💻 Laptop</option>
@@ -239,10 +306,13 @@ export default function AddDeviceModal({
                 isDarkMode
                   ? "bg-gray-700 border-gray-600 text-white focus:border-uniss-gold"
                   : "bg-white border-gray-300 text-gray-900 focus:border-uniss-blue"
-              } ${errors.nombre ? "border-red-500" : ""}`}
+              } ${errors.nombre ? "border-red-500" : ""} ${
+                !canAddDevice ? "opacity-50 cursor-not-allowed" : ""
+              }`}
               placeholder="Ej: Mi teléfono personal, Laptop del trabajo"
               aria-required="true"
               aria-invalid={errors.nombre ? "true" : "false"}
+              disabled={!canAddDevice}
             />
             {errors.nombre && (
               <span className="text-red-500 text-sm block mt-1" role="alert">
@@ -269,10 +339,13 @@ export default function AddDeviceModal({
                 isDarkMode
                   ? "bg-gray-700 border-gray-600 text-white focus:border-uniss-gold"
                   : "bg-white border-gray-300 text-gray-900 focus:border-uniss-blue"
-              } ${errors.mac ? "border-red-500" : ""}`}
+              } ${errors.mac ? "border-red-500" : ""} ${
+                !canAddDevice ? "opacity-50 cursor-not-allowed" : ""
+              }`}
               maxLength={17}
               aria-required="true"
               aria-invalid={errors.mac ? "true" : "false"}
+              disabled={!canAddDevice}
             />
             {errors.mac && (
               <span className="text-red-500 text-sm block mt-1" role="alert">
@@ -308,21 +381,21 @@ export default function AddDeviceModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !canAddDevice}
               className={`flex-1 py-3 px-4 rounded-lg font-medium ${
                 isDarkMode
                   ? "bg-uniss-gold text-gray-900 hover:bg-yellow-500"
                   : "bg-uniss-blue text-white hover:bg-blue-600"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
-              aria-label={device ? "Actualizar dispositivo" : "Guardar dispositivo"}
+              aria-label="Guardar dispositivo"
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center gap-2">
                   <ArrowPathIcon className="w-4 h-4 animate-spin" />
-                  {device ? 'Actualizando...' : 'Guardando...'}
+                  Guardando...
                 </div>
               ) : (
-                device ? 'Actualizar Dispositivo' : 'Guardar Dispositivo'
+                'Guardar Dispositivo'
               )}
             </button>
           </div>

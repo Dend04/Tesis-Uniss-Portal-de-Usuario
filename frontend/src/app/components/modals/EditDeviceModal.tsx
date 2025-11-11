@@ -2,7 +2,6 @@
 
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Device } from "@/types";
-import { formatMAC } from "../../utils/format";
 import { useEffect } from "react";
 import { 
   XMarkIcon,
@@ -20,10 +19,9 @@ interface EditDeviceModalProps {
 interface DeviceFormData {
   nombre: string;
   tipo: 'CELULAR' | 'TABLET' | 'LAPTOP' | 'PC' | 'MINI_PC' | 'OTRO';
-  mac: string;
 }
 
-// Esquema de validación (puede ser diferente para edición)
+// Esquema de validación
 const deviceSchema = {
   nombre: {
     required: "El nombre del dispositivo es requerido",
@@ -38,6 +36,7 @@ const deviceSchema = {
   }
 };
 
+// ✅ FUNCIÓN MEJORADA PARA OBTENER EL TOKEN
 const getAuthToken = (): string => {
   if (typeof window === 'undefined') return '';
   try {
@@ -45,6 +44,55 @@ const getAuthToken = (): string => {
     return token || '';
   } catch (error) {
     return '';
+  }
+};
+
+// ✅ FUNCIÓN PARA MANEJAR ERRORES DE LA API
+const handleApiError = (error: any, setError: any) => {
+  if (error instanceof Error) {
+    const message = error.message;
+    
+    if (message.includes('401')) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'Sesión expirada. Por favor, inicia sesión nuevamente.'
+      });
+    } else if (message.includes('403')) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'No tienes permisos para editar este dispositivo.'
+      });
+    } else if (message.includes('404')) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'Dispositivo no encontrado.'
+      });
+    } else if (message.includes('409') || message.includes('MAC')) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'Error: La dirección MAC ya está en uso.'
+      });
+    } else if (message.includes('500')) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'Error del servidor. Por favor, intenta más tarde.'
+      });
+    } else if (message.includes('NetworkError') || message.includes('Failed to fetch')) {
+      setError('root', { 
+        type: 'manual', 
+        message: 'Error de conexión. Verifica tu internet.'
+      });
+    } else {
+      setError('root', { 
+        type: 'manual', 
+        message: `Error: ${message}`
+      });
+    }
+  } else {
+    setError('root', { 
+      type: 'manual', 
+      message: 'Error desconocido al actualizar dispositivo'
+    });
   }
 };
 
@@ -60,7 +108,6 @@ export default function EditDeviceModal({
     handleSubmit, 
     formState: { errors, isSubmitting }, 
     reset,
-    setValue,
     setError,
     clearErrors
   } = useForm<DeviceFormData>();
@@ -71,7 +118,6 @@ export default function EditDeviceModal({
       reset({
         tipo: device.tipo,
         nombre: device.nombre,
-        mac: device.mac
       });
       clearErrors();
     }
@@ -95,43 +141,49 @@ export default function EditDeviceModal({
         body: JSON.stringify({
           nombre: data.nombre,
           tipo: data.tipo,
-          mac: data.mac,
-          // Nota: La MAC normalmente no se debería poder editar ya que es un identificador único
-          // Si necesitas permitir editar la MAC, descomenta la siguiente línea:
+          mac: device.mac, // ✅ INCLUIR LA MAC PARA VALIDACIÓN EN EL BACKEND
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        let errorMessage = errorData.error || `Error ${response.status}: ${response.statusText}`;
+        
+        // Mensajes específicos por código de error
+        switch (response.status) {
+          case 400:
+            if (errorMessage.includes('MAC')) {
+              errorMessage = 'Error: La dirección MAC ya está en uso.';
+            }
+            break;
+          case 401:
+            errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+            break;
+          case 403:
+            errorMessage = 'No tienes permisos para editar este dispositivo.';
+            break;
+          case 404:
+            errorMessage = 'Dispositivo no encontrado.';
+            break;
+          case 500:
+            errorMessage = 'Error del servidor. Por favor, intenta más tarde.';
+            break;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       onSuccess?.();
       onClose();
       
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message.includes('401')) {
-          setError('root', { 
-            type: 'manual', 
-            message: 'Sesión expirada. Por favor, inicia sesión nuevamente.'
-          });
-        } else {
-          setError('root', { 
-            type: 'manual', 
-            message: `Error al actualizar dispositivo: ${error.message}`
-          });
-        }
-      } else {
-        setError('root', { 
-          type: 'manual', 
-          message: 'Error desconocido al actualizar dispositivo'
-        });
-      }
+      handleApiError(error, setError);
     }
   };
 
   const handleClose = () => {
     reset();
+    clearErrors();
     onClose();
   };
 

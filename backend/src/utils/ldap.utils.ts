@@ -464,6 +464,79 @@ export async function unifiedLDAPSearch(
   }
 }
 
+/**
+ * Función mejorada para unifiedLDAPSearch que maneja mejor la estructura de datos
+ */
+export async function unifiedLDAPSearchImproved(
+  filter: string, 
+  attributes: string[] = ['*'],
+  baseDN: string = process.env.LDAP_BASE_DN!
+): Promise<any[]> {
+  if (!process.env.LDAP_URL || !process.env.LDAP_ADMIN_DN || !process.env.LDAP_ADMIN_PASSWORD) {
+    throw new Error("Configuración LDAP incompleta");
+  }
+  
+  const pool = getLDAPPool();
+  let client: LDAPClient | null = null;
+  
+  try {
+    client = await pool.getConnection();
+    return new Promise((resolve, reject) => {
+      const entries: any[] = [];
+      client!.search(baseDN, {
+        scope: 'sub',
+        filter,
+        attributes: attributes
+      }, (err: Error | null, res: SearchCallbackResponse) => {
+        if (err) {
+          return reject(err);
+        }
+        
+        res.on('searchEntry', (entry: ldap.SearchEntry) => {
+          const entryObject: any = {
+            dn: entry.dn.toString()
+          };
+          
+          // ✅ MEJOR MANEJO DE ATRIBUTOS
+          if (entry.attributes) {
+            entry.attributes.forEach((attr: any) => {
+              if (attr.type && attr.values !== undefined) {
+                // Convertir siempre a array para consistencia
+                entryObject[attr.type] = Array.isArray(attr.values) 
+                  ? attr.values 
+                  : [attr.values];
+              }
+            });
+          }
+          
+          console.log(`🔍 [LDAP] Entrada encontrada:`, { 
+            dn: entryObject.dn, 
+            attributes: Object.keys(entryObject) 
+          });
+          entries.push(entryObject);
+        });
+        
+        res.on('error', (error: Error) => {
+          reject(error);
+        });
+        
+        res.on('end', () => {
+          console.log(`📊 [LDAP] Búsqueda completada. Encontrados: ${entries.length} usuarios`);
+          resolve(entries);
+        });
+      });
+    });
+  } finally {
+    if (client) {
+      try {
+        pool.releaseConnection(client);
+      } catch (e) {
+        console.error("Error al liberar conexión LDAP:", e);
+      }
+    }
+  }
+}
+
 
 
 export async function searchLDAPUserForEmail(
@@ -667,44 +740,47 @@ export async function isUserInGroup(userDN: string, groupDN: string): Promise<bo
 }
 
 /**
- * Agrega un usuario a un grupo LDAP
+ * Agrega un usuario a un grupo LDAP - REPLICA EXACTA de ldap-account.services.ts
  * @param userDN DN del usuario a agregar
  * @param groupDN DN del grupo destino
  * @returns Promesa que se resuelve cuando la operación es completada
  */
 export async function addUserToGroup(userDN: string, groupDN: string): Promise<void> {
-  const pool = getLDAPPool();
-  let client: LDAPClient | null = null;
+  // ✅ REPLICAR EXACTAMENTE el comportamiento de ldap-account.services.ts
+  const client = createLDAPClient(process.env.LDAP_URL!);
   
   try {
-    client = await pool.getConnection();
+    // Autenticar como en ldap-account.services.ts
+    await bindAsync(client, process.env.LDAP_ADMIN_DN!, process.env.LDAP_ADMIN_PASSWORD!);
     
     return new Promise((resolve, reject) => {
-      const change = new Change({
-        operation: 'add',
+      const change = {
+        operation: "add",
         modification: {
-          member: userDN
-        }
-      });
+          type: "member",
+          values: [userDN],
+        },
+      };
 
-      client!.modify(groupDN, change, (err) => {
+      console.log(`🔧 [LDAP] Replicando estructura de ldap-account.services.ts`);
+
+      client.modify(groupDN, change, (err) => {
         if (err) {
-          // Si el usuario ya es miembro (LDAP constraint violation)
-          if (err.name === 'ConstraintViolationError' || err.code === 19) {
-            console.log(`✅ Usuario ya es miembro del grupo: ${groupDN}`);
+          if (err.name === "ConstraintViolationError" || (err as any).code === 20) {
+            console.log(`✅ [LDAP] Usuario ya era miembro (ConstraintViolation)`);
             resolve();
           } else {
-            reject(err);
+            console.error(`❌ [LDAP] Error: ${err.message}`);
+            reject(new Error(`Error LDAP (${(err as any).code}): ${err.message}`));
           }
         } else {
+          console.log(`✅ [LDAP] Usuario agregado al grupo exitosamente`);
           resolve();
         }
       });
     });
   } finally {
-    if (client) {
-      pool.releaseConnection(client);
-    }
+    client.unbind();
   }
 }
 

@@ -1161,3 +1161,14 @@ Validation Error Count: 1
 2025-11-04 11:04:36 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
 2025-11-04 11:10:13 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
 2025-11-04 16:20:19 [error]: Error verificando token: Token inválido o expirado
+2025-11-11 10:28:44 [error]: Error al consultar datos de empleado para CI: 02010573126. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-11-11 10:28:44 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-11 12:16:48 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida

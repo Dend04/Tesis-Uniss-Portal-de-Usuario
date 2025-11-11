@@ -1,6 +1,6 @@
 // services/pin.services.ts - Versión completa con el nuevo método
 import { Client, Change, SearchEntry, Attribute } from "ldapjs";
-import { createLDAPClient, bindAsync, unifiedLDAPSearch } from "../utils/ldap.utils";
+import { createLDAPClient, bindAsync, unifiedLDAPSearch, unifiedLDAPSearchImproved } from "../utils/ldap.utils";
 // ✅ AGREGAR el servicio de encriptación
 import { encryptionService } from "./EncryptionService";
 import { passwordService } from "./password.services";
@@ -371,61 +371,87 @@ private encodePassword(password: string): Buffer {
   /**
    * Busca usuario por sAMAccountName o employeeID
    */
-  async findUserByIdentifier(identifier: string): Promise<UserSearchResult> {
-    try {
-      // Primero intentar buscar por sAMAccountName
-      let filter = `(sAMAccountName=${this.escapeLDAPValue(identifier)})`;
-      let attributes = ['dn', 'sAMAccountName', 'employeeID', 'displayName', 'mail'];
-      
-      let entries = await unifiedLDAPSearch(filter, attributes);
-      
-      // Si no se encuentra, buscar por employeeID
-      if (entries.length === 0) {
-        filter = `(employeeID=${this.escapeLDAPValue(identifier)})`;
-        entries = await unifiedLDAPSearch(filter, attributes);
-      }
+async findUserByIdentifier(identifier: string): Promise<UserSearchResult> {
+  try {
+    console.log(`🔍 Buscando usuario con identificador: ${identifier}`);
+    
+    // Primero intentar buscar por sAMAccountName
+    let filter = `(sAMAccountName=${this.escapeLDAPValue(identifier)})`;
+    let attributes = ['dn', 'sAMAccountName', 'employeeID', 'displayName', 'mail', 'userPrincipalName'];
+    
+    // ✅ USAR LA VERSIÓN MEJORADA
+    let entries = await unifiedLDAPSearchImproved(filter, attributes);
+    
+    // Si no se encuentra, buscar por employeeID
+    if (entries.length === 0) {
+      console.log(`🔍 No encontrado por sAMAccountName, buscando por employeeID...`);
+      filter = `(employeeID=${this.escapeLDAPValue(identifier)})`;
+      entries = await unifiedLDAPSearchImproved(filter, attributes);
+    }
 
-      if (entries.length === 0) {
-        return {
-          success: false,
-          error: "Usuario no encontrado. Verifique su nombre de usuario o carnet de identidad"
-        };
-      }
+    console.log(`📊 Resultados de búsqueda: ${entries.length} entradas`);
 
-      const entry = entries[0];
-      const userDN = entry.objectName ? entry.objectName.toString() : null;
-      
-      if (!userDN) {
-        return {
-          success: false,
-          error: "Error al obtener información del usuario"
-        };
-      }
-
-      // Extraer datos del usuario
-      const userData = this.extractUserData(entry);
-      
-      if (!userData.sAMAccountName) {
-        return {
-          success: false,
-          error: "No se pudo obtener la información completa del usuario"
-        };
-      }
-      
-      return {
-        success: true,
-        userDN,
-        userData
-      };
-      
-    } catch (error) {
-      console.error("Error en búsqueda de usuario:", error);
+    if (entries.length === 0) {
       return {
         success: false,
-        error: "Error al buscar usuario en el sistema"
+        error: "Usuario no encontrado. Verifique su nombre de usuario o carnet de identidad"
       };
     }
+
+    const entry = entries[0];
+    const userDN = entry.dn;
+    
+    if (!userDN) {
+      return {
+        success: false,
+        error: "Error al obtener información del usuario"
+      };
+    }
+
+    // ✅ MEJORAR LA EXTRACCIÓN DE DATOS
+    const userData = this.extractUserDataFromImproved(entry);
+    
+    if (!userData.sAMAccountName) {
+      return {
+        success: false,
+        error: "No se pudo obtener la información completa del usuario"
+      };
+    }
+    
+    console.log(`✅ Usuario encontrado:`, userData);
+    
+    return {
+      success: true,
+      userDN,
+      userData
+    };
+    
+  } catch (error) {
+    console.error("❌ Error en búsqueda de usuario:", error);
+    return {
+      success: false,
+      error: "Error al buscar usuario en el sistema"
+    };
   }
+}
+
+// ✅ AGREGAR ESTE MÉTODO PARA MANEJAR LA NUEVA ESTRUCTURA
+private extractUserDataFromImproved(entry: any): UserData {
+  console.log("📋 Extrayendo datos de entrada:", entry);
+  
+  return {
+    sAMAccountName: entry.sAMAccountName ? 
+      (Array.isArray(entry.sAMAccountName) ? entry.sAMAccountName[0] : entry.sAMAccountName) : '',
+    employeeID: entry.employeeID ? 
+      (Array.isArray(entry.employeeID) ? entry.employeeID[0] : entry.employeeID) : '',
+    displayName: entry.displayName ? 
+      (Array.isArray(entry.displayName) ? entry.displayName[0] : entry.displayName) : '',
+    mail: entry.mail ? 
+      (Array.isArray(entry.mail) ? entry.mail[0] : entry.mail) : 
+      (entry.userPrincipalName ? 
+        (Array.isArray(entry.userPrincipalName) ? entry.userPrincipalName[0] : entry.userPrincipalName) : '')
+  };
+}
 
   /**
    * Busca el DN del usuario por sAMAccountName usando búsqueda unificada
@@ -607,6 +633,13 @@ private encodePassword(password: string): Buffer {
 
   private escapeLDAPValue(value: string): string {
     if (!value) return "";
+
+
+
+    // Primero normalizar
+    const normalized = value.toString().trim();
+
+
     return value
       .replace(/\\/g, "\\\\")
       .replace(/,/g, "\\,")

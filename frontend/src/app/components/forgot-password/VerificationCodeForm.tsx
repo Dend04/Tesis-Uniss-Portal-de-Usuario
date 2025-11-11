@@ -3,13 +3,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { EnvelopeIcon, ArrowPathIcon, UserIcon } from "@heroicons/react/24/outline";
+import { EnvelopeIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { UserData } from "@/types/user";
 
-interface UserData {
-  email: string;
-  displayName?: string;
-  sAMAccountName?: string;
-}
+// ✅ INTERFAZ CORRECTA (usa company)
+// En src/app/components/forgot-password/VerificationCodeForm.tsx
 
 interface VerificationCodeFormProps {
   userData: UserData;
@@ -17,38 +15,71 @@ interface VerificationCodeFormProps {
   onCodeVerified: (code: string) => void;
 }
 
-// Función mejorada para enmascarar el email de manera más segura
-const maskEmail = (email: string): string => {
-  if (!email) return "";
-  
-  const [username, domain] = email.split('@');
-  if (!username || !domain) return "***@***";
+// ✅ FUNCIÓN MEJORADA CON MANEJO DE ARRAYS
+const maskEmail = (email: any): string => {
+  try {
+    console.log("🔍 maskEmail recibió:", email, "tipo:", typeof email);
+    
+    let emailValue = email;
+    if (Array.isArray(email)) {
+      console.log("🔄 Email es array, tomando primer elemento:", email[0]);
+      emailValue = email[0] || "";
+    }
+    
+    if (!emailValue || typeof emailValue !== 'string') {
+      console.warn("❌ Email no válido para enmascarar:", emailValue);
+      return "***@***";
+    }
+    
+    const [username, domain] = emailValue.split('@');
+    if (!username || !domain) {
+      console.warn("❌ Formato de email inválido:", emailValue);
+      return "***@***";
+    }
 
-  // Si el username es muy corto, mostrar formato diferente
-  if (username.length <= 2) {
-    return `*${username}@${domain}`;
-  } else if (username.length <= 4) {
-    const firstChar = username.substring(0, 1);
-    const lastChar = username.substring(username.length - 1);
-    return `*${firstChar}*${lastChar}@${domain}`;
-  } else {
-    // Para usernames más largos: primer carácter + *** + último carácter
-    const firstChar = username.substring(0, 1);
-    const lastChar = username.substring(username.length - 1);
-    return `*${firstChar}***${lastChar}@${domain}`;
+    if (username.length <= 2) {
+      return `*${username}@${domain}`;
+    } else if (username.length <= 4) {
+      const firstChar = username.substring(0, 1);
+      const lastChar = username.substring(username.length - 1);
+      return `*${firstChar}*${lastChar}@${domain}`;
+    } else {
+      const firstChar = username.substring(0, 1);
+      const lastChar = username.substring(username.length - 1);
+      return `*${firstChar}***${lastChar}@${domain}`;
+    }
+  } catch (error) {
+    console.error("❌ Error en maskEmail:", error);
+    return "***@***";
   }
 };
 
-// Función para obtener las iniciales del nombre completo
-const getInitials = (displayName: string): string => {
-  if (!displayName) return "US";
-  
-  const names = displayName.split(' ');
-  if (names.length === 1) {
-    return names[0].substring(0, 2).toUpperCase();
+// ✅ FUNCIÓN MEJORADA CON MANEJO DE ARRAYS
+const getInitials = (displayName: any): string => {
+  try {
+    console.log("🔍 getInitials recibió:", displayName, "tipo:", typeof displayName);
+    
+    let displayNameValue = displayName;
+    if (Array.isArray(displayName)) {
+      console.log("🔄 displayName es array, tomando primer elemento:", displayName[0]);
+      displayNameValue = displayName[0] || "";
+    }
+    
+    if (!displayNameValue || typeof displayNameValue !== 'string') {
+      console.warn("❌ displayName no válido:", displayNameValue);
+      return "US";
+    }
+    
+    const names = displayNameValue.split(' ');
+    if (names.length === 1) {
+      return names[0].substring(0, 2).toUpperCase();
+    }
+    
+    return (names[0].substring(0, 1) + names[names.length - 1].substring(0, 1)).toUpperCase();
+  } catch (error) {
+    console.error("❌ Error en getInitials:", error);
+    return "US";
   }
-  
-  return (names[0].substring(0, 1) + names[names.length - 1].substring(0, 1)).toUpperCase();
 };
 
 export default function VerificationCodeForm({
@@ -62,10 +93,32 @@ export default function VerificationCodeForm({
   const [successMessage, setSuccessMessage] = useState("");
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  // Información enmascarada
-  const maskedEmail = maskEmail(userData.email);
-  const userInitials = getInitials(userData.displayName || userData.sAMAccountName || "");
-  const userName = userData.displayName || userData.sAMAccountName || "Usuario";
+  // ✅ DEBUG: Verificar estructura completa de userData
+  console.log("📋 userData completo en VerificationCodeForm:", userData);
+  console.log("📧 userData.company:", userData?.company, "tipo:", typeof userData?.company);
+  console.log("👤 userData.displayName:", userData?.displayName, "tipo:", typeof userData?.displayName);
+  console.log("🔑 userData.sAMAccountName:", userData?.sAMAccountName, "tipo:", typeof userData?.sAMAccountName);
+
+  // ✅ EXTRACCIÓN SEGURA DE DATOS CON MANEJO DE ARRAYS
+  const getStringValue = (value: any): string => {
+    if (Array.isArray(value)) {
+      return value[0] || '';
+    }
+    return value || '';
+  };
+
+  const userEmail = getStringValue(userData?.company);
+  const userName = getStringValue(userData?.displayName) || getStringValue(userData?.sAMAccountName) || "Usuario";
+
+  const maskedEmail = maskEmail(userEmail);
+  const userInitials = getInitials(userName);
+
+  console.log("✅ Datos procesados:", {
+    userEmail,
+    userName, 
+    maskedEmail,
+    userInitials
+  });
 
   useEffect(() => {
     if (inputRefs.current[0]) {
@@ -114,7 +167,7 @@ export default function VerificationCodeForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: userData.email,
+          email: userEmail,
           code: code,
         }),
       });
@@ -148,7 +201,9 @@ export default function VerificationCodeForm({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ userIdentifier: userData.sAMAccountName }),
+        body: JSON.stringify({ 
+          userIdentifier: getStringValue(userData?.sAMAccountName) || getStringValue(userData?.employeeID)
+        }),
       });
 
       if (!response.ok) {
@@ -195,7 +250,8 @@ export default function VerificationCodeForm({
                 {userName}
               </p>
               <p className="text-gray-600 text-xs">
-                {userData.sAMAccountName && `@${userData.sAMAccountName}`}
+                {userData?.sAMAccountName && `@${getStringValue(userData.sAMAccountName)}`}
+                {userData?.employeeID && ` | CI: ${getStringValue(userData.employeeID)}`}
               </p>
             </div>
           </div>

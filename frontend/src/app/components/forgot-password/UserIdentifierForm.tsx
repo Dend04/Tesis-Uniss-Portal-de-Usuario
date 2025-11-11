@@ -1,3 +1,4 @@
+// src/app/components/forgot-password/UserIdentifierForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -9,18 +10,9 @@ import {
   LockClosedIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { UserData } from "@/types/user";
 
-interface UserData {
-  email: string;
-  displayName?: string;
-  sAMAccountName?: string;
-  employeeID?: string;
-  userPrincipalName?: string;
-  dn: string;
-  accountStatus?: string;
-  hasPin?: boolean;
-  has2FA?: boolean;
-}
+// ✅ INTERFAZ ACTUALIZADA: Usar company en lugar de email
 
 interface UserIdentifierFormProps {
   onUserIdentified: (data: UserData, identifier: string) => void;
@@ -38,7 +30,7 @@ type FlowConfig = {
     note: string;
     icon: React.ComponentType<any>;
     endpoint: string;
-    method: "GET" | "POST"; // ✅ NUEVO: Especificar el método HTTP
+    method: "GET" | "POST";
   };
 };
 
@@ -58,15 +50,15 @@ export default function UserIdentifierForm({
     checking: boolean;
   }>({ checking: false });
 
-  // ✅ CONFIGURACIÓN ACTUALIZADA: Especificar método HTTP para cada endpoint
+  // ✅ CONFIGURACIÓN ACTUALIZADA
   const flowConfig: FlowConfig = {
     email: {
       title: "Recuperar Contraseña",
       description: "Ingrese su nombre de usuario o carnet de identidad",
       note: "Se enviará un código de verificación al correo electrónico de respaldo o personal que usted suministró al crear su cuenta.",
       icon: UserIcon,
-      endpoint: "/email/check-user", // ✅ Cambiado a check-user
-      method: "GET", // ✅ Usar GET para check-user
+      endpoint: "/email/check-user",
+      method: "GET",
     },
     pin: {
       title: "Recuperar con PIN",
@@ -128,6 +120,14 @@ export default function UserIdentifierForm({
     }
   };
 
+  // ✅ FUNCIÓN AUXILIAR PARA MANEJAR ARRAYS DESDE LDAP
+  const getStringValue = (value: any): string => {
+    if (Array.isArray(value)) {
+      return value[0] || "";
+    }
+    return value || "";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -147,7 +147,6 @@ export default function UserIdentifierForm({
       console.log(`🔍 Identificador: ${userIdentifier}`);
       console.log(`📝 Método HTTP: ${config.method}`);
 
-      // ✅ CONSTRUIR LA URL Y OPCIONES SEGÚN EL MÉTODO
       let url = `${API_URL}${config.endpoint}`;
       let options: RequestInit = {
         method: config.method,
@@ -155,10 +154,8 @@ export default function UserIdentifierForm({
       };
 
       if (config.method === "GET") {
-        // ✅ PARA GET: Agregar identifier como parámetro en la URL
         url = `${url}/${encodeURIComponent(userIdentifier)}`;
       } else {
-        // ✅ PARA POST: Agregar identifier en el body
         options.body = JSON.stringify({ identifier: userIdentifier });
       }
 
@@ -177,7 +174,6 @@ export default function UserIdentifierForm({
         const errorData = await response.json();
         console.error("❌ Error del servidor:", errorData);
 
-        // Mensaje de error mejorado para usuario no encontrado
         if (
           response.status === 404 ||
           errorData.error?.includes("no encontrado")
@@ -206,18 +202,31 @@ export default function UserIdentifierForm({
           return;
         }
 
+        // ✅ USAR company EN LUGAR DE email
         const userData: UserData = {
-          email: result.user.email,
-          displayName: result.user.displayName,
-          sAMAccountName: result.user.sAMAccountName,
-          employeeID: result.user.employeeID,
-          userPrincipalName: result.user.userPrincipalName,
-          dn: result.user.dn,
+          company:
+            getStringValue(result.user.email) ||
+            getStringValue(result.user.company),
+          email:
+            getStringValue(result.user.email) ||
+            getStringValue(result.user.company), // ← AGREGA ESTA LÍNEA
+          displayName: getStringValue(result.user.displayName),
+          sAMAccountName: getStringValue(result.user.sAMAccountName),
+          employeeID: getStringValue(result.user.employeeID),
+          userPrincipalName: getStringValue(result.user.userPrincipalName),
+          dn: getStringValue(result.user.dn),
         };
 
-        setSuccessMessage("✅ Usuario verificado correctamente. Procediendo a enviar código de verificación...");
+        // ✅ VERIFICAR QUE TENEMOS COMPANY (EMAIL)
+        if (!userData.company) {
+          setError("No se pudo obtener el correo electrónico del usuario");
+          return;
+        }
 
-        // Pequeño delay para mostrar el mensaje de éxito
+        setSuccessMessage(
+          "✅ Usuario verificado correctamente. Procediendo a enviar código de verificación..."
+        );
+
         setTimeout(() => {
           onUserIdentified(userData, userIdentifier);
         }, 1500);
@@ -249,20 +258,25 @@ export default function UserIdentifierForm({
           return;
         }
 
+        // ✅ CORRECCIÓN: Usar userData en lugar de user
         const userData: UserData = {
-          email: result.userData.email,
-          displayName: result.userData.displayName,
-          sAMAccountName: result.userData.sAMAccountName,
-          employeeID: result.userData.employeeID,
-          dn: result.userData.dn,
-          hasPin: true, // Ya verificamos que tiene PIN
+          company:
+            getStringValue(result.userData.email) ||
+            getStringValue(result.userData.company),
+          email:
+            getStringValue(result.userData.email) ||
+            getStringValue(result.userData.company),
+          displayName: getStringValue(result.userData.displayName),
+          sAMAccountName: getStringValue(result.userData.sAMAccountName),
+          employeeID: getStringValue(result.userData.employeeID),
+          userPrincipalName: getStringValue(result.userData.userPrincipalName),
+          dn: getStringValue(result.userData.dn),
         };
 
         setSuccessMessage(
           "✅ Usuario verificado correctamente. Tiene PIN de seguridad configurado."
         );
 
-        // Pequeño delay para mostrar el mensaje de éxito
         setTimeout(() => {
           onUserIdentified(userData, userIdentifier);
         }, 1000);
@@ -271,24 +285,67 @@ export default function UserIdentifierForm({
       }
 
       // ✅ MANEJO ESPECÍFICO PARA FLUJO DE 2FA
-      if (flowType === "2fa") {
-        if (!result.success) {
-          setError(result.error || "Error al verificar el usuario");
-          return;
-        }
+    // ✅ MANEJO ESPECÍFICO PARA FLUJO DE 2FA
+if (flowType === "2fa") {
+  if (!result.success) {
+    setError(result.error || "Error al verificar el usuario");
+    return;
+  }
 
-        const userData: UserData = {
-          email: result.userData.email,
-          displayName: result.userData.displayName,
-          sAMAccountName: result.userData.sAMAccountName,
-          employeeID: result.userData.employeeID,
-          dn: result.userData.dn,
-          has2FA: result.has2FA, // Agregamos información del 2FA
-        };
+  // ✅ CORRECCIÓN: Verificar estructura de respuesta del endpoint 2FA
+  console.log("🔍 Estructura de respuesta 2FA:", result);
+  
+  // ✅ Diferentes endpoints pueden devolver la data en propiedades diferentes
+  const userSource = result.userData || result.user || result;
+  
+  if (!userSource) {
+    setError("No se pudo obtener la información del usuario desde el servicio 2FA");
+    return;
+  }
 
-        onUserIdentified(userData, userIdentifier);
-        return;
-      }
+  // ✅ VERIFICAR SI EL USUARIO TIENE 2FA CONFIGURADO
+  if (result.has2FA === false) {
+    setError(
+      "Este usuario no tiene configurada la autenticación de dos factores. Por favor, utilice otro método de recuperación."
+    );
+    return;
+  }
+
+  const userData: UserData = {
+    company:
+      getStringValue(userSource.email) ||
+      getStringValue(userSource.company) ||
+      getStringValue(result.email),
+    email:
+      getStringValue(userSource.email) ||
+      getStringValue(userSource.company) ||
+      getStringValue(result.email),
+    displayName: getStringValue(userSource.displayName) || getStringValue(result.displayName),
+    sAMAccountName: getStringValue(userSource.sAMAccountName) || getStringValue(result.sAMAccountName),
+    employeeID: getStringValue(userSource.employeeID) || getStringValue(result.employeeID),
+    userPrincipalName: getStringValue(userSource.userPrincipalName) || getStringValue(result.userPrincipalName),
+    dn: getStringValue(userSource.dn) || getStringValue(result.dn),
+    has2FA: result.has2FA || true, // Asumir que si pasó la verificación, tiene 2FA
+  };
+
+  // ✅ VERIFICACIÓN ADICIONAL DE DATOS CRÍTICOS
+  if (!userData.sAMAccountName && !userData.employeeID) {
+    setError("No se pudo obtener la información completa del usuario para autenticación 2FA");
+    return;
+  }
+
+  console.log("✅ Datos de usuario para 2FA:", userData);
+  
+  setSuccessMessage(
+    "✅ Usuario verificado correctamente. Tiene autenticación de dos factores configurada."
+  );
+
+  setTimeout(() => {
+    onUserIdentified(userData, userIdentifier);
+  }, 1000);
+  
+  return;
+}
 
       // ✅ MANEJO PARA FLUJO DEFAULT (código existente)
       if (result.accountStatus === "disabled") {
@@ -310,16 +367,21 @@ export default function UserIdentifierForm({
         result.accountStatus === "expired" ||
         result.accountStatus === "active"
       ) {
+        // ✅ USAR company EN LUGAR DE email
         const userData: UserData = {
-          email: result.email,
-          displayName: result.displayName,
-          sAMAccountName: result.sAMAccountName,
-          employeeID: result.employeeID,
-          dn: result.dn,
-          accountStatus: result.accountStatus,
+          company:
+            getStringValue(result.user.email) ||
+            getStringValue(result.user.company),
+          email:
+            getStringValue(result.user.email) ||
+            getStringValue(result.user.company), // ← AGREGA ESTA LÍNEA
+          displayName: getStringValue(result.user.displayName),
+          sAMAccountName: getStringValue(result.user.sAMAccountName),
+          employeeID: getStringValue(result.user.employeeID),
+          userPrincipalName: getStringValue(result.user.userPrincipalName),
+          dn: getStringValue(result.user.dn),
         };
 
-        // ✅ Mostrar mensaje informativo si la contraseña expiró
         if (result.accountStatus === "expired") {
           setSuccessMessage(
             "Su contraseña ha expirado. Se ha enviado un código de verificación para restablecerla."
@@ -334,7 +396,6 @@ export default function UserIdentifierForm({
     } catch (err: any) {
       console.error("💥 Error completo:", err);
 
-      // Mensaje de error genérico con enlace de activación
       if (err.message.includes("fetch") || err.message.includes("network")) {
         setError(
           "Error de conexión. Por favor verifique su conexión a internet e intente nuevamente."
@@ -424,7 +485,6 @@ export default function UserIdentifierForm({
             <ExclamationTriangleIcon className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-red-700 text-xs sm:text-sm">{error}</p>
-              {/* Enlace de activación para errores de usuario no encontrado */}
               {error.includes("activate-account") && (
                 <p className="text-red-700 text-xs sm:text-sm mt-2">
                   ¿No tiene cuenta?{" "}
@@ -511,7 +571,9 @@ export default function UserIdentifierForm({
             <div className="mt-2 flex items-center gap-2">
               <UserIcon className="w-4 h-4" />
               <p className="text-xs">
-                <strong>Proceso:</strong> Primero verificaremos que el usuario existe, luego enviaremos un código de verificación a su correo electrónico.
+                <strong>Proceso:</strong> Primero verificaremos que el usuario
+                existe, luego enviaremos un código de verificación a su correo
+                electrónico.
               </p>
             </div>
           )}

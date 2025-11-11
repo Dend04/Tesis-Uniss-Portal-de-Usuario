@@ -339,7 +339,8 @@ private async createUserEntry(userDN: string, studentData: any, username: string
 
   const requiredGroups = [
     "CN=correo_int,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
-    "CN=UNISS-Everyone,OU=_Grupos,DC=uniss,DC=edu,DC=cu"
+    "CN=UNISS-Everyone,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
+    "CN=wifi_users,OU=_Grupos,DC=uniss,DC=edu,DC=cu"
   ];
   
   await this.addUserToGroups(userDN, requiredGroups);

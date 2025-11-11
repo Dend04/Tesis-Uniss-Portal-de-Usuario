@@ -13,16 +13,9 @@ import StepsIndicator, {
   StepStatus,
 } from "@/app/components/activate-account/StepsIndicator";
 import UserIdentifierForm from "@/app/components/forgot-password/UserIdentifierForm";
+import { UserData } from "@/types/user";
 
-interface UserData {
-  email: string;
-  displayName?: string;
-  sAMAccountName?: string;
-  employeeID?: string;
-  userPrincipalName?: string;
-  dn: string;
-  accountStatus?: string;
-}
+
 
 type StepType = "identify" | "verify" | "reset" | "success";
 
@@ -72,11 +65,30 @@ export default function ForgotPasswordPage() {
   ];
 
   // Manejar éxito en identificación de usuario
-  const handleUserIdentified = (data: UserData, identifier: string) => {
-    setUserData(data);
-    setUserIdentifier(identifier);
-    setCurrentStep("verify");
-  };
+const handleUserIdentified = (data: UserData, identifier: string) => {
+  console.log("✅ Datos recibidos en handleUserIdentified:", data);
+  console.log("✅ Tipo de data.company:", typeof data.company);
+  
+  // ✅ VERIFICAR Y ASEGURAR QUE LOS DATOS SON CORRECTOS
+  if (!data.company || typeof data.company !== 'string') {
+    console.error("❌ Error: data.company no es válido:", data.company);
+    
+    // Si es un array, tomar el primer elemento
+    if (Array.isArray(data.company)) {
+      console.log("🔄 data.company es un array, tomando primer elemento...");
+      data.company = data.company[0] || data.userPrincipalName || "correo@no-disponible.com";
+    } else {
+      data.company = data.userPrincipalName || "correo@no-disponible.com";
+    }
+  }
+  
+  // ✅ ASIGNAR EMAIL CON EL VALOR DE COMPANY
+  data.email = data.company;
+
+  setUserData(data);
+  setUserIdentifier(identifier);
+  setCurrentStep("verify");
+};
 
   // Manejar éxito en verificación de código
   const handleCodeVerified = (code: string) => {

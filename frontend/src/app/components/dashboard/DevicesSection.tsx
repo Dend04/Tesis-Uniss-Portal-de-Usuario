@@ -8,7 +8,7 @@ import AddDeviceModal from "../modals/AddDeviceModal";
 
 interface DevicesSectionProps {
   isDarkMode: boolean;
-  devices?: Device[]; // Hacer opcional para usar dispositivos internos
+  devices?: Device[];
   loading?: boolean;
   error?: string;
   className?: string;
@@ -34,7 +34,7 @@ const deviceTypeNames = {
   OTRO: "Otro",
 };
 
-// ✅ FUNCIÓN PARA OBTENER DISPOSITIVOS
+// ✅ FUNCIÓN MEJORADA PARA OBTENER DISPOSITIVOS CON MANEJO DE ERRORES
 const fetchDevices = async (): Promise<Device[]> => {
   const token = localStorage.getItem("authToken");
   if (!token) {
@@ -54,7 +54,20 @@ const fetchDevices = async (): Promise<Device[]> => {
     );
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      
+      switch (response.status) {
+        case 401:
+          throw new Error("Sesión expirada. Por favor, inicia sesión nuevamente.");
+        case 403:
+          throw new Error("No tienes permisos para ver los dispositivos.");
+        case 404:
+          return []; // No hay dispositivos, retornar array vacío
+        case 500:
+          throw new Error("Error del servidor. Por favor, intenta más tarde.");
+        default:
+          throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+      }
     }
 
     const data = await response.json();
@@ -75,11 +88,14 @@ const fetchDevices = async (): Promise<Device[]> => {
       throw new Error(data.error || "Formato de respuesta inesperado");
     }
   } catch (error) {
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Error de conexión. Verifica tu internet.");
   }
 };
 
-// ✅ FUNCIÓN PARA ELIMINAR DISPOSITIVO
+// ✅ FUNCIÓN MEJORADA PARA ELIMINAR DISPOSITIVO CON MANEJO DE ERRORES
 const deleteDevice = async (deviceId: string): Promise<boolean> => {
   const token = localStorage.getItem("authToken");
   if (!token) {
@@ -97,11 +113,39 @@ const deleteDevice = async (deviceId: string): Promise<boolean> => {
       }
     );
 
-    return response.ok;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      
+      switch (response.status) {
+        case 401:
+          throw new Error("Sesión expirada. Por favor, inicia sesión nuevamente.");
+        case 403:
+          throw new Error("No tienes permisos para eliminar este dispositivo.");
+        case 404:
+          throw new Error("Dispositivo no encontrado.");
+        case 500:
+          throw new Error("Error del servidor al eliminar el dispositivo.");
+        default:
+          throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+      }
+    }
+
+    return true;
   } catch (error) {
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Error de conexión al eliminar el dispositivo.");
   }
 };
+
+// ✅ INTERFAZ PARA NOTIFICACIONES
+interface Notification {
+  id: string;
+  type: 'success' | 'error' | 'info';
+  message: string;
+  duration?: number;
+}
 
 // Componente memoizado para dispositivos
 const DeviceItem = memo(
@@ -402,6 +446,66 @@ const ErrorState = memo(
 
 ErrorState.displayName = "ErrorState";
 
+// Componente de notificación
+const NotificationToast = memo(
+  ({
+    notification,
+    onDismiss,
+    isDarkMode,
+  }: {
+    notification: Notification;
+    isDarkMode: boolean;
+    onDismiss: (id: string) => void;
+  }) => {
+    useEffect(() => {
+      if (notification.duration) {
+        const timer = setTimeout(() => {
+          onDismiss(notification.id);
+        }, notification.duration);
+        
+        return () => clearTimeout(timer);
+      }
+    }, [notification.id, notification.duration, onDismiss]);
+
+    const bgColor = {
+      success: isDarkMode ? "bg-green-800" : "bg-green-100",
+      error: isDarkMode ? "bg-red-800" : "bg-red-100",
+      info: isDarkMode ? "bg-blue-800" : "bg-blue-100",
+    }[notification.type];
+
+    const textColor = {
+      success: isDarkMode ? "text-green-200" : "text-green-800",
+      error: isDarkMode ? "text-red-200" : "text-red-800",
+      info: isDarkMode ? "text-blue-200" : "text-blue-800",
+    }[notification.type];
+
+    const iconName = {
+      success: "CheckCircleIcon",
+      error: "ExclamationCircleIcon",
+      info: "InformationCircleIcon",
+    }[notification.type];
+
+    return (
+      <div
+        className={`p-4 rounded-lg border flex items-center gap-3 ${bgColor} ${textColor} shadow-lg`}
+        role="alert"
+      >
+        <IconLoader name={iconName} className="w-5 h-5" />
+        <span className="flex-1">{notification.message}</span>
+        <button
+          onClick={() => onDismiss(notification.id)}
+          className={`p-1 rounded-full hover:opacity-70 ${textColor}`}
+          aria-label="Cerrar notificación"
+        >
+          <IconLoader name="XMarkIcon" className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+);
+
+NotificationToast.displayName = "NotificationToast";
+
 export default function DevicesSection({
   isDarkMode,
   devices: externalDevices,
@@ -415,11 +519,23 @@ export default function DevicesSection({
   const [internalLoading, setInternalLoading] = useState(false);
   const [internalError, setInternalError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   
   // Estados para los modales
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
+
+  // ✅ AGREGAR NOTIFICACIÓN
+  const addNotification = useCallback((notification: Omit<Notification, 'id'>) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setNotifications(prev => [...prev, { ...notification, id }]);
+  }, []);
+
+  // ✅ ELIMINAR NOTIFICACIÓN
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  }, []);
 
   // Cargar dispositivos si no se proporcionan externamente
   const loadDevices = useCallback(async () => {
@@ -454,7 +570,18 @@ export default function DevicesSection({
   }, [loadDevices]);
 
   // Manejo de modales
-  const handleOpenCreateModal = () => setIsCreateModalOpen(true);
+  const handleOpenCreateModal = () => {
+    if (deviceCount >= 4) {
+      addNotification({
+        type: 'error',
+        message: 'Límite alcanzado. Máximo 4 dispositivos por usuario.',
+        duration: 5000
+      });
+      return;
+    }
+    setIsCreateModalOpen(true);
+  };
+
   const handleCloseCreateModal = () => setIsCreateModalOpen(false);
 
   const handleOpenEditModal = useCallback((device: Device) => {
@@ -467,8 +594,15 @@ export default function DevicesSection({
     setIsEditModalOpen(false);
   };
 
-  const handleOperationSuccess = () => {
-    handleRefresh(); // Recargar la lista después de una operación exitosa
+  const handleOperationSuccess = (message?: string) => {
+    handleRefresh();
+    if (message) {
+      addNotification({
+        type: 'success',
+        message,
+        duration: 3000
+      });
+    }
   };
 
   // Usar dispositivos externos si se proporcionan, de lo contrario usar internos
@@ -477,7 +611,7 @@ export default function DevicesSection({
   const shouldShowError = error || (internalError && (!externalDevices || externalDevices.length === 0));
   const finalLoading = loading || (internalLoading && !hasLoaded);
 
-  // Manejar eliminación de dispositivo
+  // ✅ MANEJAR ELIMINACIÓN MEJORADA
   const handleDeleteDevice = useCallback(async (device: Device) => {
     if (
       window.confirm(
@@ -485,27 +619,31 @@ export default function DevicesSection({
       )
     ) {
       try {
-        const success = await deleteDevice(device.id);
-        if (success) {
-          handleRefresh();
-        } else {
-          throw new Error(`Error al eliminar dispositivo`);
-        }
+        await deleteDevice(device.id);
+        handleOperationSuccess(`Dispositivo "${device.nombre}" eliminado correctamente`);
       } catch (error) {
-        alert("Error al eliminar el dispositivo");
+        const errorMessage = error instanceof Error ? error.message : "Error al eliminar el dispositivo";
+        addNotification({
+          type: 'error',
+          message: errorMessage,
+          duration: 5000
+        });
       }
     }
-  }, [handleRefresh]);
+  }, [handleRefresh, addNotification]);
 
   // Manejar vista de detalles
   const handleViewDetails = useCallback((device: Device) => {
     const formattedDate = device.createdAt
       ? new Date(device.createdAt).toLocaleString()
       : "Fecha no disponible";
-    alert(
-      `Detalles del dispositivo:\n\nNombre: ${device.nombre}\nMAC: ${device.mac}\nTipo: ${device.tipo}\nCreado: ${formattedDate}`
-    );
-  }, []);
+    
+    addNotification({
+      type: 'info',
+      message: `Detalles: ${device.nombre} (${device.mac}) - ${deviceTypeNames[device.tipo]}`,
+      duration: 4000
+    });
+  }, [addNotification]);
 
   const handleRetry = useCallback(() => {
     handleRefresh();
@@ -537,6 +675,18 @@ export default function DevicesSection({
 
   return (
     <>
+      {/* Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+        {notifications.map((notification) => (
+          <NotificationToast
+            key={notification.id}
+            notification={notification}
+            isDarkMode={isDarkMode}
+            onDismiss={removeNotification}
+          />
+        ))}
+      </div>
+
       <section
         className={`rounded-xl shadow-lg p-6 transition-colors ${bgColor} ${className}`}
         aria-labelledby="devices-heading"
@@ -570,15 +720,16 @@ export default function DevicesSection({
       <AddDeviceModal
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
-        onSuccess={handleOperationSuccess}
+        onSuccess={() => handleOperationSuccess("Dispositivo creado correctamente")}
         isDarkMode={isDarkMode}
+        deviceCount={deviceCount}
       />
 
       {/* Modal para editar dispositivo */}
       <EditDeviceModal
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
-        onSuccess={handleOperationSuccess}
+        onSuccess={() => handleOperationSuccess("Dispositivo actualizado correctamente")}
         device={editingDevice}
         isDarkMode={isDarkMode}
       />

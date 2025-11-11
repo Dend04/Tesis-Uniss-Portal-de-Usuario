@@ -619,9 +619,13 @@ export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise
 
 export const handleForgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log('🚀 handleForgotPassword INICIADO');
+    console.log('📨 Body recibido:', req.body);
+    
     const { userIdentifier } = req.body;
 
     if (!userIdentifier) {
+      console.log('❌ ERROR: userIdentifier no proporcionado');
       res.status(400).json({
         success: false,
         message: "Se requiere el nombre de usuario (sAMAccountName) o carnet de identidad (employeeID)",
@@ -629,19 +633,19 @@ export const handleForgotPassword = async (req: Request, res: Response): Promise
       return;
     }
 
-    console.log(`🔐 Solicitud de recuperación para: ${userIdentifier}`);
+    console.log(`🔐 Procesando recuperación para: ${userIdentifier}`);
 
+    console.log('🔍 Buscando usuario en LDAP...');
     const user = await findUserBySAMOrEmployeeID(userIdentifier);
+    console.log('✅ Usuario encontrado:', user);
     
     const verificationCode = generateVerificationCode();
-    verificationStorage.setCode(user.email, verificationCode, 10 * 60 * 1000);
+    console.log(`🔢 Código generado: ${verificationCode}`);
     
-    // ✅ MOSTRAR CÓDIGO EN CONSOLA PARA DESARROLLO
-    console.log(`📧 CÓDIGO DE VERIFICACIÓN (recuperación) enviado a ${user.email}: ${verificationCode}`);
-    console.log(`👤 Usuario: ${user.displayName || user.sAMAccountName}`);
-    console.log(`👤 sAMAccountName: ${user.sAMAccountName}`);
-    console.log(`🆔 EmployeeID: ${user.employeeID}`);
-    console.log(`⏰ Expira: 10 minutos`);
+    verificationStorage.setCode(user.email, verificationCode, 10 * 60 * 1000);
+    console.log(`💾 Código almacenado para: ${user.email}`);
+    
+    console.log(`📧 Intentando enviar correo a: ${user.email}`);
     
     const info = await sendVerificationCodeService(
       user.email,
@@ -649,7 +653,8 @@ export const handleForgotPassword = async (req: Request, res: Response): Promise
       verificationCode
     );
 
-    console.log(`✅ Código enviado a: ${user.email}`);
+    console.log(`✅ Correo enviado exitosamente`);
+    console.log(`📨 Info SMTP:`, info);
 
     res.status(200).json({
       success: true,
@@ -670,7 +675,8 @@ export const handleForgotPassword = async (req: Request, res: Response): Promise
     });
 
   } catch (error: any) {
-    console.error("❌ Error en recuperación de contraseña:", error);
+    console.error("💥 ERROR en handleForgotPassword:", error);
+    console.error("📋 Stack trace:", error.stack);
     res.status(500).json({
       success: false,
       message: error.message || "Error al procesar la solicitud de recuperación de contraseña",

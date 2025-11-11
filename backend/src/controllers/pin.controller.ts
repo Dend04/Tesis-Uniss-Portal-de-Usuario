@@ -194,39 +194,48 @@ export class PinController {
   /**
    * Busca usuario por identificador (para mostrar info en recuperación)
    */
-  findUserForRecovery = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { identifier } = req.body;
+findUserForRecovery = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { identifier } = req.body;
 
-      if (!identifier) {
-        res.status(400).json({
-          success: false,
-          error: "Identificador (usuario o carnet) es requerido",
-        });
-        return;
-      }
+    console.log('🔍 Iniciando findUserForRecovery:', { identifier });
 
-      const result = await pinService.findUserByIdentifier(identifier);
-
-      if (result.success) {
-        res.json({
-          success: true,
-          userData: result.userData,
-        });
-      } else {
-        res.status(400).json({
-          success: false,
-          error: result.error,
-        });
-      }
-    } catch (error) {
-      console.error("Error en findUserForRecovery controller:", error);
-      res.status(500).json({
+    if (!identifier) {
+      console.log('❌ Identificador faltante');
+      res.status(400).json({
         success: false,
-        error: "Error interno del servidor",
+        error: "Identificador (usuario o carnet) es requerido",
+      });
+      return;
+    }
+
+    const result = await pinService.findUserByIdentifier(identifier);
+
+    console.log('📊 Resultado de búsqueda:', { 
+      success: result.success, 
+      hasUserData: !!result.userData,
+      error: result.error 
+    });
+
+    if (result.success) {
+      res.json({
+        success: true,
+        userData: result.userData,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error,
       });
     }
-  };
+  } catch (error) {
+    console.error("❌ Error en findUserForRecovery controller:", error);
+    res.status(500).json({
+      success: false,
+      error: "Error interno del servidor",
+    });
+  }
+};
 
   /**
    * Valida la seguridad del PIN (las mismas reglas que en el frontend)

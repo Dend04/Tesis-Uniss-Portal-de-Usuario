@@ -91,7 +91,7 @@ export default function ActivationForm({
               {...register("folio")}
               value={watch("folio") || ""}
               onChange={handleNumericInput("folio", 3)}
-              placeholder="Ej: 21"
+              placeholder="Ej: 21 o 211"
               className={`w-full p-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all bg-white text-gray-800 ${
                 errors.folio 
                   ? "border-red-500 focus:ring-red-300" 
