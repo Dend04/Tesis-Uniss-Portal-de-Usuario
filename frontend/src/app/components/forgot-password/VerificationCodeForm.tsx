@@ -1,4 +1,3 @@
-// src/app/components/forgot-password/VerificationCodeForm.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -6,16 +5,13 @@ import { motion } from "framer-motion";
 import { EnvelopeIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { UserData } from "@/types/user";
 
-// ✅ INTERFAZ CORRECTA (usa company)
-// En src/app/components/forgot-password/VerificationCodeForm.tsx
-
 interface VerificationCodeFormProps {
   userData: UserData;
   onBack: () => void;
   onCodeVerified: (code: string) => void;
 }
 
-// ✅ FUNCIÓN MEJORADA CON MANEJO DE ARRAYS
+// ✅ FUNCIÓN PARA ENMASCARAR EMAIL
 const maskEmail = (email: any): string => {
   try {
     console.log("🔍 maskEmail recibió:", email, "tipo:", typeof email);
@@ -54,7 +50,7 @@ const maskEmail = (email: any): string => {
   }
 };
 
-// ✅ FUNCIÓN MEJORADA CON MANEJO DE ARRAYS
+// ✅ FUNCIÓN PARA OBTENER INICIALES
 const getInitials = (displayName: any): string => {
   try {
     console.log("🔍 getInitials recibió:", displayName, "tipo:", typeof displayName);
@@ -91,13 +87,8 @@ export default function VerificationCodeForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [isUsingGmail, setIsUsingGmail] = useState(false); // ✅ NUEVO ESTADO
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
-
-  // ✅ DEBUG: Verificar estructura completa de userData
-  console.log("📋 userData completo en VerificationCodeForm:", userData);
-  console.log("📧 userData.company:", userData?.company, "tipo:", typeof userData?.company);
-  console.log("👤 userData.displayName:", userData?.displayName, "tipo:", typeof userData?.displayName);
-  console.log("🔑 userData.sAMAccountName:", userData?.sAMAccountName, "tipo:", typeof userData?.sAMAccountName);
 
   // ✅ EXTRACCIÓN SEGURA DE DATOS CON MANEJO DE ARRAYS
   const getStringValue = (value: any): string => {
@@ -109,16 +100,8 @@ export default function VerificationCodeForm({
 
   const userEmail = getStringValue(userData?.company);
   const userName = getStringValue(userData?.displayName) || getStringValue(userData?.sAMAccountName) || "Usuario";
-
   const maskedEmail = maskEmail(userEmail);
   const userInitials = getInitials(userName);
-
-  console.log("✅ Datos procesados:", {
-    userEmail,
-    userName, 
-    maskedEmail,
-    userInitials
-  });
 
   useEffect(() => {
     if (inputRefs.current[0]) {
@@ -191,12 +174,21 @@ export default function VerificationCodeForm({
     }
   };
 
+  // ✅ FUNCIÓN MODIFICADA: Ahora usa Gmail automáticamente
   const handleResendCode = async () => {
     setIsSubmitting(true);
     setError("");
+    setSuccessMessage("");
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/forgot-password`, {
+      console.log(`🔄 Reenviando código usando ${isUsingGmail ? 'Gmail' : 'servicio principal'}...`);
+      
+      // ✅ DECIDIR QUÉ ENDPOINT USAR
+      const endpoint = isUsingGmail 
+        ? `${process.env.NEXT_PUBLIC_API_URL}/email/gmail/forgot-password`
+        : `${process.env.NEXT_PUBLIC_API_URL}/email/forgot-password`;
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -207,16 +199,54 @@ export default function VerificationCodeForm({
       });
 
       if (!response.ok) {
-        throw new Error("Error al reenviar el código");
+        const errorData = await response.json();
+        
+        // ✅ SI FALLA EL SERVICIO PRINCIPAL, INTENTAR CON GMAIL
+        if (!isUsingGmail && (response.status === 500 || response.status === 503)) {
+          console.log('⚠️ Servicio principal falló, intentando con Gmail...');
+          setIsUsingGmail(true);
+          await handleResendCode(); // Llamada recursiva
+          return;
+        }
+        
+        throw new Error(errorData.message || `Error al reenviar el código ${isUsingGmail ? 'con Gmail' : ''}`);
       }
 
-      setSuccessMessage("Código reenviado correctamente");
+      const result = await response.json();
+      
+      // ✅ MENSAJE PERSONALIZADO SEGÚN EL SERVICIO USADO
+      let mensajeExito = "Código reenviado correctamente";
+      if (isUsingGmail) {
+        mensajeExito = "✅ Código reenviado usando servicio de respaldo (Gmail)";
+        console.log('📊 Estadísticas Gmail:', result.gmailStats);
+      } else if (result.servicio === 'gmail') {
+        mensajeExito = "✅ Código reenviado usando servicio de respaldo (Gmail)";
+        setIsUsingGmail(true);
+      }
+
+      setSuccessMessage(mensajeExito);
       setVerificationCode(Array(6).fill(""));
+      
       if (inputRefs.current[0]) {
         inputRefs.current[0]?.focus();
       }
+
+      // ✅ SI SE USÓ GMAIL EXITOSAMENTE, MANTENER ESA CONFIGURACIÓN
+      if (result.servicio === 'gmail') {
+        setIsUsingGmail(true);
+      }
+
     } catch (err: any) {
-      setError(err.message || "Error al reenviar el código");
+      console.error(`❌ Error reenviando código:`, err);
+      
+      // ✅ SI ES EL PRIMER INTENTO Y FALLA, PROBAR CON GMAIL
+      if (!isUsingGmail) {
+        console.log('🔄 Primer intento falló, probando con Gmail...');
+        setIsUsingGmail(true);
+        await handleResendCode(); // Intentar nuevamente con Gmail
+      } else {
+        setError(err.message || `Error al reenviar el código ${isUsingGmail ? 'con el servicio de respaldo' : ''}. Por favor, intente más tarde.`);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -265,6 +295,16 @@ export default function VerificationCodeForm({
               </p>
             </div>
           </div>
+
+          {/* ✅ INDICADOR DE SERVICIO ACTIVO */}
+          {isUsingGmail && (
+            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+              <p className="text-xs text-green-700 flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                <strong>Usando servicio de respaldo (Gmail)</strong>
+              </p>
+            </div>
+          )}
         </div>
         
         <p className="text-sm sm:text-base text-gray-600">
@@ -284,6 +324,11 @@ export default function VerificationCodeForm({
       {successMessage && (
         <div className="bg-green-50 p-3 sm:p-4 rounded-lg border border-green-200 mb-4">
           <p className="text-green-700 text-xs sm:text-sm">{successMessage}</p>
+          {isUsingGmail && (
+            <p className="text-green-600 text-xs mt-1">
+              💡 Si no recibe el código, verifique la carpeta de spam
+            </p>
+          )}
         </div>
       )}
 
@@ -344,8 +389,15 @@ export default function VerificationCodeForm({
             className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-1 mx-auto"
           >
             <ArrowPathIcon className="w-4 h-4" />
-            ¿No recibió el código? Reenviar
+            {isUsingGmail ? "Reenviar con servicio de respaldo" : "¿No recibió el código? Reenviar"}
           </button>
+          
+          {/* ✅ INFORMACIÓN SOBRE EL SERVICIO DE RESPALDO */}
+          {!isUsingGmail && (
+            <p className="text-xs text-gray-500 mt-2">
+              Si no recibe el código, se usará automáticamente nuestro servicio de respaldo
+            </p>
+          )}
         </div>
 
         {/* Información de seguridad */}
@@ -353,6 +405,11 @@ export default function VerificationCodeForm({
           <p className="text-xs text-yellow-800 text-center">
             <strong>Seguridad:</strong> Por su protección, mostramos solo parte de su información. 
             Verifique que el correo mostrado sea el correcto.
+            {isUsingGmail && (
+              <span className="block mt-1">
+                🔒 <strong>Servicio de respaldo activo:</strong> Usando Gmail para mayor confiabilidad
+              </span>
+            )}
           </p>
         </div>
       </div>

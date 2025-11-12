@@ -277,6 +277,7 @@ export const verifyCode = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    // ✅ ACEPTAR el código sin importar qué servicio lo generó
     if (storedData.code !== code) {
       res.status(400).json({
         success: false,

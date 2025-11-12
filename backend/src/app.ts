@@ -32,6 +32,7 @@ import forgotPassword2FATop from './routes/totp-verification.routes';
 import portalRoutes from './routes/portal.routes';
 import updateAccount from './routes/updateAccount.routes'
 import groupRoutes from './routes/groups.route';
+import emailGoogleRoutes from './routes/emailGoogle.routes'
 
 
 // Cargar variables de entorno desde el archivo .env
@@ -99,6 +100,7 @@ app.use('/api/2fa', forgotPassword2FATop);
 app.use('/api/portal', portalRoutes);
 app.use('/api/updateAccount', updateAccount);
 app.use('/api/groups', groupRoutes);
+app.use('/api/email', emailGoogleRoutes); 
 
 // Endpoint de health check para verificar que el servidor está funcionando
 app.get('/health', (_: Request, res: Response) => {

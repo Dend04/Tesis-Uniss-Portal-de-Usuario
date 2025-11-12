@@ -1,4 +1,3 @@
-// app/components/config/EmailForm.tsx
 "use client";
 
 import {
@@ -16,6 +15,7 @@ import {
   QuestionMarkCircleIcon,
   CheckCircleIcon,
   ArrowPathIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Modal from "../Modal";
 
@@ -51,6 +51,12 @@ export default function EmailForm({
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [isResendingGmail, setIsResendingGmail] = useState(false);
+  const [resendStatus, setResendStatus] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -142,6 +148,8 @@ export default function EmailForm({
 
         setStep("verification");
         setCountdown(600);
+        // ✅ MOSTRAR MODAL DE CONFIRMACIÓN DE RECEPCIÓN
+        setShowReceiptModal(true);
       } catch (error) {
         setErrorMessage(
           error instanceof Error
@@ -154,6 +162,55 @@ export default function EmailForm({
     },
     [newEmail, currentEmail, validateEmail]
   );
+
+  const handleResendCodeGmail = async () => {
+    setIsResendingGmail(true);
+    setResendStatus(null);
+    
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/email/resend-change-email-verification-gmail`,
+        {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify({ 
+            email: currentEmail,
+            newEmail: newEmail,
+            userName: "Usuario"
+          }),
+        }
+      );
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || "Error al reenviar el código ");
+      }
+
+      setResendStatus({
+        success: true,
+        message: "✅ Código reenviado exitosamente . Por favor revise su bandeja de entrada."
+      });
+      
+      // Reiniciar el contador
+      setCountdown(600);
+      
+    } catch (error: any) {
+      setResendStatus({
+        success: false,
+        message: `❌ ${error.message}`
+      });
+    } finally {
+      setIsResendingGmail(false);
+    }
+  };
+
+  const handleConfirmReceipt = () => {
+    setShowReceiptModal(false);
+  };
 
   const handleVerifyAndChange = useCallback(
     async (e: React.FormEvent) => {
@@ -186,7 +243,6 @@ export default function EmailForm({
 
         if (response.status === 401) {
           const errorText = await response.text();
-        /*   localStorage.removeItem('authToken'); */
           setErrorMessage("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
           return;
         }
@@ -261,6 +317,7 @@ export default function EmailForm({
     setVerificationCode("");
     setErrorMessage("");
     setCountdown(0);
+    setShowReceiptModal(false);
   }, []);
 
   const formatTime = useCallback((seconds: number) => {
@@ -275,6 +332,75 @@ export default function EmailForm({
 
   return (
     <div className="mt-4">
+      {/* Modal de confirmación de recepción del correo */}
+      {showReceiptModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <div className="text-center mb-4">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                <EnvelopeIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mt-3 mb-2">
+                ¿Ha recibido el código de verificación?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Hemos enviado un código de verificación a:
+              </p>
+              <p className="text-blue-600 dark:text-blue-400 font-semibold my-2">{newEmail}</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Esta verificación es <span className="font-bold text-red-600">IMPORTANTE</span> para completar el cambio de correo.
+              </p>
+            </div>
+
+            {resendStatus && (
+              <div className={`p-3 rounded-lg mb-4 text-sm ${
+                resendStatus.success 
+                  ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' 
+                  : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+              }`}>
+                {resendStatus.message}
+              </div>
+            )}
+
+            <div className="flex flex-col space-y-3">
+              {/* Botón NO - Verde (para hacer dudar) */}
+              <button
+                onClick={handleResendCodeGmail}
+                disabled={isResendingGmail}
+                className="w-full bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 transition-all font-medium flex items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                {isResendingGmail ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Reenviando...</span>
+                  </>
+                ) : (
+                  <>
+                    <ExclamationTriangleIcon className="h-4 w-4" />
+                    <span>No, no lo he recibido</span>
+                  </>
+                )}
+              </button>
+
+              {/* Botón SÍ - Rojo (para confirmación) */}
+              <button
+                onClick={handleConfirmReceipt}
+                className="w-full bg-red-600 text-white py-2.5 px-4 rounded-lg hover:bg-red-700 transition-all font-medium flex items-center justify-center space-x-2"
+              >
+                <CheckCircleIcon className="h-4 w-4" />
+                <span>Sí, lo he recibido</span>
+              </button>
+            </div>
+
+            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <p className="text-yellow-700 dark:text-yellow-300 text-xs text-center">
+                <strong>Recomendación:</strong> Verifique en su bandeja de spam o correo no deseado antes de continuar.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {step === "email" ? (
         <form onSubmit={handleSendVerification} className="space-y-6">
           {/* Header */}
@@ -514,6 +640,7 @@ export default function EmailForm({
             email={newEmail}
             isDarkMode={isDarkMode}
             onClose={() => setShowHelpModal(false)}
+            onResendGmail={handleResendCodeGmail}
           />
         </Suspense>
       </Modal>
