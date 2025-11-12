@@ -1,9 +1,5 @@
-// controllers/totp-verification.controller.ts
 import { Request, Response } from 'express';
-import { TOTPVerificationService } from '../services/totp-verification.services';
-
-
-const totpService = new TOTPVerificationService();
+import { totpVerificationService } from '../services/totp-verification.services';
 
 /**
  * ✅ VERIFICAR CÓDIGO TOTP - ENDPOINT SIMPLIFICADO
@@ -22,7 +18,7 @@ export const verifyTOTPCode = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const result = await totpService.verifyTOTPCode(identifier, code);
+    const result = await totpVerificationService.verifyTOTPCode(identifier, code);
 
     if (!result.success) {
       res.status(400).json({
@@ -64,7 +60,7 @@ export const getTOTPUserInfo = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const result = await totpService.getUserTOTPInfo(identifier);
+    const result = await totpVerificationService.getUserTOTPInfo(identifier);
 
     if (!result.success) {
       res.status(404).json({

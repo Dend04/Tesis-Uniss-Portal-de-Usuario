@@ -7,6 +7,7 @@ import {
   get2FAStatusController,
   verify2FACodeRecovery,
 } from '../controllers/2fa.controller';
+import { forgotPassword2FAController } from '../controllers/forgotPassword2FA.controller';
 
 const router = express.Router();
 
@@ -21,5 +22,7 @@ router.post('/deactivate', deactivate2FAController);
 
 router.post('/check-status', check2FAUserStatus); // Para el UserIdentifierForm
 router.post('/verify-code', verify2FACodeRecovery); // Para verificar el código
+
+router.post('/reset-password', (req, res) => forgotPassword2FAController.resetPassword(req, res)); // ✅ NUEVA RUTA PARA RESET PASSWORD
 
 export default router;
