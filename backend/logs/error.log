@@ -1172,3 +1172,4 @@ D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.
 Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
 2025-11-11 10:28:44 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
 2025-11-11 12:16:48 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-14 14:15:32 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp

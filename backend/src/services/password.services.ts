@@ -6,7 +6,7 @@ import { userService } from "./user.services";
 export class PasswordService {
   private readonly maxRetries = 2;
 
-  async changePassword(userDN: string, newPassword: string, currentPassword?: string): Promise<void> {
+async changePassword(userDN: string, newPassword: string, currentPassword?: string): Promise<void> {
     let lastError;
     const username = userService.extractUsernameFromDN(userDN);
 
@@ -15,22 +15,28 @@ export class PasswordService {
       throw new Error('La nueva contraseña no puede ser igual a la actual');
     }
 
+    // ✅ NORMALIZAR EL DN ANTES DE USARLO
+    const normalizedDN = this.normalizeDN(userDN);
+    console.log(`🔄 [PASSWORD SERVICE] Usando DN normalizado: ${normalizedDN}`);
+
     for (let attempt = 1; attempt <= this.maxRetries + 1; attempt++) {
       const client = createLDAPClient(process.env.LDAP_URL!);
       
       try {
-        console.log(`🔄 Intento ${attempt} de cambio de contraseña`);
+        console.log(`🔄 Intento ${attempt} de cambio de contraseña para DN: ${normalizedDN}`);
 
         await auditService.addLogEntry(username, 'change_password_attempt', 'started', {
           attempt: attempt,
           timestamp: new Date().toISOString(),
-          currentPasswordProvided: !!currentPassword // ✅ Registrar si se proporcionó contraseña actual
+          originalDN: userDN, // ✅ Guardar DN original para auditoría
+          normalizedDN: normalizedDN, // ✅ Guardar DN normalizado
+          currentPasswordProvided: !!currentPassword
         });
 
         await bindAsync(client, process.env.LDAP_ADMIN_DN!, process.env.LDAP_ADMIN_PASSWORD!);
 
-        // Verificar historial de contraseñas
-        const passwordHistory = await this.getPasswordHistory(userDN, client);
+        // Verificar historial de contraseñas (usando DN normalizado)
+        const passwordHistory = await this.getPasswordHistory(normalizedDN, client);
         console.log(`📊 Historial de contraseñas: ${passwordHistory.length} entradas`);
 
         // Validar políticas de contraseña
@@ -44,8 +50,9 @@ export class PasswordService {
           }
         };
 
+        // ✅ USAR EL DN NORMALIZADO EN LA OPERACIÓN LDAP
         await new Promise<void>((resolve, reject) => {
-          client.modify(userDN, change, (err) => {
+          client.modify(normalizedDN, change, (err) => {
             if (err) {
               reject(err);
             } else {
@@ -60,7 +67,9 @@ export class PasswordService {
           attempt: attempt,
           timestamp: new Date().toISOString(),
           retriesUsed: attempt - 1,
-          currentPasswordVerified: !!currentPassword
+          currentPasswordVerified: !!currentPassword,
+          originalDN: userDN,
+          normalizedDN: normalizedDN
         });
         
         return; 
@@ -75,7 +84,9 @@ export class PasswordService {
           errorCode: error.code,
           timestamp: new Date().toISOString(),
           isConnectionError: error.code === 80,
-          currentPasswordProvided: !!currentPassword
+          currentPasswordProvided: !!currentPassword,
+          originalDN: userDN,
+          normalizedDN: normalizedDN
         });
 
         if (error.code === 80 && attempt <= this.maxRetries) {
@@ -95,6 +106,7 @@ export class PasswordService {
     
     throw lastError;
   }
+
 
   async validatePasswordPolicy(password: string, username: string): Promise<void> {
     const errors: string[] = [];
@@ -295,86 +307,153 @@ export class PasswordService {
     return false;
   }
 
-  async resetPassword(userDN: string, newPassword: string): Promise<void> {
-  let lastError;
-  const username = userService.extractUsernameFromDN(userDN);
+async resetPassword(userDN: string, newPassword: string): Promise<void> {
+    let lastError;
+    const username = userService.extractUsernameFromDN(userDN);
 
-  for (let attempt = 1; attempt <= this.maxRetries + 1; attempt++) {
-    const client = createLDAPClient(process.env.LDAP_URL!);
-    
-    try {
-      console.log(`🔄 Intento ${attempt} de reset de contraseña`);
+    // ✅ NORMALIZAR EL DN ANTES DE USARLO
+    const normalizedDN = this.normalizeDN(userDN);
+    console.log(`🔄 [PASSWORD SERVICE] Usando DN normalizado para reset: ${normalizedDN}`);
 
-      await auditService.addLogEntry(username, 'reset_password_attempt', 'started', {
-        attempt: attempt,
-        timestamp: new Date().toISOString(),
-        isPasswordReset: true // ✅ Indicar que es un reset, no cambio normal
-      });
+    for (let attempt = 1; attempt <= this.maxRetries + 1; attempt++) {
+      const client = createLDAPClient(process.env.LDAP_URL!);
+      
+      try {
+        console.log(`🔄 Intento ${attempt} de reset de contraseña para DN: ${normalizedDN}`);
 
-      await bindAsync(client, process.env.LDAP_ADMIN_DN!, process.env.LDAP_ADMIN_PASSWORD!);
+        await auditService.addLogEntry(username, 'reset_password_attempt', 'started', {
+          attempt: attempt,
+          timestamp: new Date().toISOString(),
+          originalDN: userDN,
+          normalizedDN: normalizedDN,
+          isPasswordReset: true
+        });
 
-      // Validar políticas de contraseña (igual que en changePassword)
-      await this.validatePasswordPolicy(newPassword, username);
+        await bindAsync(client, process.env.LDAP_ADMIN_DN!, process.env.LDAP_ADMIN_PASSWORD!);
 
-      const change = {
-        operation: "replace",
-        modification: {
-          type: "unicodePwd",
-          values: [this.encodePassword(newPassword)]
-        }
-      };
+        // Validar políticas de contraseña (usando DN normalizado)
+        await this.validatePasswordPolicy(newPassword, username);
 
-      await new Promise<void>((resolve, reject) => {
-        client.modify(userDN, change, (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
+        const change = {
+          operation: "replace",
+          modification: {
+            type: "unicodePwd",
+            values: [this.encodePassword(newPassword)]
           }
+        };
+
+        // ✅ USAR EL DN NORMALIZADO EN LA OPERACIÓN LDAP
+        await new Promise<void>((resolve, reject) => {
+          client.modify(normalizedDN, change, (err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
         });
-      });
 
-      console.log(`✅ Contraseña reseteada exitosamente`);
-      
-      await auditService.logPasswordChange(username, true, {
-        attempt: attempt,
-        timestamp: new Date().toISOString(),
-        retriesUsed: attempt - 1,
-        isPasswordReset: true // ✅ Indicar que es un reset
-      });
-      
-      return; 
-
-    } catch (error: any) {
-      lastError = error;
-      console.warn(`⚠️ Intento ${attempt} fallido:`, error.message);
-
-      await auditService.addLogEntry(username, 'reset_password_attempt', 'failed', {
-        attempt: attempt,
-        error: error.message,
-        errorCode: error.code,
-        timestamp: new Date().toISOString(),
-        isConnectionError: error.code === 80,
-        isPasswordReset: true
-      });
-
-      if (error.code === 80 && attempt <= this.maxRetries) {
-        console.log('⏳ Reintentando...');
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      } else {
-        break;
-      }
-    } finally {
-      if (client && typeof client.unbind === 'function') {
-        client.unbind(() => { 
-          console.log(`🔒 Conexión LDAP cerrada`);
+        console.log(`✅ Contraseña reseteada exitosamente`);
+        
+        await auditService.logPasswordChange(username, true, {
+          attempt: attempt,
+          timestamp: new Date().toISOString(),
+          retriesUsed: attempt - 1,
+          isPasswordReset: true,
+          originalDN: userDN,
+          normalizedDN: normalizedDN
         });
+        
+        return; 
+
+      } catch (error: any) {
+        lastError = error;
+        console.warn(`⚠️ Intento ${attempt} fallido:`, error.message);
+
+        await auditService.addLogEntry(username, 'reset_password_attempt', 'failed', {
+          attempt: attempt,
+          error: error.message,
+          errorCode: error.code,
+          timestamp: new Date().toISOString(),
+          isConnectionError: error.code === 80,
+          isPasswordReset: true,
+          originalDN: userDN,
+          normalizedDN: normalizedDN
+        });
+
+        if (error.code === 80 && attempt <= this.maxRetries) {
+          console.log('⏳ Reintentando...');
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        } else {
+          break;
+        }
+      } finally {
+        if (client && typeof client.unbind === 'function') {
+          client.unbind(() => { 
+            console.log(`🔒 Conexión LDAP cerrada`);
+          });
+        }
       }
     }
+    
+    throw lastError;
   }
-  
-  throw lastError;
-}
+
+   /**
+   * ✅ NORMALIZAR DN - Eliminar tildes y caracteres especiales (VERSIÓN ROBUSTA)
+   * Igual que en el servicio 2FA
+   */
+  private normalizeDN(dn: any): string {
+    try {
+      console.log(`🔧 [PASSWORD SERVICE] Normalizando DN (tipo: ${typeof dn}):`, dn);
+      
+      // ✅ CONVERTIR A STRING SI NO LO ES
+      let dnString = dn;
+      if (typeof dn !== 'string') {
+        if (dn && dn.toString && typeof dn.toString === 'function') {
+          dnString = dn.toString();
+        } else {
+          dnString = String(dn);
+        }
+        console.log(`🔧 [PASSWORD SERVICE] DN convertido a string: ${dnString}`);
+      }
+      
+      // ✅ VERIFICAR QUE SEA UN STRING VÁLIDO
+      if (typeof dnString !== 'string' || dnString.trim() === '') {
+        throw new Error('DN no es un string válido');
+      }
+
+      // Reemplazar caracteres con tildes
+      let normalized = dnString
+        .replace(/á/g, 'a')
+        .replace(/é/g, 'e')
+        .replace(/í/g, 'i')
+        .replace(/ó/g, 'o')
+        .replace(/ú/g, 'u')
+        .replace(/ñ/g, 'n')
+        .replace(/Á/g, 'A')
+        .replace(/É/g, 'E')
+        .replace(/Í/g, 'I')
+        .replace(/Ó/g, 'O')
+        .replace(/Ú/g, 'U')
+        .replace(/Ñ/g, 'N')
+        // También manejar caracteres escapados que ves en los logs
+        .replace(/\\c3\\a9/g, 'e')  // é escapado
+        .replace(/\\c3\\b3/g, 'o')  // ó escapado
+        .replace(/\\c3\\a1/g, 'a')  // á escapado
+        .replace(/\\c3\\ad/g, 'i')  // í escapado
+        .replace(/\\c3\\ba/g, 'u')  // ú escapado
+        .replace(/\\c3\\b1/g, 'n'); // ñ escapado
+
+      console.log(`🔧 [PASSWORD SERVICE] DN normalizado: ${normalized}`);
+      return normalized;
+
+    } catch (error) {
+      console.error('❌ [PASSWORD SERVICE] Error normalizando DN:', error);
+      // Si hay error, devolver el DN original como string
+      return String(dn);
+    }
+  }
 }
 
 export const passwordService = new PasswordService();

@@ -11,41 +11,34 @@ interface VerificationCodeFormProps {
   onCodeVerified: (code: string) => void;
 }
 
-// ✅ FUNCIÓN PARA ENMASCARAR EMAIL
+// ✅ FUNCIÓN CORREGIDA PARA ENMASCARAR EMAIL
 const maskEmail = (email: any): string => {
   try {
-    console.log("🔍 maskEmail recibió:", email, "tipo:", typeof email);
-    
     let emailValue = email;
     if (Array.isArray(email)) {
-      console.log("🔄 Email es array, tomando primer elemento:", email[0]);
       emailValue = email[0] || "";
     }
     
     if (!emailValue || typeof emailValue !== 'string') {
-      console.warn("❌ Email no válido para enmascarar:", emailValue);
       return "***@***";
     }
     
     const [username, domain] = emailValue.split('@');
     if (!username || !domain) {
-      console.warn("❌ Formato de email inválido:", emailValue);
       return "***@***";
     }
 
-    if (username.length <= 2) {
-      return `*${username}@${domain}`;
-    } else if (username.length <= 4) {
-      const firstChar = username.substring(0, 1);
-      const lastChar = username.substring(username.length - 1);
-      return `*${firstChar}*${lastChar}@${domain}`;
+    if (username.length === 1) {
+      return `${username}***@${domain}`;
+    } else if (username.length === 2) {
+      return `${username[0]}*${username[1]}@${domain}`;
     } else {
-      const firstChar = username.substring(0, 1);
-      const lastChar = username.substring(username.length - 1);
-      return `*${firstChar}***${lastChar}@${domain}`;
+      const firstChar = username[0];
+      const lastChar = username[username.length - 1];
+      const middleAsterisks = '*'.repeat(username.length - 2);
+      return `${firstChar}${middleAsterisks}${lastChar}@${domain}`;
     }
   } catch (error) {
-    console.error("❌ Error en maskEmail:", error);
     return "***@***";
   }
 };
@@ -53,16 +46,12 @@ const maskEmail = (email: any): string => {
 // ✅ FUNCIÓN PARA OBTENER INICIALES
 const getInitials = (displayName: any): string => {
   try {
-    console.log("🔍 getInitials recibió:", displayName, "tipo:", typeof displayName);
-    
     let displayNameValue = displayName;
     if (Array.isArray(displayName)) {
-      console.log("🔄 displayName es array, tomando primer elemento:", displayName[0]);
       displayNameValue = displayName[0] || "";
     }
     
     if (!displayNameValue || typeof displayNameValue !== 'string') {
-      console.warn("❌ displayName no válido:", displayNameValue);
       return "US";
     }
     
@@ -73,7 +62,6 @@ const getInitials = (displayName: any): string => {
     
     return (names[0].substring(0, 1) + names[names.length - 1].substring(0, 1)).toUpperCase();
   } catch (error) {
-    console.error("❌ Error en getInitials:", error);
     return "US";
   }
 };
@@ -87,8 +75,12 @@ export default function VerificationCodeForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [isUsingGmail, setIsUsingGmail] = useState(false); // ✅ NUEVO ESTADO
+  const [isUsingGmail, setIsUsingGmail] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  
+  // ✅ REFS PARA CONTROLAR ENVÍOS POR USUARIO ESPECÍFICO
+  const hasSentInitialCode = useRef(false);
+  const currentUserId = useRef<string>("");
 
   // ✅ EXTRACCIÓN SEGURA DE DATOS CON MANEJO DE ARRAYS
   const getStringValue = (value: any): string => {
@@ -100,6 +92,7 @@ export default function VerificationCodeForm({
 
   const userEmail = getStringValue(userData?.company);
   const userName = getStringValue(userData?.displayName) || getStringValue(userData?.sAMAccountName) || "Usuario";
+  const userIdentifier = getStringValue(userData?.sAMAccountName) || getStringValue(userData?.employeeID);
   const maskedEmail = maskEmail(userEmail);
   const userInitials = getInitials(userName);
 
@@ -108,6 +101,68 @@ export default function VerificationCodeForm({
       inputRefs.current[0]?.focus();
     }
   }, []);
+
+  // ✅ FUNCIÓN REUTILIZABLE PARA ENVIAR CÓDIGO
+  const sendVerificationCode = async (useGmail: boolean = false): Promise<boolean> => {
+    try {
+      const endpoint = useGmail 
+        ? `${process.env.NEXT_PUBLIC_API_URL}/email/gmail/forgot-password`
+        : `${process.env.NEXT_PUBLIC_API_URL}/email/forgot-password`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          userIdentifier: userIdentifier
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error al enviar el código ${useGmail ? 'con Gmail' : ''}`);
+      }
+
+      const result = await response.json();
+      
+      if (useGmail || result.servicio === 'gmail') {
+        setIsUsingGmail(true);
+      }
+      
+      return true;
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  // ✅ EFECTO CORREGIDO: ENVÍO AUTOMÁTICO COMPLETAMENTE SILENCIOSO
+  useEffect(() => {
+    if (currentUserId.current === userIdentifier && hasSentInitialCode.current) {
+      return;
+    }
+
+    currentUserId.current = userIdentifier;
+    hasSentInitialCode.current = true;
+
+    const sendInitialCode = async () => {
+      // ✅ ENVÍO AUTOMÁTICO SILENCIOSO - SIN ESTADOS DE CARGA NI MENSAJES
+      try {
+        await sendVerificationCode(false);
+        console.log("✅ Código enviado automáticamente al usuario (silencioso)");
+      } catch (err: any) {
+        try {
+          await sendVerificationCode(true);
+          console.log("✅ Código enviado exitosamente con Gmail (automático silencioso)");
+        } catch (gmailErr: any) {
+          // ✅ SOLO MOSTRAR ERROR SI FALLAN AMBOS MÉTODOS
+          setError("No pudimos enviar el código automáticamente. Por favor, use el botón 'Reenviar código' para intentarlo nuevamente.");
+        }
+      }
+    };
+
+    sendInitialCode();
+  }, [userIdentifier]);
 
   const handleCodeChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -174,79 +229,38 @@ export default function VerificationCodeForm({
     }
   };
 
-  // ✅ FUNCIÓN MODIFICADA: Ahora usa Gmail automáticamente
+  // ✅ FUNCIÓN MEJORADA PARA REENVIAR CÓDIGO - SOLO AQUÍ SE MUESTRAN MENSAJES
   const handleResendCode = async () => {
     setIsSubmitting(true);
     setError("");
     setSuccessMessage("");
     
     try {
-      console.log(`🔄 Reenviando código usando ${isUsingGmail ? 'Gmail' : 'servicio principal'}...`);
-      
-      // ✅ DECIDIR QUÉ ENDPOINT USAR
-      const endpoint = isUsingGmail 
-        ? `${process.env.NEXT_PUBLIC_API_URL}/email/gmail/forgot-password`
-        : `${process.env.NEXT_PUBLIC_API_URL}/email/forgot-password`;
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          userIdentifier: getStringValue(userData?.sAMAccountName) || getStringValue(userData?.employeeID)
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
+      // ✅ PRIMERO INTENTAR CON SERVICIO PRINCIPAL
+      try {
+        const success = await sendVerificationCode(false);
         
-        // ✅ SI FALLA EL SERVICIO PRINCIPAL, INTENTAR CON GMAIL
-        if (!isUsingGmail && (response.status === 500 || response.status === 503)) {
-          console.log('⚠️ Servicio principal falló, intentando con Gmail...');
-          setIsUsingGmail(true);
-          await handleResendCode(); // Llamada recursiva
-          return;
+        if (success) {
+          setSuccessMessage("✅ Código reenviado correctamente");
         }
         
-        throw new Error(errorData.message || `Error al reenviar el código ${isUsingGmail ? 'con Gmail' : ''}`);
+      } catch (primaryErr: any) {
+        // ✅ SI FALLA EL SERVICIO PRINCIPAL, INTENTAR CON GMAIL
+        const gmailSuccess = await sendVerificationCode(true);
+        
+        if (gmailSuccess) {
+          setSuccessMessage("✅ Código reenviado usando servicio de respaldo (Gmail)");
+        }
       }
 
-      const result = await response.json();
-      
-      // ✅ MENSAJE PERSONALIZADO SEGÚN EL SERVICIO USADO
-      let mensajeExito = "Código reenviado correctamente";
-      if (isUsingGmail) {
-        mensajeExito = "✅ Código reenviado usando servicio de respaldo (Gmail)";
-        console.log('📊 Estadísticas Gmail:', result.gmailStats);
-      } else if (result.servicio === 'gmail') {
-        mensajeExito = "✅ Código reenviado usando servicio de respaldo (Gmail)";
-        setIsUsingGmail(true);
-      }
-
-      setSuccessMessage(mensajeExito);
+      // ✅ LIMPIAR CÓDIGO Y FOCUS EN PRIMER INPUT
       setVerificationCode(Array(6).fill(""));
-      
       if (inputRefs.current[0]) {
         inputRefs.current[0]?.focus();
       }
 
-      // ✅ SI SE USÓ GMAIL EXITOSAMENTE, MANTENER ESA CONFIGURACIÓN
-      if (result.servicio === 'gmail') {
-        setIsUsingGmail(true);
-      }
-
     } catch (err: any) {
-      console.error(`❌ Error reenviando código:`, err);
-      
-      // ✅ SI ES EL PRIMER INTENTO Y FALLA, PROBAR CON GMAIL
-      if (!isUsingGmail) {
-        console.log('🔄 Primer intento falló, probando con Gmail...');
-        setIsUsingGmail(true);
-        await handleResendCode(); // Intentar nuevamente con Gmail
-      } else {
-        setError(err.message || `Error al reenviar el código ${isUsingGmail ? 'con el servicio de respaldo' : ''}. Por favor, intente más tarde.`);
-      }
+      setError(err.message || "Error al reenviar el código. Por favor, intente más tarde.");
     } finally {
       setIsSubmitting(false);
     }
@@ -257,73 +271,31 @@ export default function VerificationCodeForm({
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
-      className="px-4 sm:px-6 md:px-8 pb-6 sm:pb-8"
+      className="px-4 sm:px-6 pb-4 sm:pb-6"
     >
-      <div className="text-center mt-4 sm:mt-6 mb-4 sm:mb-6">
-        <div className="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100">
-          <EnvelopeIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+      {/* ✅ HEADER COMPACTO */}
+      <div className="text-center mb-4">
+        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-2">
+          <EnvelopeIcon className="h-6 w-6 text-blue-600" />
         </div>
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mt-3 sm:mt-4 mb-2">
+        <h2 className="text-xl font-bold text-gray-800 mb-1">
           Verificación de Código
         </h2>
-        
-        {/* Información del usuario - Mejorada y segura */}
-        <div className="bg-blue-50 p-4 rounded-lg mb-4 text-left border border-blue-200">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">
-                {userInitials}
-              </span>
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800 text-sm">
-                {userName}
-              </p>
-              <p className="text-gray-600 text-xs">
-                {userData?.sAMAccountName && `@${getStringValue(userData.sAMAccountName)}`}
-                {userData?.employeeID && ` | CI: ${getStringValue(userData.employeeID)}`}
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 bg-white p-2 rounded border">
-            <EnvelopeIcon className="w-4 h-4 text-gray-500" />
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Código enviado a:</p>
-              <p className="text-sm font-mono text-gray-800">
-                {maskedEmail}
-              </p>
-            </div>
-          </div>
-
-          {/* ✅ INDICADOR DE SERVICIO ACTIVO */}
-          {isUsingGmail && (
-            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-              <p className="text-xs text-green-700 flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <strong>Usando servicio de respaldo (Gmail)</strong>
-              </p>
-            </div>
-          )}
-        </div>
-        
-        <p className="text-sm sm:text-base text-gray-600">
-          Hemos enviado un código de verificación de 6 dígitos a su correo electrónico
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          El código expirará en 15 minutos
+        <p className="text-sm text-gray-600">
+          Ingrese el código de 6 dígitos enviado a su correo
         </p>
       </div>
 
+      {/* ✅ ALERTAS - SOLO PARA REENVÍO MANUAL Y ERRORES */}
       {error && (
-        <div className="bg-red-50 p-3 sm:p-4 rounded-lg border border-red-200 mb-4">
-          <p className="text-red-700 text-xs sm:text-sm">{error}</p>
+        <div className="bg-red-50 p-3 rounded-lg border border-red-200 mb-3">
+          <p className="text-red-700 text-sm">{error}</p>
         </div>
       )}
 
       {successMessage && (
-        <div className="bg-green-50 p-3 sm:p-4 rounded-lg border border-green-200 mb-4">
-          <p className="text-green-700 text-xs sm:text-sm">{successMessage}</p>
+        <div className="bg-green-50 p-3 rounded-lg border border-green-200 mb-3">
+          <p className="text-green-700 text-sm">{successMessage}</p>
           {isUsingGmail && (
             <p className="text-green-600 text-xs mt-1">
               💡 Si no recibe el código, verifique la carpeta de spam
@@ -332,86 +304,126 @@ export default function VerificationCodeForm({
         </div>
       )}
 
-      <div className="space-y-4 sm:space-y-5">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-            Ingrese el código de 6 dígitos
-          </label>
-          <div className="flex justify-center space-x-2">
-            {verificationCode.map((digit, index) => (
-              <input
-                key={index}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleCodeChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                ref={(el) => {
-                  inputRefs.current[index] = el;
-                }}
-                className="w-10 h-10 sm:w-12 sm:h-12 text-center text-lg sm:text-xl font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
-              />
-            ))}
+      {/* ✅ INFORMACIÓN DE USUARIO COMPACTA */}
+      <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <span className="text-white font-semibold text-sm">
+              {userInitials}
+            </span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-gray-800 text-sm truncate">
+              {userName}
+            </p>
+            <div className="flex gap-2 mt-1">
+              {userData?.sAMAccountName && (
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                  {getStringValue(userData.sAMAccountName)}
+                </span>
+              )}
+              {userData?.employeeID && (
+                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">
+                  CI: {getStringValue(userData.employeeID)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
-          <button
-            type="button"
-            onClick={onBack}
-            disabled={isSubmitting}
-            className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm sm:text-base disabled:opacity-50"
-          >
-            Volver
-          </button>
-          <button
-            onClick={handleVerify}
-            disabled={isSubmitting || verificationCode.some((digit) => digit === "")}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium text-center text-sm sm:text-base disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <>
-                <ArrowPathIcon className="h-4 w-4 animate-spin inline mr-2" />
-                Verificando...
-              </>
-            ) : (
-              "Verificar Código"
-            )}
-          </button>
+        {/* ✅ SECCIÓN CORREO COMPACTA */}
+        <div className="bg-white p-2 rounded border border-blue-100">
+          <div className="flex items-center gap-2">
+            <EnvelopeIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-gray-500 mb-1">Código enviado a:</p>
+              <p className="text-sm font-medium text-gray-800 truncate">
+                {maskedEmail}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={handleResendCode}
-            disabled={isSubmitting}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-1 mx-auto"
-          >
-            <ArrowPathIcon className="w-4 h-4" />
-            {isUsingGmail ? "Reenviar con servicio de respaldo" : "¿No recibió el código? Reenviar"}
-          </button>
-          
-          {/* ✅ INFORMACIÓN SOBRE EL SERVICIO DE RESPALDO */}
-          {!isUsingGmail && (
-            <p className="text-xs text-gray-500 mt-2">
-              Si no recibe el código, se usará automáticamente nuestro servicio de respaldo
+        {/* ✅ INDICADOR GMAIL COMPACTO */}
+        {isUsingGmail && (
+          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+            <p className="text-xs text-green-700 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+              <span>Usando servicio de respaldo (Gmail)</span>
             </p>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
-        {/* Información de seguridad */}
-        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mt-4">
-          <p className="text-xs text-yellow-800 text-center">
-            <strong>Seguridad:</strong> Por su protección, mostramos solo parte de su información. 
-            Verifique que el correo mostrado sea el correcto.
-            {isUsingGmail && (
-              <span className="block mt-1">
-                🔒 <strong>Servicio de respaldo activo:</strong> Usando Gmail para mayor confiabilidad
-              </span>
-            )}
-          </p>
+      {/* ✅ INPUTS DE CÓDIGO */}
+      <div className="mb-4">
+        <div className="flex justify-center space-x-2 mb-2">
+          {verificationCode.map((digit, index) => (
+            <input
+              key={index}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              onChange={(e) => handleCodeChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(index, e)}
+              ref={(el) => {
+                inputRefs.current[index] = el;
+              }}
+              className="w-10 h-10 text-center text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+            />
+          ))}
         </div>
+        <p className="text-xs text-gray-500 text-center">
+          El código expirará en 15 minutos
+        </p>
+      </div>
+
+      {/* ✅ BOTONES COMPACTOS */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-3">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={isSubmitting}
+          className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm disabled:opacity-50"
+        >
+          Volver
+        </button>
+        <button
+          onClick={handleVerify}
+          disabled={isSubmitting || verificationCode.some((digit) => digit === "")}
+          className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium text-center text-sm disabled:opacity-50"
+        >
+          {isSubmitting ? (
+            <>
+              <ArrowPathIcon className="h-4 w-4 animate-spin inline mr-2" />
+              Verificando...
+            </>
+          ) : (
+            "Verificar Código"
+          )}
+        </button>
+      </div>
+
+      {/* ✅ BOTÓN REENVIAR COMPACTO */}
+      <div className="text-center mb-3">
+        <button
+          type="button"
+          onClick={handleResendCode}
+          disabled={isSubmitting}
+          className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-1 mx-auto"
+        >
+          <ArrowPathIcon className="w-4 h-4" />
+          {isSubmitting ? "Enviando..." : (isUsingGmail ? "Reenviar código" : "¿No recibió el código? Reenviar")}
+        </button>
+      </div>
+
+      {/* ✅ INFORMACIÓN DE SEGURIDAD COMPACTA */}
+      <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+        <p className="text-xs text-yellow-800 text-center">
+          <strong>Seguridad:</strong> Por su protección, mostramos solo parte de su información. 
+          Verifique que el correo mostrado sea el correcto.
+        </p>
       </div>
     </motion.div>
   );

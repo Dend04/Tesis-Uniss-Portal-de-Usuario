@@ -227,7 +227,7 @@ export default function EmailForm({
         }
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/email/change-email/verify-and-update`,
+          `${process.env.NEXT_PUBLIC_API_URL}/email/change-backup-email/verify-and-update`,
           {
             method: "POST",
             headers: { 

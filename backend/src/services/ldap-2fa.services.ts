@@ -179,11 +179,11 @@ private async applyLDAPChanges(
   employeeNumberValue: string
 ): Promise<void> {
   
-  console.log('🔄 Aplicando cambios LDAP:', {
+  console.log('🔄 [2FA SERVICE] Aplicando cambios LDAP:', {
     userParameters: userParametersValue,
     employeeNumber: employeeNumberValue 
       ? `[RESTAURANDO: ${employeeNumberValue}]` 
-      : "[PONIendo '2FA DESACTIVADO']"
+      : "[PONIENDO '2FA DESACTIVADO']"
   });
 
   try {
@@ -195,7 +195,7 @@ private async applyLDAPChanges(
         values: [userParametersValue]
       }
     }));
-    console.log('✅ userParameters actualizado correctamente');
+    console.log('✅ [2FA SERVICE] userParameters actualizado correctamente');
 
     // ✅ SEGUNDO: Manejar employeeNumber - NUNCA eliminar, siempre poner un valor
     const finalEmployeeNumberValue = employeeNumberValue || '2FA DESACTIVADO';
@@ -208,58 +208,169 @@ private async applyLDAPChanges(
       }
     }));
     
-    console.log(`✅ employeeNumber actualizado a: "${finalEmployeeNumberValue}"`);
+    console.log(`✅ [2FA SERVICE] employeeNumber actualizado a: "${finalEmployeeNumberValue}"`);
 
   } catch (error) {
-    console.error('❌ Error en applyLDAPChanges:', error);
+    console.error('❌ [2FA SERVICE] Error en applyLDAPChanges:', error);
     throw new Error(`Error aplicando cambios LDAP: ${error instanceof Error ? error.message : 'Error desconocido'}`);
   }
 }
 
-  /**
-   * ✅ MÉTODO PARA OBTENER DN DESDE sAMAccountName
-   */
-  async getUserDNBySAMAccountName(sAMAccountName: string): Promise<string> {
-    try {
-      console.log('🔍 Obteniendo DN para sAMAccountName:', sAMAccountName);
+/**
+ * ✅ MÉTODO PARA OBTENER DN DESDE sAMAccountName - CON CONVERSIÓN A STRING
+ */
+async getUserDNBySAMAccountName(sAMAccountName: string): Promise<string> {
+  try {
+    console.log('🔍 [2FA SERVICE] Obteniendo DN para sAMAccountName:', sAMAccountName);
 
-      const filter = `(sAMAccountName=${sAMAccountName})`;
-      const attributes = ['distinguishedName'];
-      
-      const results = await unifiedLDAPSearch(filter, attributes);
-      
-      if (results.length === 0) {
-        throw new Error(`Usuario no encontrado: ${sAMAccountName}`);
-      }
-
-      const userEntry = results[0];
-      const userDN = userEntry.objectName;
-      
-      console.log('✅ DN obtenido:', userDN);
-      return userDN;
-
-    } catch (error) {
-      console.error('❌ Error obteniendo DN:', error);
-      throw error;
+    const filter = `(sAMAccountName=${sAMAccountName})`;
+    const attributes = ['distinguishedName'];
+    
+    const results = await unifiedLDAPSearch(filter, attributes);
+    
+    if (results.length === 0) {
+      throw new Error(`Usuario no encontrado: ${sAMAccountName}`);
     }
+
+    const userEntry = results[0];
+    let userDN = userEntry.objectName;
+    
+    console.log('📋 [2FA SERVICE] Tipo de DN recibido:', typeof userDN, userDN);
+    
+    // ✅ CONVERTIR EL DN A STRING SI ES UN OBJETO
+    if (typeof userDN !== 'string') {
+      if (userDN.toString && typeof userDN.toString === 'function') {
+        userDN = userDN.toString();
+        console.log('🔧 [2FA SERVICE] DN convertido a string:', userDN);
+      } else {
+        // Si no tiene método toString, intentar acceder a propiedades
+        userDN = String(userDN);
+        console.log('🔧 [2FA SERVICE] DN convertido usando String():', userDN);
+      }
+    }
+    
+    // ✅ NORMALIZAR EL DN - ELIMINAR TILDES
+    userDN = this.normalizeDN(userDN);
+    console.log('✅ [2FA SERVICE] DN obtenido y normalizado:', userDN);
+    return userDN;
+
+  } catch (error) {
+    console.error('❌ [2FA SERVICE] Error obteniendo DN:', error);
+    throw error;
   }
+}
 
   /**
    * ✅ MÉTODO SIMPLIFICADO: Aplicar un solo cambio LDAP
    */
-  private async applySingleChange(client: Client, userDN: string, change: Change): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      client.modify(userDN, change, (err) => {
-        if (err) {
-          console.error(`❌ Error modificando atributo ${change.modification.type}:`, err);
-          reject(err);
+private async applySingleChange(client: Client, userDN: string, change: Change): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    client.modify(userDN, change, (err) => {
+      if (err) {
+        console.error(`❌ [2FA SERVICE] Error modificando atributo ${change.modification.type}:`, err);
+        
+        // Manejo específico de errores
+        if (err.code === 32) {
+          reject(new Error(`Objeto no encontrado (DN incorrecto): ${userDN}`));
+        } else if (err.code === 50) {
+          reject(new Error(`Permisos insuficientes para modificar en esta OU`));
+        } else if (err.code === 53) {
+          reject(new Error(`El servidor no permite esta operación`));
+        } else if (err.code === 16) { // No such attribute
+          console.log(`ℹ️ [2FA SERVICE] Atributo ${change.modification.type} no existe, intentando agregar...`);
+          this.addAttribute(client, userDN, change.modification.type, change.modification.values[0])
+            .then(resolve)
+            .catch(reject);
         } else {
-          console.log(`✅ ${change.modification.type} modificado exitosamente`);
-          resolve();
+          reject(new Error(`Error LDAP (${err.code}): ${err.message}`));
         }
-      });
+      } else {
+        console.log(`✅ [2FA SERVICE] ${change.modification.type} modificado exitosamente`);
+        resolve();
+      }
     });
+  });
+}
+
+/**
+ * ✅ MÉTODO AUXILIAR: Agregar atributo si no existe
+ */
+private async addAttribute(client: Client, userDN: string, attribute: string, value: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const change = new Change({
+      operation: 'add',
+      modification: {
+        type: attribute,
+        values: [value]
+      }
+    });
+
+    client.modify(userDN, change, (err) => {
+      if (err) {
+        console.error(`❌ [2FA SERVICE] Error agregando atributo ${attribute}:`, err);
+        reject(err);
+      } else {
+        console.log(`✅ [2FA SERVICE] Atributo ${attribute} agregado exitosamente`);
+        resolve();
+      }
+    });
+  });
+}
+
+/**
+ * ✅ NORMALIZAR DN - Eliminar tildes y caracteres especiales (VERSIÓN ROBUSTA)
+ */
+private normalizeDN(dn: any): string {
+  try {
+    console.log(`🔧 [2FA SERVICE] Normalizando DN (tipo: ${typeof dn}):`, dn);
+    
+    // ✅ CONVERTIR A STRING SI NO LO ES
+    let dnString = dn;
+    if (typeof dn !== 'string') {
+      if (dn && dn.toString && typeof dn.toString === 'function') {
+        dnString = dn.toString();
+      } else {
+        dnString = String(dn);
+      }
+      console.log(`🔧 [2FA SERVICE] DN convertido a string: ${dnString}`);
+    }
+    
+    // ✅ VERIFICAR QUE SEA UN STRING VÁLIDO
+    if (typeof dnString !== 'string' || dnString.trim() === '') {
+      throw new Error('DN no es un string válido');
+    }
+
+    // Reemplazar caracteres con tildes
+    let normalized = dnString
+      .replace(/á/g, 'a')
+      .replace(/é/g, 'e')
+      .replace(/í/g, 'i')
+      .replace(/ó/g, 'o')
+      .replace(/ú/g, 'u')
+      .replace(/ñ/g, 'n')
+      .replace(/Á/g, 'A')
+      .replace(/É/g, 'E')
+      .replace(/Í/g, 'I')
+      .replace(/Ó/g, 'O')
+      .replace(/Ú/g, 'U')
+      .replace(/Ñ/g, 'N')
+      // También manejar caracteres escapados que ves en los logs
+      .replace(/\\c3\\a9/g, 'e')  // é escapado
+      .replace(/\\c3\\b3/g, 'o')  // ó escapado
+      .replace(/\\c3\\a1/g, 'a')  // á escapado
+      .replace(/\\c3\\ad/g, 'i')  // í escapado
+      .replace(/\\c3\\ba/g, 'u')  // ú escapado
+      .replace(/\\c3\\b1/g, 'n'); // ñ escapado
+
+    console.log(`🔧 [2FA SERVICE] DN normalizado: ${normalized}`);
+    return normalized;
+
+  } catch (error) {
+    console.error('❌ [2FA SERVICE] Error normalizando DN:', error);
+    // Si hay error, devolver el DN original como string
+    return String(dn);
   }
+}
 }
 
 export const ldap2FAService = new LDAP2FAService();

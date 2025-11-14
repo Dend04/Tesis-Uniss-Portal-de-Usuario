@@ -536,12 +536,10 @@ export const sendChangeEmailVerificationCode = async (
   }
 };
 
-export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise<void> => {
+/* export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise<void> => {
   try {
     const { newEmail, code } = req.body;
 
-    // ✅ SOLUCIÓN: Usar la extensión global de Express que ya definiste
-    // TypeScript ya debería reconocer req.user gracias a tu declare global
     const userId = req.user?.sAMAccountName;
     
     if (!userId) {
@@ -552,7 +550,7 @@ export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise
       return;
     }
     
-    // ✅ PRIMERO verificar el código
+    // ✅ Verificar el código
     const storedData = verificationStorage.getCode(newEmail);
     if (!storedData || storedData.code !== code) {
       res.status(400).json({
@@ -562,51 +560,26 @@ export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise
       return;
     }
 
-    let ldapUsers;
-    try {
-      // Buscar usuario en LDAP
-      const filter = `(&(objectClass=user)(sAMAccountName=${userId}))`;
-      const attributes = ['distinguishedName', 'sAMAccountName', 'mail', 'userPrincipalName'];
-      
-      ldapUsers = await searchLDAPUserForEmail(filter, attributes);
-      
-      if (ldapUsers.length === 0) {
-        res.status(404).json({
-          success: false,
-          message: "Usuario no encontrado en el directorio",
-        });
-        return;
-      }
-      
-      // ✅ ACTUALIZAR EL CORREO EN LDAP
-      const ldapUpdateService = new LDAPEmailUpdateService();
-      const updateResult = await ldapUpdateService.updateUserEmail(userId, newEmail);
+    // ✅ SI REALMENTE NECESITAS ACTUALIZAR EL MAIL (no recomendado), usa esto:
+    const ldapUpdateService = new LDAPEmailUpdateService();
+    const updateResult = await ldapUpdateService.updateUserAttribute(userId, 'mail', newEmail);
 
-      if (!updateResult.success) {
-        res.status(500).json({
-          success: false,
-          message: updateResult.message,
-        });
-        return;
-      }
-
-      // ✅ ELIMINAR CÓDIGO SOLO DESPUÉS DE ÉXITO
-      verificationStorage.deleteCode(newEmail);
-
-      res.status(200).json({
-        success: true,
-        message: "Correo actualizado exitosamente",
-        newEmail: newEmail,
-      });
-
-    } catch (ldapError: any) {
+    if (!updateResult.success) {
       res.status(500).json({
         success: false,
-        message: "Error al buscar usuario en el directorio",
-        error: ldapError.message,
+        message: updateResult.message,
       });
       return;
     }
+
+    // ✅ ELIMINAR CÓDIGO SOLO DESPUÉS DE ÉXITO
+    verificationStorage.deleteCode(newEmail);
+
+    res.status(200).json({
+      success: true,
+      message: "Correo actualizado exitosamente",
+      newEmail: newEmail,
+    });
 
   } catch (error: any) {
     console.error("💥 Error en verifyAndUpdateEmail:", error);
@@ -616,7 +589,7 @@ export const verifyAndUpdateEmail = async (req: Request, res: Response): Promise
       error: error.message,
     });
   }
-};
+}; */
 
 export const handleForgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -753,6 +726,79 @@ export const checkUserExists = async (req: Request, res: Response): Promise<void
       success: false,
       message: "Error al verificar usuario",
       error: error.message
+    });
+  }
+};
+
+// En tu controlador de email, modifica la función verifyAndUpdateBackupEmail
+export const verifyAndUpdateBackupEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { newEmail, code } = req.body;
+
+    // ✅ Obtener el usuario autenticado
+    const userId = req.user?.sAMAccountName;
+    
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Usuario no autenticado",
+      });
+      return;
+    }
+    
+    // ✅ PRIMERO verificar el código
+    const storedData = verificationStorage.getCode(newEmail);
+    if (!storedData || storedData.code !== code) {
+      res.status(400).json({
+        success: false,
+        message: "Código de verificación inválido o expirado",
+      });
+      return;
+    }
+
+    // ✅ ACTUALIZAR EL ATRIBUTO COMPANY EN LDAP - LLAMADA CORRECTA
+    try {
+      const ldapUpdateService = new LDAPEmailUpdateService();
+      
+      // ✅ USAR updateUserCompany EN LUGAR DE updateUserAttribute
+      const updateResult = await ldapUpdateService.updateUserCompany(userId, newEmail);
+
+      if (!updateResult.success) {
+        console.error(`❌ Error actualizando company: ${updateResult.message}`);
+        res.status(500).json({
+          success: false,
+          message: updateResult.message,
+        });
+        return;
+      }
+
+      console.log(`✅ Atributo 'company' actualizado en LDAP para ${userId}: ${newEmail}`);
+
+      // ✅ ELIMINAR CÓDIGO SOLO DESPUÉS DE ÉXITO
+      verificationStorage.deleteCode(newEmail);
+
+      res.status(200).json({
+        success: true,
+        message: "Correo de respaldo actualizado exitosamente",
+        newEmail: newEmail,
+      });
+
+    } catch (ldapError: any) {
+      console.error("❌ Error actualizando atributo company en LDAP:", ldapError);
+      res.status(500).json({
+        success: false,
+        message: "Error al actualizar el correo de respaldo en LDAP",
+        error: ldapError.message,
+      });
+      return;
+    }
+
+  } catch (error: any) {
+    console.error("💥 Error en verifyAndUpdateBackupEmail:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error al actualizar el correo de respaldo",
+      error: error.message,
     });
   }
 };

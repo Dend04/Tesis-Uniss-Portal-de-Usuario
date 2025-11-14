@@ -373,7 +373,7 @@ private encodePassword(password: string): Buffer {
    */
 async findUserByIdentifier(identifier: string): Promise<UserSearchResult> {
   try {
-    console.log(`🔍 Buscando usuario con identificador: ${identifier}`);
+    console.log(`🔍 [PIN SERVICE] Buscando usuario con identificador: ${identifier}`);
     
     // Primero intentar buscar por sAMAccountName
     let filter = `(sAMAccountName=${this.escapeLDAPValue(identifier)})`;
@@ -384,12 +384,12 @@ async findUserByIdentifier(identifier: string): Promise<UserSearchResult> {
     
     // Si no se encuentra, buscar por employeeID
     if (entries.length === 0) {
-      console.log(`🔍 No encontrado por sAMAccountName, buscando por employeeID...`);
+      console.log(`🔍 [PIN SERVICE] No encontrado por sAMAccountName, buscando por employeeID...`);
       filter = `(employeeID=${this.escapeLDAPValue(identifier)})`;
       entries = await unifiedLDAPSearchImproved(filter, attributes);
     }
 
-    console.log(`📊 Resultados de búsqueda: ${entries.length} entradas`);
+    console.log(`📊 [PIN SERVICE] Resultados de búsqueda: ${entries.length} entradas`);
 
     if (entries.length === 0) {
       return {
@@ -399,7 +399,7 @@ async findUserByIdentifier(identifier: string): Promise<UserSearchResult> {
     }
 
     const entry = entries[0];
-    const userDN = entry.dn;
+    let userDN = entry.dn;
     
     if (!userDN) {
       return {
@@ -407,6 +407,10 @@ async findUserByIdentifier(identifier: string): Promise<UserSearchResult> {
         error: "Error al obtener información del usuario"
       };
     }
+
+    // ✅ NORMALIZAR EL DN - ELIMINAR TILDES
+    userDN = this.normalizeDN(userDN);
+    console.log(`🔧 [PIN SERVICE] DN normalizado para operaciones: ${userDN}`);
 
     // ✅ MEJORAR LA EXTRACCIÓN DE DATOS
     const userData = this.extractUserDataFromImproved(entry);
@@ -418,7 +422,7 @@ async findUserByIdentifier(identifier: string): Promise<UserSearchResult> {
       };
     }
     
-    console.log(`✅ Usuario encontrado:`, userData);
+    console.log(`✅ [PIN SERVICE] Usuario encontrado:`, userData);
     
     return {
       success: true,
@@ -427,7 +431,7 @@ async findUserByIdentifier(identifier: string): Promise<UserSearchResult> {
     };
     
   } catch (error) {
-    console.error("❌ Error en búsqueda de usuario:", error);
+    console.error("❌ [PIN SERVICE] Error en búsqueda de usuario:", error);
     return {
       success: false,
       error: "Error al buscar usuario en el sistema"
@@ -534,71 +538,89 @@ private extractUserDataFromImproved(entry: any): UserData {
   /**
    * ✅ CORREGIDO: Actualiza el campo serialNumber en LDAP
    */
-  private async updateSerialNumber(userDN: string, pin: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // ✅ CORRECCIÓN: Usar la estructura correcta para el cambio LDAP
-      const change = new Change({
-        operation: "replace",
-        modification: new Attribute({
-          type: "serialNumber",
-          values: [pin]
-        })
-      });
-
-      console.log(`🔄 Actualizando serialNumber para ${userDN}:`, {
-        operation: 'replace',
-        attribute: 'serialNumber',
-        valueLength: pin.length,
-        valuePreview: pin === " " ? '[ESPACIO]' : (pin ? `${pin.substring(0, 10)}...` : '[VACÍO]')
-      });
-
-      this.client.modify(userDN, change, (err) => {
-        if (err) {
-          // Si el error es porque el atributo no existe, intentamos agregarlo
-          if (err.code === 16) { // No such attribute
-            console.log('ℹ️  Atributo serialNumber no existe, intentando agregar...');
-            this.addSerialNumberAttribute(userDN, pin)
-              .then(resolve)
-              .catch(reject);
-          } else {
-            console.error('❌ Error en modify:', err);
-            reject(err);
-          }
-        } else {
-          console.log('✅ serialNumber actualizado exitosamente');
-          resolve();
-        }
-      });
+private async updateSerialNumber(userDN: string, pin: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // ✅ CORRECCIÓN: Usar la estructura correcta para el cambio LDAP
+    const change = new Change({
+      operation: "replace",
+      modification: new Attribute({
+        type: "serialNumber",
+        values: [pin]
+      })
     });
-  }
+
+    console.log(`🔄 [PIN SERVICE] Actualizando serialNumber para ${userDN}:`, {
+      operation: 'replace',
+      attribute: 'serialNumber',
+      valueLength: pin.length,
+      valuePreview: pin === " " ? '[ESPACIO]' : (pin ? `${pin.substring(0, 10)}...` : '[VACÍO]')
+    });
+
+    this.client.modify(userDN, change, (err) => {
+      if (err) {
+        console.error('❌ [PIN SERVICE] Error en modify:', err);
+        
+        // Manejo específico de errores
+        if (err.code === 32) {
+          reject(new Error(`Objeto no encontrado (DN incorrecto): ${userDN}`));
+        } else if (err.code === 50) {
+          reject(new Error(`Permisos insuficientes para modificar en esta OU`));
+        } else if (err.code === 53) {
+          reject(new Error(`El servidor no permite esta operación`));
+        } else if (err.code === 16) { // No such attribute
+          console.log('ℹ️ [PIN SERVICE] Atributo serialNumber no existe, intentando agregar...');
+          this.addSerialNumberAttribute(userDN, pin)
+            .then(resolve)
+            .catch(reject);
+        } else {
+          reject(new Error(`Error LDAP (${err.code}): ${err.message}`));
+        }
+      } else {
+        console.log('✅ [PIN SERVICE] serialNumber actualizado exitosamente');
+        resolve();
+      }
+    });
+  });
+}
 
   /**
    * ✅ CORREGIDO: Agrega el atributo serialNumber si no existe
    */
-  private async addSerialNumberAttribute(userDN: string, pin: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // ✅ CORRECCIÓN: Usar la estructura correcta
-      const change = new Change({
-        operation: "add",
-        modification: new Attribute({
-          type: "serialNumber",
-          values: [pin]
-        })
-      });
-
-      console.log(`➕ Agregando atributo serialNumber para ${userDN}`);
-
-      this.client.modify(userDN, change, (err) => {
-        if (err) {
-          console.error('❌ Error en add:', err);
-          reject(err);
-        } else {
-          console.log('✅ serialNumber agregado exitosamente');
-          resolve();
-        }
-      });
+private async addSerialNumberAttribute(userDN: string, pin: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // ✅ CORRECCIÓN: Usar la estructura correcta
+    const change = new Change({
+      operation: "add",
+      modification: new Attribute({
+        type: "serialNumber",
+        values: [pin]
+      })
     });
-  }
+
+    console.log(`➕ [PIN SERVICE] Agregando atributo serialNumber para ${userDN}`);
+
+    this.client.modify(userDN, change, (err) => {
+      if (err) {
+        console.error('❌ [PIN SERVICE] Error en add:', err);
+        
+        // Manejo específico de errores
+        if (err.code === 32) {
+          reject(new Error(`Objeto no encontrado (DN incorrecto): ${userDN}`));
+        } else if (err.code === 50) {
+          reject(new Error(`Permisos insuficientes para agregar atributos en esta OU`));
+        } else if (err.code === 53) {
+          reject(new Error(`El servidor no permite agregar este atributo`));
+        } else {
+          reject(new Error(`Error LDAP (${err.code}): ${err.message}`));
+        }
+      } else {
+        console.log('✅ [PIN SERVICE] serialNumber agregado exitosamente');
+        resolve();
+      }
+    });
+  });
+}
+
 
   /**
    * Valida el formato del PIN
@@ -653,6 +675,39 @@ private extractUserDataFromImproved(entry: any): UserData {
       .replace(/\r/g, "")
       .replace(/\n/g, "");
   }
+
+   /**
+   * ✅ NORMALIZAR DN - Eliminar tildes y caracteres especiales (MISMA SOLUCIÓN)
+   */
+  private normalizeDN(dn: string): string {
+    console.log(`🔧 [PIN SERVICE] Normalizando DN: ${dn}`);
+    
+    // Reemplazar caracteres con tildes
+    let normalized = dn
+      .replace(/á/g, 'a')
+      .replace(/é/g, 'e')
+      .replace(/í/g, 'i')
+      .replace(/ó/g, 'o')
+      .replace(/ú/g, 'u')
+      .replace(/ñ/g, 'n')
+      .replace(/Á/g, 'A')
+      .replace(/É/g, 'E')
+      .replace(/Í/g, 'I')
+      .replace(/Ó/g, 'O')
+      .replace(/Ú/g, 'U')
+      .replace(/Ñ/g, 'N')
+      // También manejar caracteres escapados que ves en los logs
+      .replace(/\\c3\\a9/g, 'e')  // é escapado
+      .replace(/\\c3\\b3/g, 'o')  // ó escapado
+      .replace(/\\c3\\a1/g, 'a')  // á escapado
+      .replace(/\\c3\\ad/g, 'i')  // í escapado
+      .replace(/\\c3\\ba/g, 'u')  // ú escapado
+      .replace(/\\c3\\b1/g, 'n'); // ñ escapado
+
+    console.log(`🔧 [PIN SERVICE] DN normalizado: ${normalized}`);
+    return normalized;
+  }
+
 }
 
 export const pinService = new PinService();

@@ -1,6 +1,6 @@
 // src/controllers/user-profile.controller.ts
 import { Request, Response } from 'express';
-import { verifyToken } from '../utils/jwt.utils';
+import { generateTokens, verifyToken } from '../utils/jwt.utils';
 import logger from '../utils/logger';
 import { updateAccountService } from '../services/updateAccount.services';
 
@@ -67,10 +67,23 @@ export const updateEmployeeID = async (req: AuthenticatedRequest, res: Response)
 
     logger.info(`EmployeeID actualizado para usuario ${username}: ${cleanCI}`);
 
+    // ✅ GENERAR NUEVO TOKEN CON EL EMPLOYEEID ACTUALIZADO
+    const newTokenPayload = {
+      sAMAccountName: decodedToken.sAMAccountName,
+      username: decodedToken.username,
+      employeeID: cleanCI, // ✅ Usar el NUEVO employeeID
+      displayName: decodedToken.displayName,
+      title: decodedToken.title,
+      dn: decodedToken.dn
+    };
+
+    const { accessToken: newToken } = generateTokens(newTokenPayload);
+
     res.status(200).json({
       success: true,
       message: "Carnet de Identidad actualizado exitosamente",
-      employeeID: cleanCI
+      employeeID: cleanCI,
+      newToken: newToken // ✅ Enviar el nuevo token al frontend
     });
 
   } catch (error: any) {

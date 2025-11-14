@@ -27,52 +27,61 @@ export default function EmployeeIDModal({
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-  try {
-    const cleanCI = employeeID.replace(/\D/g, "");
-    
-    if (cleanCI.length !== 11) {
-      throw new Error("El Carnet de Identidad debe tener 11 dígitos");
-    }
+    try {
+      const cleanCI = employeeID.replace(/\D/g, "");
+      
+      if (cleanCI.length !== 11) {
+        throw new Error("El Carnet de Identidad debe tener 11 dígitos");
+      }
 
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      throw new Error("No se encontró token de autenticación");
-    }
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error("No se encontró token de autenticación");
+      }
 
-    // ✅ AGREGAR LOGS DE DIAGNÓSTICO
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/updateAccount/update-employee-id`;
-    console.log('🔍 URL de la petición:', apiUrl);
-    console.log('🔍 Token disponible:', !!token);
-    console.log('🔍 EmployeeID a enviar:', cleanCI);
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/updateAccount/update-employee-id`;
+      console.log('🔍 URL de la petición:', apiUrl);
+      console.log('🔍 EmployeeID a enviar:', cleanCI);
 
-      // 1. Actualizar el perfil del usuario con el employeeID
+      // 1. Actualizar employeeID en LDAP y OBTENER NUEVO TOKEN
       const updateResponse = await fetch(apiUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ employeeID: cleanCI })
-    });
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ employeeID: cleanCI })
+      });
 
-    console.log('🔍 Respuesta del servidor:', updateResponse.status, updateResponse.statusText);
+      console.log('🔍 Respuesta del servidor:', updateResponse.status, updateResponse.statusText);
 
-    if (!updateResponse.ok) {
-      const errorText = await updateResponse.text();
-      console.error('🔍 Error response:', errorText);
-      throw new Error(`Error ${updateResponse.status}: ${updateResponse.statusText}`);
-    }
-      // 2. Ejecutar la verificación dual con el nuevo CI
+      if (!updateResponse.ok) {
+        const errorText = await updateResponse.text();
+        console.error('🔍 Error response:', errorText);
+        throw new Error(`Error ${updateResponse.status}: ${updateResponse.statusText}`);
+      }
+
+      const updateData = await updateResponse.json();
+
+      // ✅ ACTUALIZAR EL TOKEN EN LOCALSTORAGE CON EL NUEVO TOKEN
+      if (updateData.newToken) {
+        localStorage.setItem('authToken', updateData.newToken);
+        console.log('✅ Token actualizado con nuevo employeeID');
+      } else {
+        console.warn('⚠️ No se recibió nuevo token del servidor');
+      }
+
+      // 2. Ejecutar la verificación dual con el NUEVO TOKEN
       const verificationResponse = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/verify/dual-status`,
         {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${token}`,
+            "Authorization": `Bearer ${updateData.newToken || token}`, // ✅ Usar nuevo token si está disponible
             "Content-Type": "application/json",
           },
         }
@@ -87,11 +96,12 @@ export default function EmployeeIDModal({
       if (verificationData.success) {
         setSuccess(true);
         
-        // Cerrar modal después de 2 segundos
+        // ✅ Cerrar modal después de 2 segundos (NO CERRAR SESIÓN)
         setTimeout(() => {
           onSuccess(cleanCI);
           setSuccess(false);
           setEmployeeID("");
+          onClose(); // ✅ Solo cerrar el modal
         }, 2000);
       } else {
         throw new Error(verificationData.error || "Error en la verificación");
