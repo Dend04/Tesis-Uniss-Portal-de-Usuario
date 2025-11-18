@@ -2,109 +2,116 @@ import { createLDAPClient, bindAsync } from "../utils/ldap.utils";
 import ldap from "ldapjs";
 import { auditService } from "./audit.services";
 import { userService } from "./user.services";
+import { databaseLogService, LogData } from "./database-log.services";
 
 export class PasswordService {
   private readonly maxRetries = 2;
 
-async changePassword(userDN: string, newPassword: string, currentPassword?: string): Promise<void> {
+ async changePassword(userDN: string, newPassword: string, currentPassword?: string): Promise<void> {
     let lastError;
     const username = userService.extractUsernameFromDN(userDN);
 
-    // ✅ VALIDACIÓN ADICIONAL EN EL SERVICIO
-    if (currentPassword && currentPassword === newPassword) {
-      throw new Error('La nueva contraseña no puede ser igual a la actual');
-    }
+    // ✅ LOG EN SERVICIO TAMBIÉN (opcional, para más detalle)
+    const serviceLogData: LogData = {
+      accion: 'PASSWORD_CHANGE_SERVICE',
+      username: username,
+      exitoso: false,
+      detalles: 'Iniciando cambio de contraseña en servicio',
+      dispositivo: 'ldap_service'
+    };
 
-    // ✅ NORMALIZAR EL DN ANTES DE USARLO
-    const normalizedDN = this.normalizeDN(userDN);
-    console.log(`🔄 [PASSWORD SERVICE] Usando DN normalizado: ${normalizedDN}`);
+    try {
+      // Validación adicional
+      if (currentPassword && currentPassword === newPassword) {
+        throw new Error('La nueva contraseña no puede ser igual a la actual');
+      }
 
-    for (let attempt = 1; attempt <= this.maxRetries + 1; attempt++) {
-      const client = createLDAPClient(process.env.LDAP_URL!);
-      
-      try {
-        console.log(`🔄 Intento ${attempt} de cambio de contraseña para DN: ${normalizedDN}`);
+      const normalizedDN = this.normalizeDN(userDN);
+      console.log(`🔄 [PASSWORD SERVICE] Cambiando contraseña para: ${username}`);
 
-        await auditService.addLogEntry(username, 'change_password_attempt', 'started', {
-          attempt: attempt,
-          timestamp: new Date().toISOString(),
-          originalDN: userDN, // ✅ Guardar DN original para auditoría
-          normalizedDN: normalizedDN, // ✅ Guardar DN normalizado
-          currentPasswordProvided: !!currentPassword
-        });
+      for (let attempt = 1; attempt <= this.maxRetries + 1; attempt++) {
+        const client = createLDAPClient(process.env.LDAP_URL!);
+        
+        try {
+          console.log(`🔄 Intento ${attempt} de cambio de contraseña para: ${username}`);
 
-        await bindAsync(client, process.env.LDAP_ADMIN_DN!, process.env.LDAP_ADMIN_PASSWORD!);
+          await auditService.addLogEntry(username, 'change_password_attempt', 'started', {
+            attempt: attempt,
+            timestamp: new Date().toISOString(),
+            normalizedDN: normalizedDN
+          });
 
-        // Verificar historial de contraseñas (usando DN normalizado)
-        const passwordHistory = await this.getPasswordHistory(normalizedDN, client);
-        console.log(`📊 Historial de contraseñas: ${passwordHistory.length} entradas`);
+          await bindAsync(client, process.env.LDAP_ADMIN_DN!, process.env.LDAP_ADMIN_PASSWORD!);
 
-        // Validar políticas de contraseña
-        await this.validatePasswordPolicy(newPassword, username);
+          // Validar políticas
+          await this.validatePasswordPolicy(newPassword, username);
 
-        const change = {
-          operation: "replace",
-          modification: {
-            type: "unicodePwd",
-            values: [this.encodePassword(newPassword)]
-          }
-        };
-
-        // ✅ USAR EL DN NORMALIZADO EN LA OPERACIÓN LDAP
-        await new Promise<void>((resolve, reject) => {
-          client.modify(normalizedDN, change, (err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
+          const change = {
+            operation: "replace",
+            modification: {
+              type: "unicodePwd",
+              values: [this.encodePassword(newPassword)]
             }
+          };
+
+          await new Promise<void>((resolve, reject) => {
+            client.modify(normalizedDN, change, (err) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve();
+              }
+            });
           });
-        });
 
-        console.log(`✅ Contraseña cambiada exitosamente`);
-        
-        await auditService.logPasswordChange(username, true, {
-          attempt: attempt,
-          timestamp: new Date().toISOString(),
-          retriesUsed: attempt - 1,
-          currentPasswordVerified: !!currentPassword,
-          originalDN: userDN,
-          normalizedDN: normalizedDN
-        });
-        
-        return; 
-
-      } catch (error: any) {
-        lastError = error;
-        console.warn(`⚠️ Intento ${attempt} fallido:`, error.message);
-
-        await auditService.addLogEntry(username, 'change_password_attempt', 'failed', {
-          attempt: attempt,
-          error: error.message,
-          errorCode: error.code,
-          timestamp: new Date().toISOString(),
-          isConnectionError: error.code === 80,
-          currentPasswordProvided: !!currentPassword,
-          originalDN: userDN,
-          normalizedDN: normalizedDN
-        });
-
-        if (error.code === 80 && attempt <= this.maxRetries) {
-          console.log('⏳ Reintentando...');
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        } else {
-          break;
-        }
-      } finally {
-        if (client && typeof client.unbind === 'function') {
-          client.unbind(() => { 
-            console.log(`🔒 Conexión LDAP cerrada`);
+          console.log(`✅ Contraseña cambiada exitosamente para: ${username}`);
+          
+          // ✅ LOG EXITOSO EN SERVICIO
+          serviceLogData.exitoso = true;
+          serviceLogData.detalles = `Cambio de contraseña completado en intento ${attempt}`;
+          await databaseLogService.guardarLog(serviceLogData);
+          
+          await auditService.logPasswordChange(username, true, {
+            attempt: attempt,
+            timestamp: new Date().toISOString(),
+            retriesUsed: attempt - 1
           });
+          
+          return;
+
+        } catch (error: any) {
+          lastError = error;
+          console.warn(`⚠️ Intento ${attempt} fallido para ${username}:`, error.message);
+
+          await auditService.addLogEntry(username, 'change_password_attempt', 'failed', {
+            attempt: attempt,
+            error: error.message,
+            errorCode: error.code,
+            timestamp: new Date().toISOString()
+          });
+
+          if (error.code === 80 && attempt <= this.maxRetries) {
+            console.log('⏳ Reintentando...');
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          } else {
+            break;
+          }
+        } finally {
+          if (client && typeof client.unbind === 'function') {
+            client.unbind(() => {});
+          }
         }
       }
+      
+      throw lastError;
+
+    } catch (error: any) {
+      // ✅ LOG DE ERROR EN SERVICIO
+      serviceLogData.detalles = `Error en servicio: ${error.message}`;
+      serviceLogData.error = error.message;
+      await databaseLogService.guardarLog(serviceLogData);
+      throw error;
     }
-    
-    throw lastError;
   }
 
 

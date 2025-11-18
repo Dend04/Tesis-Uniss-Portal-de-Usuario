@@ -1173,3 +1173,139 @@ Timed out fetching a new connection from the connection pool. More info: http://
 2025-11-11 10:28:44 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
 2025-11-11 12:16:48 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
 2025-11-14 14:15:32 [error]: Campo employeeID no encontrado en token. Campos disponibles: sAMAccountName,username,employeeID,displayName,dn,title,iat,exp
+2025-11-18 10:37:40 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 10:58:57 [error]: Error al verificar estado dual: {"is_panic":false,"message":"Engine is not yet connected.","backtrace":"Backtrace [{ fn: \"napi_register_module_v1\" }, { fn: \"napi_register_module_v1\" }, { fn: \"napi_register_module_v1\" }, { fn: \"napi_register_module_v1\" }, { fn: \"napi_register_module_v1\" }, { fn: \"napi_register_module_v1\" }, { fn: \"napi_register_module_v1\" }, { fn: \"napi_register_module_v1\" }, { fn: \"napi_register_module_v1\" }, { fn: \"BaseThreadInitThunk\" }, { fn: \"RtlUserThreadStart\" }]"}
+2025-11-18 11:51:35 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 11:51:52 [error]: Error al consultar datos de empleado para CI: 88042818762. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-11-18 11:51:52 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-18 11:52:26 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 11:53:27 [error]: Error global: Error: invalid attribute type name: internet_prof_vip,OU=_Grupos,DC=uniss,DC=edu,DC=c
+    at readAttributePair (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\@ldapjs\dn\lib\utils\parse-string\read-attribute-pair.js:59:11)
+    at parseString (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\@ldapjs\dn\lib\utils\parse-string\index.js:66:32)
+    at Function.fromString (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\@ldapjs\dn\lib\dn.js:331:18)
+    at ensureDN (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:85:15)
+    at Client.modify (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\node_modules\ldapjs\lib\client\client.js:473:13)
+    at D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\assets-account.services.ts:154:17
+    at new Promise (<anonymous>)
+    at UserEntriesBuilder.addUserToGroup (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\assets-account.services.ts:145:10)
+    at UserEntriesBuilder.addUserToGroups (D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\assets-account.services.ts:137:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+2025-11-18 11:56:00 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 11:56:17 [error]: Error al consultar datos de empleado para CI: 88042818762. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-11-18 11:56:17 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-18 11:56:56 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 13:20:48 [error]: Error al consultar datos de empleado para CI: 86082715841. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-11-18 13:20:48 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-18 13:21:08 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 13:41:41 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 13:41:57 [error]: Error al consultar datos de empleado para CI: 88042818762. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-11-18 13:41:57 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-18 13:41:59 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 13:43:41 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 13:44:35 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 13:44:51 [error]: Error al consultar datos de empleado para CI: 88042818762. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-11-18 13:44:51 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-18 13:44:53 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 13:55:20 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 13:55:36 [error]: Error al consultar datos de empleado para CI: 88042818762. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-11-18 13:55:36 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-18 13:55:41 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 13:57:29 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 14:01:21 [error]: No se encontraron datos válidos para el CI: 86082715841. Error: Error en datos principales: [getMainStudentData] Error DESCONOCIDO: getaddrinfo ENOTFOUND sigenu.uniss.edu.cu
+2025-11-18 14:01:21 [error]: Error al consultar datos de empleado para CI: 86082715841. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Can't reach database server at `10.16.13.8:49709`
+
+Please make sure your database server is running at `10.16.13.8:49709`.
+2025-11-18 14:01:21 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-18 14:01:24 [error]: No se encontraron datos válidos para el CI: 86082715841. Error: Error en datos principales: [getMainStudentData] Error DESCONOCIDO: getaddrinfo ENOTFOUND sigenu.uniss.edu.cu
+2025-11-18 14:01:24 [error]: Error al consultar datos de empleado para CI: 86082715841. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Can't reach database server at `10.16.13.8:49709`
+
+Please make sure your database server is running at `10.16.13.8:49709`.
+2025-11-18 14:01:24 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-18 14:08:40 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: [getMainStudentData] Error DESCONOCIDO: getaddrinfo ENOTFOUND sigenu.uniss.edu.cu
+2025-11-18 14:08:50 [error]: Error al consultar datos de empleado para CI: 88042818762. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-11-18 14:08:50 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-18 14:09:52 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 14:12:15 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida
+2025-11-18 14:12:31 [error]: Error al consultar datos de empleado para CI: 88042818762. Error: 
+Invalid `this.prisma.empleados_Gral.findFirst()` invocation in
+D:\vsc\Tesis-Uniss-Portal-de-Usuario\backend\src\services\identity-verification.services.ts:134:57
+
+  131 private async checkEmployee(ci: string): Promise<EmployeeWithDepartment | null> {
+  132   try {
+  133     logger.info(`Consultando datos de empleado para CI: ${ci}`);
+→ 134     const employee = await this.prisma.empleados_Gral.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+2025-11-18 14:12:31 [error]: Error al verificar identidad: No se encontró registro como estudiante o trabajador
+2025-11-18 14:12:34 [error]: No se encontraron datos válidos para el CI: 88042818762. Error: Error en datos principales: Estructura de datos principal inválida

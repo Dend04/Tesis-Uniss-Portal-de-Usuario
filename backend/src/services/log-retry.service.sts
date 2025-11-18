@@ -1,0 +1,61 @@
+// src/services/log-retry.service.ts
+import { databaseLogService } from "./database-log.service";
+
+export class LogRetryService {
+  private retryInterval: NodeJS.Timeout | null = null;
+  private readonly RETRY_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
+
+  /**
+   * ✅ Iniciar servicio de reintentos automáticos
+   */
+  iniciarReintentosAutomaticos(): void {
+    console.log('🔄 Iniciando servicio de reintentos de logs...');
+    
+    this.retryInterval = setInterval(async () => {
+      try {
+        await databaseLogService.reintentarLogsPendientes();
+        
+        // Obtener estadísticas para monitoreo
+        const stats = await databaseLogService.obtenerEstadisticasLogs();
+        console.log('📊 Estadísticas de logs:', stats);
+        
+      } catch (error) {
+        console.error('❌ Error en reintento automático:', error);
+      }
+    }, this.RETRY_INTERVAL_MS);
+  }
+
+  /**
+   * ✅ Detener servicio de reintentos
+   */
+  detenerReintentos(): void {
+    if (this.retryInterval) {
+      clearInterval(this.retryInterval);
+      this.retryInterval = null;
+      console.log('🛑 Servicio de reintentos detenido');
+    }
+  }
+
+  /**
+   * ✅ Reintentar manualmente
+   */
+  async reintentarManualmente(): Promise<{ success: boolean; message: string }> {
+    try {
+      await databaseLogService.reintentarLogsPendientes();
+      const stats = await databaseLogService.obtenerEstadisticasLogs();
+      
+      return {
+        success: true,
+        message: `Reintento manual completado. Pendientes en caché: ${stats.cache.pendientes}`
+      };
+    } catch (error) {
+      console.error('❌ Error en reintento manual:', error);
+      return {
+        success: false,
+        message: `Error en reintento manual: ${error}`
+      };
+    }
+  }
+}
+
+export const logRetryService = new LogRetryService();

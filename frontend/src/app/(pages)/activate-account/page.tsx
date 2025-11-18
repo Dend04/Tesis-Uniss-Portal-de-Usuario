@@ -48,9 +48,10 @@ const activationSchema = z.object({
     .string()
     .length(3, "El tomo debe tener 3 dígitos")
     .regex(/^\d+$/, "Solo se permiten números"),
-  folio: z
+ folio: z
     .string()
-    .length(2, "El folio debe tener 2 dígitos")
+    .min(2, "El folio debe tener al menos 2 dígitos")
+    .max(3, "El folio no puede tener más de 3 dígitos")
     .regex(/^\d+$/, "Solo se permiten números"),
 });
 

@@ -14,10 +14,73 @@ interface AuthRequest extends Request {
   user?: TokenPayload;
 }
 
-// ✅ MOVER addUserToWifiGroupIfNeeded FUERA DEL CONTROLADOR PARA EVITAR PROBLEMAS DE CONTEXTO
-async function addUserToWifiGroupIfNeeded(username: string): Promise<boolean> {
+// ✅ FUNCIÓN SIMPLIFICADA PARA DETERMINAR TIPO DE USUARIO DESDE EL TITLE DEL TOKEN
+function determineUserTypeFromTitle(title?: string): string {
+  if (!title) {
+    console.log(`🔍 [USER_TYPE] Title no disponible en el token`);
+    return 'Estudiante u Otro';
+  }
+
+  console.log(`🔍 [USER_TYPE] Analizando title del token: "${title}"`);
+
+  const lowerTitle = title.toLowerCase();
+
+  // ✅ PALABRAS CLAVE PARA IDENTIFICAR DOCENTES
+  const docenteKeywords = [
+    'docente', 'profesor', 'teacher', 'faculty', 'catedra', 
+    'profesora', 'catedrático', 'catedrática', 'enseñanza',
+    'educador', 'educadora', 'maestro', 'maestra'
+  ];
+
+  // ✅ PALABRAS CLAVE PARA IDENTIFICAR INVESTIGADORES
+  const investigadorKeywords = [
+    'investigador', 'investigadora', 'investigator', 'research', 
+    'científico', 'científica', 'science', 'investigación',
+    'investigacion', 'researcher', 'ciencia'
+  ];
+
+  const isDocente = docenteKeywords.some(keyword => 
+    lowerTitle.includes(keyword)
+  );
+
+  const isInvestigador = investigadorKeywords.some(keyword => 
+    lowerTitle.includes(keyword)
+  );
+
+  if (isDocente && isInvestigador) {
+    return 'Docente e Investigador';
+  } else if (isDocente) {
+    return 'Docente';
+  } else if (isInvestigador) {
+    return 'Investigador';
+  }
+
+  // ✅ SI NO ES DOCENTE NI INVESTIGADOR, VERIFICAR SI ES ESTUDIANTE
+  const estudianteKeywords = [
+    'estudiante', 'student', 'alumno', 'alumna', 'aprendiz'
+  ];
+
+  const isEstudiante = estudianteKeywords.some(keyword =>
+    lowerTitle.includes(keyword)
+  );
+
+  if (isEstudiante) {
+    return 'Estudiante';
+  }
+
+  console.log(`🔍 [USER_TYPE] Title no coincide con categorías conocidas: "${title}"`);
+  return 'Personal u Otro';
+}
+
+// ✅ FUNCIÓN MEJORADA PARA AGREGAR USUARIOS A GRUPOS SEGÚN SU TIPO
+async function addUserToGroupsIfNeeded(username: string, userTitle?: string): Promise<{
+  wifiGroupUpdated: boolean;
+  vipGroupUpdated: boolean;
+  userType?: string;
+}> {
   try {
-    console.log(`🔗 [LDAP] Verificando membresía de ${username} en grupo wifi_users`);
+    console.log(`🔗 [LDAP] Verificando membresía de ${username} en grupos`);
+    console.log(`👨‍🏫 [LDAP] Title del usuario: ${userTitle}`);
 
     // 1. Buscar el usuario en LDAP para obtener su DN
     const userEntries = await unifiedLDAPSearch(
@@ -27,7 +90,7 @@ async function addUserToWifiGroupIfNeeded(username: string): Promise<boolean> {
 
     if (userEntries.length === 0) {
       console.error(`❌ [LDAP] Usuario ${username} no encontrado en LDAP`);
-      return false;
+      return { wifiGroupUpdated: false, vipGroupUpdated: false };
     }
 
     const userEntry = userEntries[0];
@@ -39,12 +102,13 @@ async function addUserToWifiGroupIfNeeded(username: string): Promise<boolean> {
     }
 
     console.log(`✅ [LDAP] DN (string): ${userDN}`);
-    console.log(`🎯 [LDAP] Tipo de DN: ${typeof userDN}`);
 
-    const groupDN = "CN=wifi_users,OU=_Grupos,DC=uniss,DC=edu,DC=cu";
-    console.log(`🎯 [LDAP] Grupo: ${groupDN}`);
+    const groups = {
+      wifi: "CN=wifi_users,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
+      vip: "CN=internet_prof_vip,OU=_Grupos,DC=uniss,DC=edu,DC=cu"
+    };
 
-    // Verificar si ya es miembro
+    // Verificar si ya es miembro de los grupos
     let memberOfArray: string[] = [];
     
     if ((userEntry as any).attributes) {
@@ -60,38 +124,118 @@ async function addUserToWifiGroupIfNeeded(username: string): Promise<boolean> {
 
     console.log(`🔍 [LDAP] Grupos del usuario:`, memberOfArray);
 
-    const isAlreadyMember = memberOfArray.some((group: string) =>
+    const isInWifiGroup = memberOfArray.some((group: string) =>
       group.toLowerCase().includes('cn=wifi_users')
     );
 
-    if (isAlreadyMember) {
+    const isInVipGroup = memberOfArray.some((group: string) =>
+      group.toLowerCase().includes('cn=internet_prof_vip')
+    );
+
+    // ✅ DETERMINAR TIPO DE USUARIO BASADO EN EL TITLE DEL TOKEN
+    const userType = determineUserTypeFromTitle(userTitle);
+    console.log(`👨‍🏫 [LDAP] Tipo de usuario detectado desde token: ${userType}`);
+
+    let wifiGroupAdded = false;
+    let vipGroupAdded = false;
+
+    // Agregar a wifi_users si no está (para todos los usuarios con dispositivos)
+    if (!isInWifiGroup) {
+      try {
+        console.log(`➡️ [LDAP] Agregando usuario ${username} a grupo wifi_users...`);
+        await addUserToGroup(userDN, groups.wifi);
+        console.log(`✅ [LDAP] Usuario ${username} agregado exitosamente al grupo wifi_users`);
+        wifiGroupAdded = true;
+      } catch (error) {
+        console.error(`❌ [LDAP] Error agregando a wifi_users:`, error);
+        // Manejar el caso donde el usuario ya es miembro
+        if (error instanceof Error && 
+            (error.message.includes('already exists') || 
+             error.message.includes('constraint'))) {
+          console.log(`✅ [LDAP] Usuario ya era miembro de wifi_users`);
+        }
+      }
+    } else {
       console.log(`✅ [LDAP] Usuario ${username} ya es miembro de wifi_users`);
-      return false;
     }
 
-    console.log(`➡️ [LDAP] Agregando usuario ${username} a grupo wifi_users...`);
+    // ✅ AGREGAR A internet_prof_vip SI ES DOCENTE/INVESTIGADOR Y NO ESTÁ EN EL GRUPO
+    const isTeacherOrResearcher = userType === 'Docente' || userType === 'Investigador';
+    
+    if (isTeacherOrResearcher && !isInVipGroup) {
+      try {
+        console.log(`➡️ [LDAP] Agregando usuario ${username} (${userType}) a grupo internet_prof_vip...`);
+        await addUserToGroup(userDN, groups.vip);
+        console.log(`✅ [LDAP] Usuario ${username} agregado exitosamente al grupo internet_prof_vip`);
+        vipGroupAdded = true;
+      } catch (error) {
+        console.error(`❌ [LDAP] Error agregando a internet_prof_vip:`, error);
+        // Manejar el caso donde el usuario ya es miembro
+        if (error instanceof Error && 
+            (error.message.includes('already exists') || 
+             error.message.includes('constraint'))) {
+          console.log(`✅ [LDAP] Usuario ya era miembro de internet_prof_vip`);
+        }
+      }
+    } else {
+      if (isInVipGroup) {
+        console.log(`✅ [LDAP] Usuario ${username} ya es miembro de internet_prof_vip`);
+      } else if (!isTeacherOrResearcher) {
+        console.log(`ℹ️ [LDAP] Usuario ${username} no es Docente/Investigador (${userType}), no se agrega a internet_prof_vip`);
+      }
+    }
 
-    // Agregar al grupo
-    await addUserToGroup(userDN, groupDN);
-
-    console.log(`✅ [LDAP] Usuario ${username} agregado exitosamente al grupo wifi_users`);
-    return true;
+    return { 
+      wifiGroupUpdated: wifiGroupAdded, 
+      vipGroupUpdated: vipGroupAdded,
+      userType 
+    };
 
   } catch (error) {
-    console.error(`❌ [LDAP] Error:`, error);
+    console.error(`❌ [LDAP] Error general:`, error);
     
     // Manejar el caso donde el usuario ya es miembro
     if (error instanceof Error) {
       if ((error as any).code === 20 || 
           error.message.includes('already exists') ||
           error.message.includes('constraint')) {
-        console.log(`✅ [LDAP] Usuario ya era miembro del grupo`);
-        return false;
+        console.log(`✅ [LDAP] Usuario ya era miembro de algún grupo`);
+        return { wifiGroupUpdated: false, vipGroupUpdated: false };
       }
     }
     
-    return false;
+    return { wifiGroupUpdated: false, vipGroupUpdated: false };
   }
+}
+
+// ✅ FUNCIÓN CORREGIDA PARA EXTRAER USERNAME DEL TOKEN (ACEPTA UNDEFINED)
+function extractUsernameFromToken(userPayload: TokenPayload | undefined): string | null {
+  if (!userPayload) {
+    console.error("❌ [EXTRACT] CRÍTICO: userPayload está vacío");
+    return null;
+  }
+
+  console.log(
+    "🔍 [EXTRACT] Buscando username en payload completo:",
+    userPayload
+  );
+
+  // ✅ PRIORIDAD: sAMAccountName del token (es el campo principal)
+  if (userPayload.sAMAccountName) {
+    console.log(`✅ [EXTRACT] Username encontrado en sAMAccountName:`, userPayload.sAMAccountName);
+    return userPayload.sAMAccountName;
+  }
+
+  // ✅ FALLBACK: username del token
+  if (userPayload.username) {
+    console.log(`✅ [EXTRACT] Username encontrado en username:`, userPayload.username);
+    return userPayload.username;
+  }
+
+  console.error(
+    "❌ [EXTRACT] CRÍTICO: No se pudo extraer ningún username del token"
+  );
+  return null;
 }
 
 export const dispositivoController = {
@@ -128,6 +272,7 @@ export const dispositivoController = {
       }
 
       console.log("✅ [CREATE] Usuario identificado para creación:", username);
+      console.log("🎓 [CREATE] Title del usuario:", req.user.title);
 
       // ✅ VERIFICAR LÍMITE DE DISPOSITIVOS (4 POR USUARIO)
       const userDevicesCount = await prisma.dispositivo.count({
@@ -189,33 +334,49 @@ export const dispositivoController = {
 
       console.log("✅ [CREATE] Dispositivo creado exitosamente:", dispositivo);
 
-      // ✅ CORRECCIÓN: LLAMAR A LA FUNCIÓN DIRECTAMENTE, NO CON THIS
+      // ✅ LLAMAR A LA NUEVA FUNCIÓN DE GRUPOS CON EL TITLE DEL TOKEN
       try {
-        const groupAdded = await addUserToWifiGroupIfNeeded(username);
+        const { wifiGroupUpdated, vipGroupUpdated, userType } = await addUserToGroupsIfNeeded(
+          username, 
+          req.user.title // ✅ PASAMOS EL TITLE DIRECTAMENTE DESDE EL TOKEN
+        );
 
-        if (groupAdded) {
-          console.log(
-            `✅ [CREATE] Usuario ${username} agregado al grupo wifi_users`
-          );
-        } else {
-          console.log(
-            `✅ [CREATE] Usuario ${username} ya estaba en grupo wifi_users`
-          );
-        }
+        console.log(`✅ [CREATE] Resultado grupos LDAP:`, {
+          wifiGroupUpdated,
+          vipGroupUpdated,
+          userType
+        });
+
+        res.status(201).json({
+          success: true,
+          message: "Dispositivo creado exitosamente",
+          data: dispositivo,
+          ldapGroupsUpdated: {
+            wifi_users: wifiGroupUpdated,
+            internet_prof_vip: vipGroupUpdated
+          },
+          userType,
+          userDeviceCount: userDevicesCount + 1
+        });
+
       } catch (ldapError) {
         console.error(
-          "⚠️ [CREATE] Error al verificar/agregar usuario a grupo wifi:",
+          "⚠️ [CREATE] Error al verificar/agregar usuario a grupos LDAP:",
           ldapError
         );
-        // No fallamos la creación del dispositivo por este error, solo log
+        // No fallamos la creación del dispositivo por este error
+        res.status(201).json({
+          success: true,
+          message: "Dispositivo creado exitosamente, pero error al actualizar grupos LDAP",
+          data: dispositivo,
+          ldapGroupsUpdated: {
+            wifi_users: false,
+            internet_prof_vip: false
+          },
+          warning: "Error al actualizar grupos de acceso"
+        });
       }
 
-      res.status(201).json({
-        success: true,
-        message: "Dispositivo creado exitosamente",
-        data: dispositivo,
-        ldapGroupUpdated: true,
-      });
     } catch (error) {
       console.error("❌ [CREATE] Error creating dispositivo:", error);
 
@@ -237,7 +398,6 @@ export const dispositivoController = {
     }
   },
 
-  // ... (el resto de los métodos se mantienen igual)
   // READ - Obtener todos los dispositivos DEL USUARIO AUTENTICADO
   async getAll(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -355,6 +515,15 @@ export const dispositivoController = {
   async getById(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "Usuario no autenticado",
+        });
+        return;
+      }
+
       const username = extractUsernameFromToken(req.user);
 
       if (!username) {
@@ -412,6 +581,15 @@ export const dispositivoController = {
     try {
       const { id } = req.params;
       const { mac, nombre, tipo } = req.body;
+      
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "Usuario no autenticado",
+        });
+        return;
+      }
+
       const username = extractUsernameFromToken(req.user);
 
       if (!username) {
@@ -492,6 +670,15 @@ export const dispositivoController = {
   async delete(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "Usuario no autenticado",
+        });
+        return;
+      }
+
       const username = extractUsernameFromToken(req.user);
 
       if (!username) {
@@ -552,6 +739,14 @@ export const dispositivoController = {
   // GET - Estadísticas de dispositivos DEL USUARIO
   async getStats(req: AuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "Usuario no autenticado",
+        });
+        return;
+      }
+
       const username = extractUsernameFromToken(req.user);
 
       if (!username) {
@@ -671,111 +866,3 @@ export const dispositivoController = {
     return manufacturers[prefix] || "Fabricante desconocido";
   },
 };
-
-// ✅ FUNCIÓN MEJORADA PARA EXTRAER USERNAME DEL TOKEN
-function extractUsernameFromToken(userPayload: any): string | null {
-  if (!userPayload) {
-    console.error("❌ [EXTRACT] CRÍTICO: userPayload está vacío");
-    return null;
-  }
-
-  console.log(
-    "🔍 [EXTRACT] Buscando username en payload completo:",
-    userPayload
-  );
-
-  // ✅ LISTA PRIORIZADA DE CAMPOS PARA USERNAME
-  const priorityUsernameFields = [
-    "sAMAccountName", // Formato estándar de Active Directory - ALTA PRIORIDAD
-    "samAccountName", // Camel case alternativo
-    "username", // Campo genérico
-    "userName", // Camel case
-    "preferred_username", // Estándar OIDC
-    "sub", // Subject (estándar JWT)
-    "upn", // User Principal Name
-    "userPrincipalName", // User Principal Name completo
-    "email", // Del email
-    "uid", // User ID
-    "name", // Nombre
-    "given_name", // Nombre dado
-  ];
-
-  console.log(
-    "🔎 [EXTRACT] Buscando en campos prioritarios:",
-    priorityUsernameFields
-  );
-
-  // Buscar en campos prioritarios
-  for (const field of priorityUsernameFields) {
-    if (userPayload[field]) {
-      const value = userPayload[field];
-      console.log(
-        `✅ [EXTRACT] Username encontrado en campo '${field}':`,
-        value
-      );
-
-      // Si es un email, extraer la parte antes del @
-      if (
-        field === "email" &&
-        typeof value === "string" &&
-        value.includes("@")
-      ) {
-        const usernameFromEmail = value.split("@")[0];
-        console.log(
-          `📧 [EXTRACT] Username extraído del email: ${usernameFromEmail}`
-        );
-        return usernameFromEmail;
-      }
-
-      return String(value);
-    }
-  }
-
-  // ✅ SI NO ENCUENTRA EN CAMPOS PRIORITARIOS, BUSCAR EN TODOS LOS CAMPOS
-  console.log(
-    "🔄 [EXTRACT] No se encontró en campos prioritarios. Buscando en todos los campos..."
-  );
-
-  const allFields = Object.keys(userPayload);
-  console.log("📋 [EXTRACT] Todos los campos disponibles:", allFields);
-
-  // Buscar cualquier campo que contenga "user", "name", "account", "login", "id"
-  const fallbackFields = allFields.filter(
-    (key) =>
-      key.toLowerCase().includes("user") ||
-      key.toLowerCase().includes("name") ||
-      key.toLowerCase().includes("account") ||
-      key.toLowerCase().includes("login") ||
-      key.toLowerCase().includes("id")
-  );
-
-  console.log("🔄 [EXTRACT] Buscando en campos de fallback:", fallbackFields);
-
-  for (const field of fallbackFields) {
-    if (userPayload[field]) {
-      console.log(
-        `🔄 [EXTRACT] Username encontrado en campo de fallback '${field}':`,
-        userPayload[field]
-      );
-      return String(userPayload[field]);
-    }
-  }
-
-  // ✅ ÚLTIMO RECURSO: Devolver el primer campo string que encuentre
-  console.log(
-    "⚠️ [EXTRACT] No se encontraron campos específicos. Buscando cualquier campo string..."
-  );
-
-  for (const field of allFields) {
-    const value = userPayload[field];
-    if (typeof value === "string" && value.trim().length > 0) {
-      console.log(`🔀 [EXTRACT] Usando campo alternativo '${field}':`, value);
-      return value;
-    }
-  }
-
-  console.error(
-    "❌ [EXTRACT] CRÍTICO: No se pudo extraer ningún username del token"
-  );
-  return null;
-}

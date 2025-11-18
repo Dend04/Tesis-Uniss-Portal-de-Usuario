@@ -783,4 +783,3 @@ export async function addUserToGroup(userDN: string, groupDN: string): Promise<v
     client.unbind();
   }
 }
-

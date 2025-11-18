@@ -126,7 +126,8 @@ private async createUserEntry(departmentDN: string, employee: any, username: str
   await this.addUserToGroups(userDN, [
     'CN=correo_int,OU=_Grupos,DC=uniss,DC=edu,DC=cu',
     'CN=UNISS-Everyone,OU=_Grupos,DC=uniss,DC=edu,DC=cu',
-    "CN=wifi_users,OU=_Grupos,DC=uniss,DC=edu,DC=cu"
+    "CN=wifi_users,OU=_Grupos,DC=uniss,DC=edu,DC=cu",
+    "CN=internet_prof_vip,OU=_Grupos,DC=uniss,DC=edu,DC=cu"
   ]);
 }
 
