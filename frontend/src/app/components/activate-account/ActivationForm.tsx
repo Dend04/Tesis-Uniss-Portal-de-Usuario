@@ -35,7 +35,7 @@ export default function ActivationForm({
         Activación de Cuenta Institucional
       </h1>
       <p className="text-center text-gray-600 mb-6">
-        Ingrese los datos de su carnet de identidad para verificar su identidad
+        Ingrese su carnet de identidad para verificar su identidad
       </p>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <div>
@@ -60,6 +60,9 @@ export default function ActivationForm({
             </p>
           )}
         </div>
+        
+        {/* Comentado: Sección de Tomo y Folio */}
+        {/* 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -106,6 +109,8 @@ export default function ActivationForm({
             )}
           </div>
         </div>
+        */}
+        
         {errors.root && (
           <div className="bg-red-50 p-3 rounded-lg border border-red-200">
             <p className="text-red-700 text-sm text-center">

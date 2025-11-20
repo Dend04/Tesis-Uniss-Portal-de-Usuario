@@ -1,0 +1,986 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass UNISSThesisLyX
+\options a4paper,titlepage,12pt,numbered
+\use_default_options false
+\maintain_unincluded_children no
+\language spanish
+\language_package default
+\inputencoding auto-legacy
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\float_placement class
+\float_alignment class
+\paperfontsize 12
+\spacing onehalf
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 0
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plainnat
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style swiss
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle fancy
+\tablestyle default
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Chapter
+Análisis y diseño para la gestión y control de cuentas de usuario en la Universidad "José Martí Pérez" de Sancti Spíritus
+\end_layout
+
+\begin_layout Standard
+El desarrollo de una aplicación web requiere un análisis cuidadoso de la metodología y tecnologías a aplicar.
+ Se deben tener en cuenta las necesidades de la institución donde se implementará,
+ para dar solución a estas eficientemente,
+ con las funcionalidades de la aplicación.
+ El uso de herramientas libres es un aspecto importante a tener en cuenta porque garantiza la sustentabilidad y portabilidad del proyecto,
+ además de seguir la política trazada por el país de migración hacia plataformas de Software Libre.
+\end_layout
+
+\begin_layout Standard
+El presente capítulo ofrece un breve análisis del proceso actual para la creación de cuentas de usuario en la Universidad “José Martí Pérez” de Sancti Spíritus (UNISS).
+ Y a continuación,
+ se hace un estudio de los requisitos necesarios para la construcción de la aplicación,
+ la selección de la tecnologías y herramientas a emplear,
+ así como el proceso de modelación de la misma;
+ este último constituye un factor importante en las actividades que conducen al desarrollo de un buen software porque permite comprender mejor el sistema y facilita su simplificación y análisis.
+ 
+\end_layout
+
+\begin_layout Standard
+El uso de la herramienta Visual Paradigm,
+ un software profesional para modelado UML,
+ hizo posible el análisis y diseño de la aplicación con la calidad y las características requeridas.
+\end_layout
+
+\begin_layout Section
+Situación actual del proceso de creación de cuentas de usuario en la UNISS
+\end_layout
+
+\begin_layout Standard
+En la UNISS el proceso de creación de cuentas de usuario está dividido en dos etapas (Figura 2.1.1) y utiliza como fuente de datos los registros de estudiantes y trabajadores de dicha universidad.
+ Los registros de estudiantes son proporcionados por el Sistema de Gestión para la Nueva Universidad (SIGENU) y los de trabajadores por el sistema ASSET (Sistema presente en las universidades de todo el país para la gestión de personal docente y no docente).
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename C:/Users/DELL/Downloads/_- visual selection (5).png
+	scale 70
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En la primera etapa del proceso se exporta del SIGENU los registros de estudiantes ordenados por facultad y especialidad a un archivo de texto en formato CSV.
+ Sin embargo,
+ este primer paso no se puede realizar de igual forma con el ASSET,
+ porque este sistema no posee dicha funcionalidad,
+ por lo es necesario imprimir los listados de trabajadores para posteriormente procesarlos.
+ 
+\end_layout
+
+\begin_layout Standard
+En la segunda etapa se procede a insertar en el Directorio Activo los registros de estudiantes y trabajadores.
+ En esta etapa se hace un tratamiento diferente para cada fuente de datos:
+ ASSET y SIGENU.
+\end_layout
+
+\begin_layout Standard
+Los registros de estudiantes que previamente se han exportado a un archivo en formato CSV son insertados en el Directorio Activo mediante la utilización de un script que analiza el archivo y genera una cuenta de usuario para cada registro de estudiante al tener en consideración su nombre y apellidos,
+ dicho script también analiza la facultad y especialidad para su correcta ubicación en el directorio.
+ 
+\end_layout
+
+\begin_layout Standard
+Para la creación de las cuentas de los trabajadores se entrega el listado impreso en formato duro al personal administrativo pertinente y de manera manual son agregadas las cuentas de usuario al Directorio Activo
+\end_layout
+
+\begin_layout Standard
+Este proceso de creación de cuentas de usuario puede tomar un largo período de tiempo hasta su culminación,
+ lo que en ocasiones provoca inconformidades.
+ También está expuesto a errores humanos debido a que gran parte de este se realiza de forma manual.
+\end_layout
+
+\begin_layout Section
+Identificación de Actores y Trabajadores del Negocio
+\end_layout
+
+\begin_layout Standard
+El análisis exhaustivo de los actores del sistema y trabajadores del negocio constituye una fase fundamental dentro de la metodología RUP para el desarrollo de la solución de gestión de cuentas de usuario en la Universidad "José Martí Pérez".
+ Este proceso de identificación sistemática permite establecer los cimientos conceptuales necesarios para diseñar e implementar un sistema que responda efectivamente a los requerimientos operativos de la institución,
+ garantizando que todas las perspectivas y necesidades queden adecuadamente representadas en el diseño final.
+\end_layout
+
+\begin_layout Standard
+Dentro del marco de análisis se han identificado cuatro actores principales del sistema.
+ En primer lugar,
+ el Solicitante de Cuenta representa el rol primario que engloba tanto a estudiantes como a profesores que requieren acceso a los servicios digitales institucionales.
+ Este actor general se especializa en dos categorías específicas:
+ los Estudiantes,
+ que demandan acceso inmediato y protegido a los servicios educativos digitales y cuyo registro se gestiona exclusivamente a través del sistema SIGENU;
+ y el Personal Docente,
+ que requiere una administración eficaz de credenciales y autorizaciones para desempeñar sus labores académicas,
+ siendo gestionados mediante el sistema ASSET.
+ Completa este ecosistema de actores los Administradores del Sistema,
+ constituido por personal especializado encargado de la operación diaria del sistema y la emisión de reportes institucionales.
+\end_layout
+
+\begin_layout Standard
+Esta caracterización diferencial y jerárquica de actores permite establecer de manera estructurada los requisitos fundamentales del sistema.
+ Entre estos se destaca la automatización integral del ciclo de vida de las identidades digitales con un esquema de integración dual que contempla la conexión específica con SIGENU para la gestión de estudiantes y con ASSET para el personal docente.
+ Adicionalmente,
+ se derivan requisitos relacionados con el despliegue de medidas de seguridad avanzadas que incorporen autenticación multifactorial,
+ la capacidad de producir informes de auditoría detallados que satisfagan las necesidades de transparencia institucional,
+ y el aseguramiento de una interfaz intuitiva y universalmente accesible que garantice una experiencia de usuario óptima para todos los actores identificados.
+\end_layout
+
+\begin_layout Standard
+La conjunción de estos elementos converge en la transformación del proceso actual -caracterizado por su naturaleza intensivamente manual y su susceptibilidad a errores- hacia un modelo automatizado,
+ confiable y coherente con los objetivos estratégicos de modernización digital de la institución,
+ cumpliendo así con los principios de trazabilidad y especificidad que exigen tanto las buenas prácticas para el desarrollo de tesis académicas como la metodología RUP.
+\end_layout
+
+\begin_layout Section
+Proceso de Solicitud de Creación de Cuenta para Usuarios Nuevos
+\end_layout
+
+\begin_layout Standard
+El proceso de creación de cuentas para usuarios sin registro previo se conceptualiza como un componente fundamental dentro de la arquitectura del sistema,
+ sustentado en principios de verificación de identidad robusta,
+ automatización de procesos y minimización de intervención manual.
+ Estos pilares conceptuales garantizan un desarrollo iterativo e incremental que responde a los requisitos funcionales y no funcionales identificados durante las fases de análisis y diseño inicial.
+ La implementación de este proceso refleja la aplicación sistemática de disciplinas de ingeniería de software,
+ particularmente en lo concerniente al modelado de negocio,
+ análisis de requisitos y diseño de la solución.
+\end_layout
+
+\begin_layout Subsection
+Descripción General del Proceso
+\end_layout
+
+\begin_layout Standard
+Los objetivos que orientan este proceso se articulan de manera coherente con las necesidades institucionales identificadas durante el levantamiento de requisitos.
+ En primer lugar,
+ se establece un mecanismo seguro de verificación de identidad que implementa validación multicapa mediante fuentes primarias confiables,
+ garantizando la autenticidad de los documentos de identidad y previniendo posibles suplantaciones mediante controles automatizados.
+ Este objetivo se alinea directamente con los casos de uso de seguridad identificados durante la etapa de especificación de requisitos.
+\end_layout
+
+\begin_layout Standard
+En segundo término,
+ el proceso busca automatizar la creación de cuentas basándose en fuentes primarias confiables,
+ lo que conlleva el diseño de interfaces de comunicación robustas con los sistemas SIgenu y Assets existentes.
+ Esta automatización se desarrolla mediante ciclos sucesivos de implementación,
+ incorporando mecanismos de sincronización de datos en tiempo real y estableciendo protocolos de contingencia para escenarios de indisponibilidad que pudieran afectar la experiencia del usuario.
+\end_layout
+
+\begin_layout Standard
+Como tercer objetivo fundamental,
+ se procura reducir significativamente la carga administrativa mediante la integración con sistemas existentes,
+ minimizando la intervención manual en procesos rutinarios y optimizando los tiempos de procesamiento mediante flujos automatizados.
+ Este objetivo responde a los requerimientos de eficiencia operacional identificados en el modelado de procesos de negocio.
+ La reducción de errores humanos mediante validaciones sistemáticas constituye un beneficio adicional que refuerza la calidad del proceso en su conjunto.
+\end_layout
+
+\begin_layout Standard
+Finalmente,
+ el proceso garantiza la consistencia de datos entre sistemas mediante la implementación de políticas de sincronización unidireccional y el establecimiento de mecanismos de resolución de conflictos,
+ manteniendo una trazabilidad completa de las transacciones entre sistemas.
+ Este objetivo técnico se alinea con las mejores prácticas de ingeniería de software,
+ particularmente en lo referente al diseño de sistemas distribuidos,
+ donde se definieron los modelos de datos y las interfaces entre sistemas que hacen posible esta consistencia transaccional a lo largo del ciclo de vida de las cuentas de usuario
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename D:/Escuela/DCUS actor Solicitante de credenciales .jpg
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Diagrama Caso de Uso del Solicitante
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Diagrama de Flujo de Actividad del Proceso
+\end_layout
+
+\begin_layout Standard
+Para visualizar de manera clara y accesible la secuencia de pasos que conforman el proceso de creación de cuentas,
+ se ha diseñado un diagrama de flujo de actividad que representa gráficamente el recorrido completo del usuario.
+ Este diagrama se ubicaría como Figura 2.3.2 dentro del cuerpo del documento,
+ preferiblemente en la página siguiente a esta descripción,
+ permitiendo una referencia visual inmediata que complementa la explicación textual.
+\end_layout
+
+\begin_layout Standard
+El diagrama ilustra el camino que sigue un usuario desde que inicia el proceso de solicitud hasta que obtiene su cuenta completamente funcional.
+ Comienza con la introducción del carnet de identidad,
+ continúa con la verificación automática en las fuentes primarias,
+ muestra las posibles ramificaciones según los resultados de validación,
+ y culmina con la creación exitosa de la cuenta y la notificación al usuario.
+ Cada nodo del diagrama representa una acción específica,
+ mientras que las conexiones entre ellos indican el flujo lógico de la secuencia,
+ incluyendo puntos de decisión donde el proceso puede tomar diferentes direcciones según las condiciones encontradas.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename D:/Escuela/Diagrama de flujo (Registrar credenciales de usuario nueva)2.jpg
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Diagrama de flujo (Registrar credenciales de usuario nueva)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+El proceso comienza cuando el usuario accede al sistema y selecciona la opción de crear una nueva cuenta.
+ Como primer paso,
+ se le solicita que introduzca su carnet de identidad,
+ el cual servirá como llave única para la verificación posterior.
+ El sistema valida inmediatamente el formato de este documento,
+ asegurándose que cumple con los requisitos estructurales antes de proceder con consultas más complejas.
+ A continuación,
+ el sistema realiza una consulta automática a las fuentes primarias de información institucional.
+ Para los estudiantes,
+ esta verificación se realiza contra la base de datos de SIGENU,
+ mientras que para el personal docente y administrativo se utiliza el sistema ASSET.
+ Este paso es fundamental para confirmar que el solicitante pertenece efectivamente a la comunidad universitaria y tiene derecho a una cuenta institucional.
+\end_layout
+
+\begin_layout Standard
+Si la verificación es exitosa,
+ el sistema recupera automáticamente los datos personales e institucionales del usuario desde la fuente primaria correspondiente.
+ Esta información incluye nombre completo,
+ afiliación institucional (facultad,
+ departamento o especialidad) y categoría (estudiante,
+ docente o administrativo).
+ El usuario puede visualizar estos datos y confirmar su exactitud,
+ lo que añade una capa adicional de validación y le da control sobre la información que se utilizará para crear su cuenta.
+ Una vez confirmados los datos,
+ el sistema genera automáticamente un nombre de usuario utilizando un algoritmo que combina elementos del nombre y apellidos del usuario,
+ garantizando unicidad y consistencia en las convenciones de nomenclatura.
+ En este punto,
+ se solicita al usuario que establezca una contraseña segura,
+ la cual debe cumplir con las políticas de complejidad definidas por la institución.
+ Simultáneamente,
+ se requiere que proporcione un correo electrónico de respaldo que servirá como canal alternativo para comunicaciones importantes y procesos de recuperación de cuenta.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename D:/Escuela/Diagrama de Colaboracion caso Solicitante.jpg
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Diagrama de Colaboración,
+ Caso Solicitante 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename D:/Escuela/Diagrama de clases del diseño CU ¨Solicitar credenciales¨.jpg
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Diagrama de diseño Caso Solicitante
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Con toda la información recolectada y validada,
+ el sistema procede a crear la cuenta en el directorio LDAP,
+ asignando los permisos y grupos correspondientes según el perfil del usuario.
+ Finalmente,
+ se envía un correo electrónico de bienvenida a la dirección proporcionada,
+ confirmando la creación exitosa de la cuenta y proporcionando instrucciones para el primer acceso.
+ Todo este flujo está diseñado para ser intuitivo y eficiente,
+ minimizando la fricción para el usuario mientras se mantienen altos estándares de seguridad y precisión en la gestión de identidades.
+\end_layout
+
+\begin_layout Standard
+El módulo de gestión de cuenta representa el componente central de autoservicio dentro del sistema,
+ diseñado para empoderar a los usuarios con el control completo sobre sus credenciales y configuraciones de seguridad.
+ Este espacio personalizado constituye el punto de acceso principal una vez completado el proceso de autenticación,
+ ofreciendo una interfaz intuitiva que consolida todas las funcionalidades relacionadas con la administración de la identidad digital del usuario dentro de la plataforma.
+\end_layout
+
+\begin_layout Subsection
+Descripción General del Proceso
+\end_layout
+
+\begin_layout Standard
+Dentro de este módulo,
+ los usuarios pueden visualizar el estado actual de su contraseña,
+ incluyendo información precisa sobre la fecha de expiración según las políticas de seguridad institucionales.
+ Esta característica preventiva permite a los usuarios planificar con anticipación el cambio de sus credenciales,
+ evitando así interrupciones en el acceso a los servicios.
+ El sistema incorpora un mecanismo de cambio de contraseña que guía al usuario mediante validaciones en tiempo real,
+ asegurando el cumplimiento de los requisitos de complejidad establecidos mientras se mantiene una experiencia de usuario fluida e intuitiva.
+\end_layout
+
+\begin_layout Standard
+La gestión del correo electrónico de respaldo representa otra funcionalidad crítica dentro de este módulo.
+ Los usuarios pueden consultar el correo actualmente registrado y proceder a su actualización cuando sea necesario,
+ proceso que incluye un mecanismo de verificación mediante enlace de confirmación enviado a la nueva dirección.
+ Este procedimiento garantiza la validez del correo alternativo y mantiene la integridad del canal de comunicación para escenarios de recuperación de cuenta o notificaciones de seguridad.
+\end_layout
+
+\begin_layout Standard
+En cuanto a la administración de dispositivos,
+ el sistema proporciona una interfaz comprehensiva para el registro y gestión de direcciones MAC asociadas a la cuenta.
+ Los usuarios pueden visualizar el listado completo de dispositivos autorizados,
+ agregar nuevos equipos mediante un formulario de registro simplificado,
+ editar la información de dispositivos existentes o eliminar aquellos que ya no requieran acceso a la red.
+ Cada modificación en el registro de dispositivos genera notificaciones automáticas al usuario,
+ reforzando así la seguridad y el control sobre los accesos a la red institucional.
+\end_layout
+
+\begin_layout Standard
+La configuración de opciones de recuperación de cuenta constituye un pilar fundamental dentro de las funcionalidades de seguridad disponibles.
+ Los usuarios tienen la capacidad de activar o desactivar el sistema de autenticación de dos factores (2FA),
+ así como establecer un PIN de seguridad alternativo para procedimientos de recuperación.
+ Estas opciones proporcionan múltiples capas de protección adaptables a las preferencias y necesidades específicas de cada usuario,
+ siempre manteniendo el equilibrio entre seguridad y usabilidad.
+\end_layout
+
+\begin_layout Standard
+Complementando estas funcionalidades,
+ el módulo incorpora un sistema de registro de actividad que permite a los usuarios visualizar de manera organizada los logs de acceso y acciones relevantes realizadas con su cuenta.
+ Este historial detallado incluye información temporal,
+ geográfica y contextual sobre cada evento,
+ proporcionando transparencia completa y facilitando la identificación temprana de actividades potencialmente sospechosas.
+ La implementación de este módulo refleja el compromiso con la autonomía del usuario mientras se mantienen los más altos estándares de seguridad y confiabilidad en la gestión de identidades digitales.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename D:/Escuela/DCUS actor usuario reduniss.jpg
+	scale 45
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Diagrama de Caso de uso del Usuario
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Diagrama de Flujo del Proceso de Vinculación
+\end_layout
+
+\begin_layout Standard
+Para representar específicamente el proceso de vinculación entre la verificación de identidad y la creación de la cuenta,
+ se ha diseñado un diagrama de flujo especializado que ilustra esta secuencia crítica.
+ Este diagrama se ubicaría como Figura 2.4.2 en el documento,
+ mostrando de manera precisa el camino que sigue el sistema para conectar la validación inicial con la configuración final de la cuenta de usuario.
+\end_layout
+
+\begin_layout Standard
+El diagrama se enfoca exclusivamente en el proceso de vinculación,
+ comenzando con la verificación exitosa de la identidad del usuario en las fuentes primarias y culminando con la integración completa de los datos en el directorio LDAP.
+ Cada paso intermedio representa una etapa fundamental en este enlace,
+ destacando los puntos donde se transfiere información entre sistemas y donde el usuario debe proporcionar inputs específicos para completar el proceso.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename D:/Escuela/Diagrama de flujo (vincular cuenta de usuario existente).jpg
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Esta integración incluye la asociación de los datos institucionales con las credenciales personales establecidas por el usuario,
+ la activación de los permisos correspondientes según el perfil identificado,
+ y el establecimiento de las relaciones con los grupos organizacionales apropiados dentro de la estructura institucional.
+\end_layout
+
+\begin_layout Standard
+El proceso culmina con la generación de notificaciones automáticas que confirman la vinculación exitosa,
+ tanto al usuario a través del correo electrónico registrado como a los sistemas de auditoría internos que registran el evento para fines de trazabilidad.
+ Este flujo específico de vinculación asegura que cada cuenta creada mantenga consistencia entre los datos autoritativos de los sistemas fuente y las preferencias de seguridad establecidas por el usuario,
+ estableciendo las bases para una gestión de identidades robusta y confiable.
+\end_layout
+
+\begin_layout Subsection
+Análisis de Problemas y Oportunidades de Mejora
+\end_layout
+
+\begin_layout Section
+Requerimientos funcionales
+\end_layout
+
+\begin_layout Standard
+Los requerimientos funcionales representan la funcionalidad el sistema,
+ y se modelan mediante casos de uso(Edith,
+ 2019).
+ Para la identificación de los requerimientos funcionales del sistema se consideran las especificaciones de los casos de uso del negocio.
+\end_layout
+
+\begin_layout Standard
+Después de realizar las entrevistas con los usuarios del sistema quedaron definidos los principales requisitos funcionales que se muestran en la Tabla 2.3(ver Anexo A para consultar todos los requerimientos funcionales).
+\end_layout
+
+\begin_layout Enumerate
+Iniciar Sesión
+\end_layout
+
+\begin_layout Enumerate
+Cambiar Contraseña
+\end_layout
+
+\begin_layout Enumerate
+Restablecer Contraseña Mediante PIN
+\end_layout
+
+\begin_layout Enumerate
+Restablecer Contraseña Mediante Correo
+\end_layout
+
+\begin_layout Enumerate
+Restablecer Contraseña Mediante 2FA
+\end_layout
+
+\begin_layout Enumerate
+Configurar cuenta
+\end_layout
+
+\begin_layout Enumerate
+Habilitar Doble Verificación (2FA)
+\end_layout
+
+\begin_layout Enumerate
+Definir Correo de Recuperación
+\end_layout
+
+\begin_layout Enumerate
+Editar PIN
+\end_layout
+
+\begin_layout Enumerate
+Notificar Expiración de la Cuenta
+\end_layout
+
+\begin_layout Enumerate
+Notificar Activación de Mecanismo de Recuperación de Cuenta
+\end_layout
+
+\begin_layout Enumerate
+Mostrar Cantidad de Días Restantes para Expiración de Cuenta
+\end_layout
+
+\begin_layout Enumerate
+Gestionar Dispositivos WIFI
+\end_layout
+
+\begin_layout Enumerate
+Adicionar Dispositivos WIFI
+\end_layout
+
+\begin_layout Enumerate
+Eliminar Dispositivos WIFI
+\end_layout
+
+\begin_layout Enumerate
+Modificar Dispositivos WIFI
+\end_layout
+
+\begin_layout Enumerate
+Notificar Próxima Expiración de Cuenta Vía Correo
+\end_layout
+
+\begin_layout Enumerate
+Mostrar Actividad Reciente la Cuenta
+\end_layout
+
+\begin_layout Enumerate
+Mostrar Información del Usuario (estudiante SIGENU,
+ trabjador ASSETS)
+\end_layout
+
+\begin_layout Enumerate
+Cerrar Sesión
+\end_layout
+
+\begin_layout Section
+Requerimientos no funcionales
+\end_layout
+
+\begin_layout Standard
+Los requerimientos no funcionales son los atributos que debe exhibir el sistema como facilidad de uso,
+ fiabilidad,
+ eficiencia,
+ portabilidad,
+ etc.
+ Debe pensarse en estas propiedades como las características que hacen al producto atractivo,
+ usable,
+ rápido y confiable.
+\end_layout
+
+\begin_layout Enumerate
+La interfaz del software debe ser intuitiva y fácil de usar para todos los usuarios,
+ incluyendo aquellos con poca experiencia tecnológica 
+\end_layout
+
+\begin_layout Enumerate
+Debe incluir guiás o tutoriales para ayudar a los usuarios a completar el proceso de registro.
+\end_layout
+
+\begin_layout Enumerate
+El sistema debe estar disponible todo el tiempo,
+ permitiendo a los usuarios acceder en cualquier momento 
+\end_layout
+
+\begin_layout Enumerate
+La información personal de los usuarios debe estar protegida mediante cifrado y solo debe ser mostrado a los mismos usuarios si ellos así lo solicitan 
+\end_layout
+
+\begin_layout Enumerate
+Implementar autenticación de múltiples factores para acceder a la plataforma
+\end_layout
+
+\begin_layout Enumerate
+Debe poder integrarse fácilmente con otros sistemas universitarios existentes 
+\end_layout
+
+\begin_layout Enumerate
+Debe ser fácil de mantener y actualizar,
+ permitiendo la corrección de errores y la implementación de nuevas funcionalidades sin causar interrupciones significativos 
+\end_layout
+
+\begin_layout Enumerate
+Debe poder ser accesible desde distintos dispositivos
+\end_layout
+
+\begin_layout Enumerate
+Debe tener doble factor de autenticación
+\end_layout
+
+\begin_layout Section
+Conclusiones parciales 
+\end_layout
+
+\begin_layout Standard
+El análisis y diseño realizado en el presente capítulo permitió establecer las bases fundamentales para el desarrollo de una aplicación web destinada a la gestión y control de cuentas de usuario en la Universidad "José Martí Pérez" de Sancti Spíritus.
+ A través de la aplicación de una metodología de desarrollo estructurada,
+ se logró comprender en profundidad los procesos actuales de gestión de identidades,
+ identificando las principales limitaciones y oportunidades de mejora.
+\end_layout
+
+\begin_layout Standard
+El estudio del proceso reveló un sistema fragmentado con alta dependencia de intervención manual,
+ donde la creación de cuentas para estudiantes y trabajadores sigue flujos diferenciados que generan inconsistencias y prolongan los tiempos de procesamiento.
+ Esta situación actual,
+ caracterizada por la exportación manual de datos desde SIGENU y la dependencia de listados impresos desde ASSET,
+ evidenció la necesidad urgente de una solución automatizada que unifique los procedimientos y garantice la eficiencia operacional.
+\end_layout
+
+\begin_layout Standard
+La identificación de actores y trabajadores del negocio permitió establecer los requerimientos esenciales del sistema,
+ destacándose la necesidad de un proceso unificado para solicitantes de cuenta que englobe tanto a estudiantes como a personal docente,
+ así como la importancia de roles administrativos especializados para la supervisión y gestión del sistema.
+ Esta caracterización resultó fundamental para diseñar una solución que responda a las necesidades reales de todos los usuarios involucrados.
+\end_layout
+
+\begin_layout Standard
+El diseño del proceso de solicitud de creación de cuentas para usuarios nuevos incorpora principios de verificación de identidad robusta y automatización integral,
+ estableciendo un flujo que comienza con la validación mediante carnet de identidad y culmina con la creación automatizada en el directorio LDAP.
+ Los diagramas de flujo desarrollados proporcionan una visualización clara de estos procesos,
+ facilitando la comprensión de las secuencias y validaciones involucradas.
+\end_layout
+
+\begin_layout Standard
+La especificación de requerimientos funcionales y no funcionales constituye un aporte significativo para la fase de desarrollo,
+ estableciendo 20 funcionalidades críticas que abarcan desde la gestión básica de contraseñas hasta mecanismos avanzados de seguridad como la autenticación de dos factores.
+ Los requisitos no funcionales definidos garantizan que el sistema final posea atributos de calidad esenciales como usabilidad,
+ disponibilidad,
+ seguridad y mantenibilidad.
+\end_layout
+
+\begin_layout Standard
+El uso de herramientas profesionales como Visual Paradigm para el modelado UML facilitó la representación precisa de los procesos y casos de uso,
+ contribuyendo a una mejor comprensión del sistema y a la estandarización de los artefactos de diseño.
+ La orientación hacia tecnologías de software libre asegura la sustentabilidad y portabilidad del proyecto,
+ alineándose con las políticas institucionales y nacionales.
+\end_layout
+
+\begin_layout Standard
+En conclusión,
+ el trabajo realizado en este capítulo establece los cimientos técnicos y conceptuales necesarios para el desarrollo de una solución integral que transformará el actual proceso manual y propenso a errores en un sistema automatizado,
+ seguro y eficiente,
+ contribuyendo significativamente a la modernización de la gestión de identidades digitales en la Universidad "José Martí Pérez" de Sancti Spíritus.
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+% Begin Landscape Layou
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{landscape}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename Figs/Raster/minion.png
+	lyxscale 30
+	width 30col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Minions
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename Figs/Raster/TomandJerry.png
+	lyxscale 30
+	width 30col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Tom y Jerry
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename Figs/Raster/WallE.png
+	lyxscale 30
+	width 30col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Wall-E
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Las mejores películas animadas
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+% End Landscape Layout
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{landscape}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\end_body
+\end_document

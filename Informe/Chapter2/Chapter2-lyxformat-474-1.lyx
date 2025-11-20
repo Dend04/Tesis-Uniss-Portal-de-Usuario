@@ -1,0 +1,398 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass PhDThesisLyX
+\options a4paper,titlepage,12pt,numbered
+\use_default_options false
+\maintain_unincluded_children false
+\language spanish
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing onehalf
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 0
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language french
+\papercolumns 1
+\papersides 1
+\paperpagestyle fancy
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Chapter
+Mi segundo capítulo
+\end_layout
+
+\begin_layout Section
+Mi primera sección
+\end_layout
+
+\begin_layout Standard
+Se van a incluir figuras al azar.
+\end_layout
+
+\begin_layout Subsection
+Enumeración 
+\end_layout
+
+\begin_layout Enumerate
+El primer punto
+\end_layout
+
+\begin_layout Enumerate
+Segundo punto 
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Primer subpunto 
+\end_layout
+
+\begin_layout Enumerate
+Segundo subpunto 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Tercer punto
+\end_layout
+
+\begin_layout Subsection
+Viñetas
+\end_layout
+
+\begin_layout Itemize
+Primer punto
+\end_layout
+
+\begin_layout Itemize
+Segundo punto 
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+El primer subpunto 
+\end_layout
+
+\begin_layout Itemize
+El segundo subpunto 
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+El tercer punto
+\end_layout
+
+\begin_layout Section
+Mi segunda sección
+\end_layout
+
+\begin_layout Standard
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+ In magna nisi, aliquam id blandit id, congue ac est.
+ Fusce porta consequat leo.
+ Proin feugiat at felis vel consectetur.
+ Ut tempus ipsum sit amet congue posuere.
+ Nulla varius rutrum quam.
+ Donec sed purus luctus, faucibus velit id, ultrices sapien.
+ Cras diam purus, tincidunt eget tristique ut, egestas quis nulla.
+ Curabitur vel iaculis lectus.
+ Nunc nulla urna, ultrices et eleifend in, accumsan ut erat.
+ In ut ante leo.
+ Aenean a lacinia nisl, sit amet ullamcorper dolor.
+ Maecenas blandit, tortor ut scelerisque congue, velit diam volutpat metus,
+ sed vestibulum eros justo ut nulla.
+ Etiam nec ipsum non enim luctus porta in in massa.
+ Cras arcu urna, malesuada ut tellus ut, pellentesque mollis risus.Morbi
+ vel tortor imperdiet arcu auctor mattis sit amet eu nisi.
+ Nulla gravida urna vel nisl egestas varius.
+ Aliquam posuere ante quis malesuada dignissim.
+ Mauris ultrices tristique eros, a dignissim nisl iaculis nec.
+ Praesent dapibus tincidunt mauris nec tempor.
+ Curabitur et consequat nisi.
+ Quisque viverra egestas risus, ut sodales enim blandit at.
+ Mauris quis odio nulla.
+ Cras euismod turpis magna, in facilisis diam congue non.
+ Mauris faucibus nisl a orci dictum, et tempus mi cursus.
+ Etiam elementum tristique lacus, sit amet eleifend nibh eleifend sed 1
+ .
+ Maecenas dapibu augue ut urna malesuada, non tempor nibh mollis.
+ Donec sed sem sollicitudin, convallis velit aliquam, tincidunt diam.
+ In eu venenatis lorem.
+ Aliquam non augue porttitor tellus faucibus porta et nec ante.
+ Proin sodales, libero vitae commodo sodales, dolor nisi cursus magna, non
+ tincidunt ipsum nibh eget purus.
+ Nam rutrum tincidunt arcu, tincidunt vulputate mi sagittis id.
+ Proin et nisi nec orci tincidunt auctor et porta elit.
+ Praesent eu dolor ac magna cursus euismod.
+ Integer non dictum nunc.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename Figs/Raster/minion.png
+	width 30text%
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Minions de la película Despicable Me
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+% Begin Landscape Layout
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{landscape}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename Figs/Raster/minion.png
+	lyxscale 30
+	width 30col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Minions
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename Figs/Raster/TomandJerry.png
+	lyxscale 30
+	width 30col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Tom y Jerry
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename Figs/Raster/WallE.png
+	lyxscale 30
+	width 30col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Wall-E
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Las mejores películas animadas
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+% End Landscape Layout
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{landscape}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

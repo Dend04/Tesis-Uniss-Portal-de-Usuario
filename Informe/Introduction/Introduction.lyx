@@ -1,0 +1,286 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass UNISSThesisLyX
+\begin_preamble
+\usepackage[colorlinks=true, citecolor=blue, linkcolor=blue, urlcolor=blue]{hyperref}
+\end_preamble
+\options a4paper,titlepage,12pt,numbered
+\use_default_options false
+\maintain_unincluded_children no
+\language spanish
+\language_package default
+\inputencoding auto-legacy
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\float_placement class
+\float_alignment class
+\paperfontsize 12
+\spacing onehalf
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 0
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plainnat
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style swiss
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle fancy
+\tablestyle default
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+En el panorama contemporáneo,
+
+\series bold
+ la transformación digital
+\series default
+ se ha consolidado como un pilar fundamental para la evolución de las instituciones educativas,
+ redefiniendo sus procesos y estrategias mediante la integración de tecnologías avanzadas
+\begin_inset CommandInset citation
+LatexCommand citep
+key "olarte-pacco_innovacion_2025"
+literal "false"
+
+\end_inset
+
+.
+ En este contexto,
+ la gestión eficiente de las credenciales de acceso representa un desafío operativo crítico.
+ Tradicionalmente,
+ muchas organizaciones han dependido de soluciones de escritorio específicas para sistemas operativos particulares,
+ las cuales,
+ si bien resolvieron necesidades puntuales,
+ presentan limitaciones inherentes en 
+\series bold
+flexibilidad,
+ mantenimiento y escalabilidad
+\series default
+.
+ 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "estacio_flores_gestion_2024"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Frente a estas restricciones,
+ 
+\series bold
+las aplicaciones web
+\series default
+ emergen como la alternativa preferente.
+ Estas soluciones no solo ofrecen independencia de plataforma,
+ sino que facilitan una administración centralizada,
+ actualizaciones inmediatas y acceso remoto,
+ optimizando así los recursos institucionales 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "monsalves_inteligencia_2024"
+literal "false"
+
+\end_inset
+
+.
+ La adopción de este tipo de tecnologías está alineada con las tendencias actuales de
+\series bold
+ gobierno digital
+\series default
+,
+ que buscan hacer más fluidas,
+ accesibles y transparentes las interacciones entre las instituciones y sus usuarios 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "berna_quispe_gobierno_2025"
+literal "false"
+
+\end_inset
+
+.
+ La automatización de procesos mediante aplicaciones web ha demostrado reducir significativamente los tiempos de respuesta y mejorar la accesibilidad a la información,
+ tal como se ha observado en estudios sobre gestión documental en el sector público.
+\end_layout
+
+\begin_layout Standard
+La creación y administración de cuentas de usuario en la Universidad "José Martí Pérez" de Sancti Spíritus se caracteriza,
+ en la actualidad,
+ por ser un proceso
+\series bold
+ predominantemente manual.
+
+\series default
+ Esta metodología no solo consume un tiempo y recursos considerables,
+ sino que incrementa sustancialmente la probabilidad de errores humanos y genera retrasos en la provisión de servicios,
+ afectando directamente la experiencia de estudiantes,
+ profesores y personal administrativo.
+\end_layout
+
+\begin_layout Standard
+La persistencia de procesos manuales y la falta de una comunicación clara y fluida limitan la capacidad de las organizaciones para responder con rapidez y transparencia a las demandas,
+ impactando negativamente en la 
+\series bold
+eficiencia y la rendición de cuentas
+\series default
+.
+ Esta problemática evidencia la necesidad urgente de modernizar los procesos en la administración pública y educativa,
+ una lección que se hizo aún más patente durante la pandemia de COVID-19.
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "estacio_flores_gestion_2024"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Partiendo de esta problemática,
+ se formula la siguiente
+\series bold
+ pregunta de investigación:
+\end_layout
+
+\begin_layout Standard
+¿Cómo optimizar el tiempo de creación y administración de las cuentas de usuario en la Universidad "José Martí Pérez" de Sancti Spíritus mediante una solución tecnológica integral?
+\end_layout
+
+\begin_layout Standard
+El 
+\series bold
+objetivo general 
+\series default
+de este trabajo es:
+ "Diseñar e implementar un sistema web para la gestión integral de cuentas de usuario en la Universidad 'José Martí Pérez' de Sancti Spíritus que optimice la eficiencia del proceso actual".
+\end_layout
+
+\begin_layout Standard
+Para alcanzar este objetivo,
+ se plantean las siguientes 
+\series bold
+preguntas de investigación
+\series default
+:
+\end_layout
+
+\begin_layout Enumerate
+¿Qué fundamentos teóricos y tecnológicos sustentan el desarrollo de una aplicación web para la gestión integral de cuentas de usuario en el contexto universitario?
+\end_layout
+
+\begin_layout Enumerate
+¿Qué diseño de sistema puede satisfacer los requerimientos específicos de gestión de usuarios,
+ dispositivos y seguridad en la Universidad "José Martí Pérez"?
+\end_layout
+
+\begin_layout Enumerate
+¿Cómo implementar una solución tecnológica que integre funcionalidades avanzadas de administración,
+ seguridad y monitoreo para las cuentas de usuario?
+\end_layout
+
+\begin_layout Standard
+\align left
+En correspondencia con las preguntas de investigación se plantean las siguientes 
+\series bold
+tareas de investigación
+\series default
+:
+\end_layout
+
+\begin_layout Enumerate
+Determinar los fundamentos teóricos y tecnológicos que sustentan el desarrollo de aplicaciones web para gestión de credenciales en entornos universitarios.
+\end_layout
+
+\begin_layout Enumerate
+Diseñar una aplicación web que contribuya a la gestión y control de cuentas para las Universidad “José Martí Pérez” de Sancti Spíritus.
+\end_layout
+
+\begin_layout Enumerate
+Implementar y validar el funcionamiento de la aplicación web desarrollada en el entorno universitario.
+\end_layout
+
+\begin_layout Standard
+Esta investigación contribuirá al desarrollo de sistemas automatizados que mejoren significativamente la eficiencia en la gestión de identidades digitales,
+ ofreciendo además capacidades de seguridad mejoradas y una experiencia de usuario más completa en comparación con soluciones existentes.
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+btprint "btPrintCited"
+bibfiles "D:/vsc/tesis_2024_2025_informe_productos_servicios_cimex/References/Mi biblioteca Zotero"
+options "plain"
+encoding "default"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

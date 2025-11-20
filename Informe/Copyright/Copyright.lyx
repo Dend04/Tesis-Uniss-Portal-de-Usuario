@@ -1,0 +1,180 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass UNISSThesisLyX
+\options a4paper,titlepage
+\use_default_options false
+\maintain_unincluded_children false
+\language spanish
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing onehalf
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 0
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plainnat
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style swiss
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle fancy
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+thispagestyle{empty}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Este documento es Propiedad Patrimonial de la Universidad de Sancti Spíritus
+ 
+\begin_inset Quotes cld
+\end_inset
+
+José Martí Pérez
+\begin_inset Quotes crd
+\end_inset
+
+, y se encuentra depositado en los fondos del Centro de Recursos para el
+ Aprendizaje y la Investigación 
+\begin_inset Quotes cld
+\end_inset
+
+Raúl Ferrer Pérez
+\begin_inset Quotes crd
+\end_inset
+
+, subordinado a la Dirección General de Desarrollo 3 de la mencionada casa
+ de altos estudios.
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+vspace{1cm}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Se autoriza su utilización bajo la licencia siguiente:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Atribución- No Comercial- Compartir Igual
+\series default
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename ../Figs/license-creative-commons.png
+	width 25text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Para cualquier información, contacte con: 
+\end_layout
+
+\begin_layout Standard
+Centro de Recursos para el Aprendizaje y la Investigación “Raúl Ferrer Pérez”.
+ Comandante Manuel Fajardo s/n, esquina a Cuartel, Olivos 1.
+ Sancti Spíritus.
+ Cuba.
+ CP.
+ 60100 
+\end_layout
+
+\begin_layout Standard
+Teléfono: 
+\series bold
+41-334968
+\series default
+ 
+\end_layout
+
+\end_body
+\end_document

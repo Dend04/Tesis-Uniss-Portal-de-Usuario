@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
 import { memo, useMemo, useState, useCallback, useEffect } from "react";
 import { Device } from "@/types";
 import IconLoader from "../IconLoader";
 import EditDeviceModal from "../modals/EditDeviceModal";
 import AddDeviceModal from "../modals/AddDeviceModal";
+import WifiPolicyModal from "../modals/WifiPolicyModal";
 
 interface DevicesSectionProps {
   isDarkMode: boolean;
@@ -55,10 +56,12 @@ const fetchDevices = async (): Promise<Device[]> => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      
+
       switch (response.status) {
         case 401:
-          throw new Error("Sesión expirada. Por favor, inicia sesión nuevamente.");
+          throw new Error(
+            "Sesión expirada. Por favor, inicia sesión nuevamente."
+          );
         case 403:
           throw new Error("No tienes permisos para ver los dispositivos.");
         case 404:
@@ -66,7 +69,10 @@ const fetchDevices = async (): Promise<Device[]> => {
         case 500:
           throw new Error("Error del servidor. Por favor, intenta más tarde.");
         default:
-          throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+          throw new Error(
+            errorData.error ||
+              `Error ${response.status}: ${response.statusText}`
+          );
       }
     }
 
@@ -115,10 +121,12 @@ const deleteDevice = async (deviceId: string): Promise<boolean> => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      
+
       switch (response.status) {
         case 401:
-          throw new Error("Sesión expirada. Por favor, inicia sesión nuevamente.");
+          throw new Error(
+            "Sesión expirada. Por favor, inicia sesión nuevamente."
+          );
         case 403:
           throw new Error("No tienes permisos para eliminar este dispositivo.");
         case 404:
@@ -126,7 +134,10 @@ const deleteDevice = async (deviceId: string): Promise<boolean> => {
         case 500:
           throw new Error("Error del servidor al eliminar el dispositivo.");
         default:
-          throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+          throw new Error(
+            errorData.error ||
+              `Error ${response.status}: ${response.statusText}`
+          );
       }
     }
 
@@ -142,7 +153,7 @@ const deleteDevice = async (deviceId: string): Promise<boolean> => {
 // ✅ INTERFAZ PARA NOTIFICACIONES
 interface Notification {
   id: string;
-  type: 'success' | 'error' | 'info';
+  type: "success" | "error" | "info";
   message: string;
   duration?: number;
 }
@@ -462,7 +473,7 @@ const NotificationToast = memo(
         const timer = setTimeout(() => {
           onDismiss(notification.id);
         }, notification.duration);
-        
+
         return () => clearTimeout(timer);
       }
     }, [notification.id, notification.duration, onDismiss]);
@@ -520,21 +531,25 @@ export default function DevicesSection({
   const [internalError, setInternalError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  
+
   // Estados para los modales
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isWifiPolicyModalOpen, setIsWifiPolicyModalOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
 
   // ✅ AGREGAR NOTIFICACIÓN
-  const addNotification = useCallback((notification: Omit<Notification, 'id'>) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setNotifications(prev => [...prev, { ...notification, id }]);
-  }, []);
+  const addNotification = useCallback(
+    (notification: Omit<Notification, "id">) => {
+      const id = Math.random().toString(36).substr(2, 9);
+      setNotifications((prev) => [...prev, { ...notification, id }]);
+    },
+    []
+  );
 
   // ✅ ELIMINAR NOTIFICACIÓN
   const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
   }, []);
 
   // Cargar dispositivos si no se proporcionan externamente
@@ -573,16 +588,34 @@ export default function DevicesSection({
   const handleOpenCreateModal = () => {
     if (deviceCount >= 4) {
       addNotification({
-        type: 'error',
-        message: 'Límite alcanzado. Máximo 4 dispositivos por usuario.',
-        duration: 5000
+        type: "error",
+        message: "Límite alcanzado. Máximo 4 dispositivos por usuario.",
+        duration: 5000,
       });
       return;
     }
-    setIsCreateModalOpen(true);
+
+    // Si es el primer dispositivo, mostrar políticas de Wi-Fi primero
+    if (deviceCount === 0) {
+      setIsWifiPolicyModalOpen(true);
+    } else {
+      // Para dispositivos adicionales, abrir directamente el modal de creación
+      setIsCreateModalOpen(true);
+    }
   };
 
   const handleCloseCreateModal = () => setIsCreateModalOpen(false);
+
+  // Nuevo manejador para cuando se aceptan las políticas
+  const handleAcceptWifiPolicy = () => {
+    setIsWifiPolicyModalOpen(false);
+    // Abrir modal de creación después de aceptar políticas
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseWifiPolicyModal = () => {
+    setIsWifiPolicyModalOpen(false);
+  };
 
   const handleOpenEditModal = useCallback((device: Device) => {
     setEditingDevice(device);
@@ -598,52 +631,70 @@ export default function DevicesSection({
     handleRefresh();
     if (message) {
       addNotification({
-        type: 'success',
+        type: "success",
         message,
-        duration: 3000
+        duration: 3000,
       });
     }
   };
 
   // Usar dispositivos externos si se proporcionan, de lo contrario usar internos
-  const devices = externalDevices && externalDevices.length > 0 ? externalDevices : internalDevices;
+  const devices =
+    externalDevices && externalDevices.length > 0
+      ? externalDevices
+      : internalDevices;
   const deviceCount = devices.length;
-  const shouldShowError = error || (internalError && (!externalDevices || externalDevices.length === 0));
+  const shouldShowError =
+    error ||
+    (internalError && (!externalDevices || externalDevices.length === 0));
   const finalLoading = loading || (internalLoading && !hasLoaded);
 
   // ✅ MANEJAR ELIMINACIÓN MEJORADA
-  const handleDeleteDevice = useCallback(async (device: Device) => {
-    if (
-      window.confirm(
-        `¿Estás seguro de que quieres eliminar el dispositivo "${device.nombre}"?`
-      )
-    ) {
-      try {
-        await deleteDevice(device.id);
-        handleOperationSuccess(`Dispositivo "${device.nombre}" eliminado correctamente`);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Error al eliminar el dispositivo";
-        addNotification({
-          type: 'error',
-          message: errorMessage,
-          duration: 5000
-        });
+  const handleDeleteDevice = useCallback(
+    async (device: Device) => {
+      if (
+        window.confirm(
+          `¿Estás seguro de que quieres eliminar el dispositivo "${device.nombre}"?`
+        )
+      ) {
+        try {
+          await deleteDevice(device.id);
+          handleOperationSuccess(
+            `Dispositivo "${device.nombre}" eliminado correctamente`
+          );
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Error al eliminar el dispositivo";
+          addNotification({
+            type: "error",
+            message: errorMessage,
+            duration: 5000,
+          });
+        }
       }
-    }
-  }, [handleRefresh, addNotification]);
+    },
+    [handleRefresh, addNotification]
+  );
 
   // Manejar vista de detalles
-  const handleViewDetails = useCallback((device: Device) => {
-    const formattedDate = device.createdAt
-      ? new Date(device.createdAt).toLocaleString()
-      : "Fecha no disponible";
-    
-    addNotification({
-      type: 'info',
-      message: `Detalles: ${device.nombre} (${device.mac}) - ${deviceTypeNames[device.tipo]}`,
-      duration: 4000
-    });
-  }, [addNotification]);
+  const handleViewDetails = useCallback(
+    (device: Device) => {
+      const formattedDate = device.createdAt
+        ? new Date(device.createdAt).toLocaleString()
+        : "Fecha no disponible";
+
+      addNotification({
+        type: "info",
+        message: `Detalles: ${device.nombre} (${device.mac}) - ${
+          deviceTypeNames[device.tipo]
+        }`,
+        duration: 4000,
+      });
+    },
+    [addNotification]
+  );
 
   const handleRetry = useCallback(() => {
     handleRefresh();
@@ -716,11 +767,21 @@ export default function DevicesSection({
         )}
       </section>
 
+      {/* Modal para políticas de Wi-Fi (solo para primer dispositivo) */}
+      <WifiPolicyModal
+        isOpen={isWifiPolicyModalOpen}
+        onClose={handleCloseWifiPolicyModal}
+        onAccept={handleAcceptWifiPolicy}
+        isDarkMode={isDarkMode}
+      />
+
       {/* Modal para crear dispositivo */}
       <AddDeviceModal
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
-        onSuccess={() => handleOperationSuccess("Dispositivo creado correctamente")}
+        onSuccess={() =>
+          handleOperationSuccess("Dispositivo creado correctamente")
+        }
         isDarkMode={isDarkMode}
         deviceCount={deviceCount}
       />
@@ -729,7 +790,9 @@ export default function DevicesSection({
       <EditDeviceModal
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
-        onSuccess={() => handleOperationSuccess("Dispositivo actualizado correctamente")}
+        onSuccess={() =>
+          handleOperationSuccess("Dispositivo actualizado correctamente")
+        }
         device={editingDevice}
         isDarkMode={isDarkMode}
       />

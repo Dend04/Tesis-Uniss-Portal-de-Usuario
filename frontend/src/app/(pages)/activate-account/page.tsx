@@ -13,6 +13,7 @@ import StepsIndicator, {
 } from "@/app/components/activate-account/StepsIndicator";
 import ActivationForm from "@/app/components/activate-account/ActivationForm";
 import VerificationSuccess from "@/app/components/activate-account/VerificationSuccess";
+import CodeOfEthics from "@/app/components/activate-account/CodeOfEthics";
 import BackupEmailForm from "@/app/components/activate-account/BackupEmailForm";
 import UserConfirmation from "@/app/components/activate-account/UserConfirmation";
 import UsernameSelection from "@/app/components/activate-account/UsernameSelection";
@@ -44,15 +45,6 @@ const activationSchema = z.object({
     .string()
     .length(11, "El carnet debe tener 11 dígitos")
     .regex(/^\d+$/, "Solo se permiten números"),
-  tomo: z
-    .string()
-    .length(3, "El tomo debe tener 3 dígitos")
-    .regex(/^\d+$/, "Solo se permiten números"),
- folio: z
-    .string()
-    .min(2, "El folio debe tener al menos 2 dígitos")
-    .max(3, "El folio no puede tener más de 3 dígitos")
-    .regex(/^\d+$/, "Solo se permiten números"),
 });
 
 const emailSchema = z.object({
@@ -64,6 +56,7 @@ export type EmailFormData = z.infer<typeof emailSchema>;
 type StepType =
   | "activation"
   | "success"
+  | "codeOfEthics"
   | "username"
   | "email"
   | "password"
@@ -96,7 +89,7 @@ export default function ActivationPage() {
       title: "Verificación",
       status: (currentStep === "activation"
         ? "current"
-        : ["success", "username", "email", "password", "confirmation"].includes(currentStep)
+        : ["success", "codeOfEthics", "username", "email", "password", "confirmation"].includes(currentStep)
         ? "complete"
         : "upcoming") as StepStatus,
     },
@@ -104,6 +97,15 @@ export default function ActivationPage() {
       id: "success",
       title: "Confirmación",
       status: (currentStep === "success"
+        ? "current"
+        : ["codeOfEthics", "username", "email", "password", "confirmation"].includes(currentStep)
+        ? "complete"
+        : "upcoming") as StepStatus,
+    },
+    {
+      id: "codeOfEthics",
+      title: "Código de Ética",
+      status: (currentStep === "codeOfEthics"
         ? "current"
         : ["username", "email", "password", "confirmation"].includes(currentStep)
         ? "complete"
@@ -338,23 +340,32 @@ export default function ActivationPage() {
               key="success-step"
               result={result}
               onBack={() => setCurrentStep("activation")}
-              onContinue={() => setCurrentStep("username")}
+              onContinue={() => setCurrentStep("codeOfEthics")}
             />
           )}
 
-          {/* Paso 3: Selección de username */}
+          {/* Paso 3: Código de Ética */}
+          {currentStep === "codeOfEthics" && (
+            <CodeOfEthics
+              key="codeOfEthics-step"
+              onAccept={() => setCurrentStep("username")}
+              onBack={() => setCurrentStep("success")}
+            />
+          )}
+
+          {/* Paso 4: Selección de username */}
           {currentStep === "username" && result && (
             <UsernameSelection
               key="username-step"
               userData={result}
               userType={result.type}
               onSelect={setSelectedUsername}
-              onBack={() => setCurrentStep("success")}
+              onBack={() => setCurrentStep("codeOfEthics")}
               onNext={() => setCurrentStep("email")}
             />
           )}
           
-          {/* Paso 4: Formulario de correo de respaldo */}
+          {/* Paso 5: Formulario de correo de respaldo */}
           {currentStep === "email" && (
             <BackupEmailForm
               key="email-step"
@@ -366,7 +377,7 @@ export default function ActivationPage() {
             />
           )}
           
-          {/* Paso 5: Formulario de contraseña */}
+          {/* Paso 6: Formulario de contraseña */}
           {currentStep === "password" && result && (
             <PasswordForm
               key="password-step"
@@ -380,7 +391,7 @@ export default function ActivationPage() {
             />
           )}
           
-          {/* Paso 6: Confirmación final del usuario */}
+          {/* Paso 7: Confirmación final del usuario */}
           {currentStep === "confirmation" && result && (
             <UserConfirmation
               key="confirmation-step"

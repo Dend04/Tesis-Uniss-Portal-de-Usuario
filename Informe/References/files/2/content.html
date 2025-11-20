@@ -1,0 +1,3888 @@
+<html foxified style><!--
+ Page saved with SingleFile 
+ url: https://repositorio.uclv.edu.cu/server/api/core/bitstreams/369a3eaa-7912-41f5-a7e8-7126308be066/content 
+ saved date: Sun Nov 16 2025 09:15:03 GMT-0500 (hora estándar de Cuba)
+--><meta charset=utf-8><meta name=color-scheme content="light dark"><style>@keyframes aqjkdtZawN5lryW5flKx{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes KG9mWh693CBdLSEsKEEw{0%{transform:rotateZ(0deg)}100%{transform:rotateZ(360deg)}}@keyframes aqjkdtZawN5lryW5flKx{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style><style>@keyframes aqjkdtZawN5lryW5flKx{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes KG9mWh693CBdLSEsKEEw{0%{transform:rotateZ(0deg)}100%{transform:rotateZ(360deg)}}@keyframes aqjkdtZawN5lryW5flKx{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style><style>@keyframes cyDGHsYvrKbP8e_GTG2d{0%{opacity:0}100%{opacity:1}}</style><meta name=referrer content=no-referrer><link rel=canonical href=https://repositorio.uclv.edu.cu/server/api/core/bitstreams/369a3eaa-7912-41f5-a7e8-7126308be066/content><meta http-equiv=content-security-policy content="default-src 'none'; font-src 'self' data:; img-src 'self' data:; style-src 'unsafe-inline'; media-src 'self' data:; script-src 'unsafe-inline' data:; object-src 'self' data:; frame-src 'self' data:;"><style>img[src="data:,"],source[src="data:,"]{display:none!important}</style><body><pre style=word-wrap:break-word;white-space:pre-wrap> 
+
+Universidad Central “Marta Abreu” de Las Villas 
+
+Facultad de Ingeniería Eléctrica 
+
+Departamento de Telecomunicaciones y Electrónica 
+
+ 
+
+TRABAJO DE DIPLOMA 
+
+ 
+
+Sistema para la gestión y control de cuentas de 
+
+usuario en la UCLV  
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Autor: Adrian Collazo Linares 
+
+Tutor: MSc. Carlos Miguel Bustillo Rodríguez 
+
+ 
+
+ 
+
+Santa Clara 
+
+2017 
+
+"Año 59 de la Revolución" 
+
+
+
+ 
+
+Universidad Central “Marta Abreu” de Las Villas 
+
+Facultad de Ingeniería Eléctrica 
+
+Departamento de Telecomunicaciones y Electrónica 
+
+ 
+
+TRABAJO DE DIPLOMA 
+
+ 
+
+Sistema para la gestión y control de cuentas de 
+
+usuario en la UCLV  
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+  
+
+ 
+
+Autor: Adrian Collazo Linares 
+Email: acollazo@uclv.cu 
+
+ 
+
+Tutor: MSc. Carlos Miguel Bustillo Rodríguez 
+Email: cbustillo@uclv.edu.cu 
+
+Especialista Principal en Seguridad Informática UCLV 
+
+ 
+ 
+
+Santa Clara 
+
+2017 
+
+"Año 59 de la Revolución" 
+
+mailto:acollazo@uclv.cu
+mailto:cbustillo@uclv.edu.cu
+
+
+ 
+
+ 
+
+Hago constar que el presente trabajo de diploma fue realizado en la Universidad Central 
+
+“Marta Abreu” de Las Villas como parte de la culminación de estudios de la especialidad 
+
+de Ingeniería en Automática, autorizando a que el mismo sea utilizado por la Institución, 
+
+para los fines que estime conveniente, tanto de forma parcial como total y que además no 
+
+podrá ser presentado en eventos, ni publicados sin autorización de la Universidad. 
+
+ 
+
+ 
+
+ 
+
+Firma del Autor  
+
+Los abajo firmantes certificamos que el presente trabajo ha sido realizado según acuerdo de 
+
+la dirección de nuestro centro y el mismo cumple con los requisitos que debe tener un 
+
+trabajo de esta envergadura referido a la temática señalada. 
+
+ 
+
+ 
+
+ 
+
+Firma del Autor 
+ 
+
+Firma del Jefe de Departamento 
+
+donde se defiende el trabajo 
+
+ 
+
+ 
+
+ 
+
+Firma del Responsable de 
+
+Información Científico-Técnica  
+
+ 
+
+
+
+ 
+i 
+
+PENSAMIENTO 
+
+Cuando se innova se corre el riesgo de cometer errores. Es mejor admitirlo rápidamente 
+
+y continuar con otra innovación. 
+
+Steve Jobs 
+
+
+
+ 
+ii 
+
+DEDICATORIA 
+
+A esa persona especial que, aunque está lejos de mí, es la mayor alegría de mi vida. Lexie 
+
+A mi madre, padre y hermano por tenerlos siempre cerca cuando los he necesitado. 
+
+A toda mi familia que, aunque estamos lejos, “siempre estamos unidos”. 
+
+
+
+ 
+iii 
+
+AGRADECIMIENTOS 
+
+Mis agradecimientos: 
+
+ A mi madre, mi hermano, mi padre y mi novia por darme su confianza y apoyo. 
+
+ A mi tutor Carlos Miguel Bustillo por su dedicación, constancia y disposición en 
+
+todo momento. 
+
+ A mis instructores Manuel Oliver y Héctor Cruz por los conocimientos y el apoyo 
+
+que siempre me han dado. 
+
+ A Haydeé Abreu León por su ayuda y paciencia en la revisión de mi tesis. 
+
+ A mis compañeros de la Dirección de Informatización: Javier, Armando, Ernesto, 
+
+Yoel, Víctor, Ennier, Michel, Gretter, Carlos Herrera, Francisco Herrera, Miriel, 
+
+Patricia, Laura, Belkis, Tamara, Marga, Lidia, Bustillo, Manuel y Héctor. 
+
+ A los amigos que me bridaron su ayuda desinteresada. 
+
+ A todos los que hicieron posible la realización de este trabajo. 
+
+
+
+ 
+iv 
+
+TAREA TÉCNICA 
+
+1. El análisis del trabajo que se realiza en la UCLV actualmente para la solicitud de las 
+
+cuentas de usuario y su administración. 
+
+2. La realización del estudio sobre los diferentes tipos y variantes de sistemas de 
+
+administración de credenciales.  
+
+3. La investigación sobre la implementación de sistemas de administración de 
+
+credenciales basados en soluciones web. 
+
+4. La evaluación de la eficacia y eficiencia del proceso de gestión y control de cuentas de 
+
+usuario luego de aplicar el sistema propuesto. 
+
+
+
+ 
+v 
+
+RESUMEN 
+
+Los sistemas informáticos en la actualidad desempeñan un papel esencial en la 
+
+automatización y optimización de procesos, ya que estos garantizan una mayor eficiencia y 
+
+confiabilidad. En la Universidad Central “Marta Abreu” de Las Villas el proceso de 
+
+creación de cuentas de usuario está sujeto a ciertos inconvenientes, como son: los largos 
+
+períodos de tiempo y su falta de automatización, por lo que surge la necesidad de 
+
+desarrollar un sistema que permita dar solución a esta problemática. Para ello se realizó un 
+
+estudio de la metodología y herramientas disponibles, donde se concluyó que el desarrollo 
+
+de una aplicación web con el uso de tecnologías como PHP y MongoDB resulta ser la 
+
+opción más recomendada a implementar y acorde con la política trazada en el país de 
+
+migración hacia plataformas de Software Libre. El objetivo de la aplicación será brindar un 
+
+sistema automatizado que permita realizar la creación de las cuentas de usuario en menor 
+
+tiempo y a un menor costo de recursos. Tras su diseño y construcción luego de seguir la 
+
+metodología establecida, se procedió a realizar las pruebas necesarias con el fin de conocer 
+
+los resultados obtenidos. En este análisis se pudo apreciar que la propuesta cumple 
+
+satisfactoriamente sus objetivos. 
+
+ 
+
+ 
+
+
+
+ 
+vi 
+
+TABLA DE CONTENIDOS 
+
+PENSAMIENTO ..................................................................................................................... i 
+
+DEDICATORIA .................................................................................................................... ii 
+
+AGRADECIMIENTOS ........................................................................................................ iii 
+
+INTRODUCCIÓN .................................................................................................................. 1 
+
+Organización del informe ................................................................................................... 3 
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS 
+
+DE USUARIO 4 
+
+1.1. Sistema informático ................................................................................................. 4 
+
+1.2. Aplicación web ......................................................................................................... 7 
+
+1.2.1 Capa del navegador ......................................................................................... 10 
+
+1.2.2 Capa del servidor ............................................................................................ 10 
+
+1.2.3 Capa de persistencia ........................................................................................ 13 
+
+1.3. Metodología de desarrollo de software .................................................................. 16 
+
+1.4. Usuarios informáticos y cuentas de usuario ........................................................... 17 
+
+1.5. Conclusiones parciales del capítulo ....................................................................... 19 
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB ....................................... 20 
+
+2.1 Situación actual del proceso de creación de cuentas de usuario en la UCLV ........ 20 
+
+2.2 Selección de las tecnologías y herramientas .......................................................... 22 
+
+2.2.1 Capa del navegador ......................................................................................... 22 
+
+
+
+ 
+vii 
+
+2.2.2 Capa del servidor ............................................................................................ 22 
+
+2.2.3 Capa de persistencia ........................................................................................ 23 
+
+2.3 Descripción de los requerimientos ......................................................................... 23 
+
+2.3.1 Requerimientos funcionales de la aplicación web .......................................... 23 
+
+2.3.2 Requerimientos no funcionales de la aplicación web ..................................... 24 
+
+2.4 Descripción de los actores del sistema ................................................................... 25 
+
+2.5 Diagramas de casos de uso ..................................................................................... 26 
+
+2.6 Descripción de los casos de uso del sistema .......................................................... 28 
+
+2.6.1 Flujos normal y alterno de eventos para los casos de uso .............................. 35 
+
+2.7 Diagramas de Actividades ...................................................................................... 56 
+
+2.8 Diagrama de despliegue ......................................................................................... 64 
+
+2.9 Seguridad y privacidad de la información ............................................................. 65 
+
+2.9.1 Conexiones seguras ......................................................................................... 65 
+
+2.9.2 Seguridad y privacidad de los datos ............................................................... 65 
+
+2.9.3 Mecanismos de autoprotección ....................................................................... 65 
+
+2.10 Conclusiones parciales del capítulo .................................................................... 66 
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS ............ 67 
+
+3.1 Prueba de la aplicación web en el servidor de desarrollo ...................................... 67 
+
+3.1.1 Conectividad ................................................................................................... 68 
+
+3.1.2 Velocidad y compatibilidad ............................................................................ 69 
+
+3.2 Análisis de los resultados obtenidos ...................................................................... 75 
+
+3.3 Manual de uso de la aplicación para usuarios y administradores .......................... 77 
+
+3.3.1 Manual de usuario ........................................................................................... 77 
+
+3.3.2 Manual de administrador ................................................................................ 85 
+
+
+
+ 
+viii 
+
+3.4 Conclusiones parciales del capítulo ....................................................................... 90 
+
+CONCLUSIONES ................................................................................................................ 91 
+
+RECOMENDACIONES ....................................................................................................... 93 
+
+REFERENCIAS BIBLIOGRÁFICAS ................................................................................. 94 
+
+GLOSARIO ........................................................................................................................ 100 
+
+ANEXOS ............................................................................................................................ 103 
+
+
+
+INTRODUCCIÓN 
+1 
+
+INTRODUCCIÓN 
+
+En la actualidad un gran número de entidades utilizan sistemas que controlan y administran 
+
+las credenciales de sus clientes y empleados para el acceso a los recursos y equipos en la 
+
+red. Para ello basan sus soluciones en aplicaciones construidas para sistemas operativos 
+
+específicos o aplicaciones sobre sistemas web. 
+
+Las aplicaciones construidas para sistemas operativos específicos tienden a ser rígidas y 
+
+difíciles de mantener por lo que requieren un mayor esfuerzo y recursos. En cambio, las 
+
+aplicaciones web constituyen una opción más viable, porque: son independientes del 
+
+sistema operativo, fáciles de mantener, requieren menos recursos y más sencillas de 
+
+administrar.  
+
+Los sistemas de gestión de credenciales basados en aplicaciones web suelen ser los más 
+
+utilizados y difundidos. La necesidad de conectar estos a diferentes tipos de servicios 
+
+internos y externos, así como la posibilidad de administrarlos y supervisarlos de manera 
+
+remota, demuestra ampliamente sus ventajas sobre otros tipos de sistemas.  
+
+La creación de las cuentas de usuario en la Universidad Central “Marta Abreu” de Las 
+
+Villas resulta ser un proceso que toma un largo período de tiempo hasta su culminación y 
+
+se realiza en su mayor parte de forma manual lo que trae como consecuencia posibles 
+
+errores en la creación de las cuentas. Esta situación lleva a la necesidad de crear un sistema 
+
+automatizado que pueda dar solución a los problemas mencionados. 
+
+La situación anterior conduce a la siguiente pregunta: 
+
+¿Cómo optimizar el tiempo de creación y la administración de las cuentas de usuario en la 
+
+Universidad Central “Marta Abreu” de Las Villas? 
+
+Por tanto, es necesario tener en cuenta: 
+
+
+
+INTRODUCCIÓN 
+2 
+
+ ¿Qué soluciones en la actualidad se emplean para la implementación de sistemas de 
+
+gestión y control de cuentas de usuario? 
+
+ ¿Cuál es la mejor opción a implementar en la Universidad Central “Marta Abreu” de 
+
+Las Villas? 
+
+ ¿La solución elegida resuelve de manera eficiente el problema de la gestión y el 
+
+control de cuentas de usuario en la Universidad Central “Marta Abreu” de Las Villas? 
+
+Por ello el objetivo general de este trabajo es: “Implementar un sistema para la gestión y el 
+
+control de las cuentas de usuario en la Universidad Central “Marta Abreu” de Las Villas, 
+
+que permita mejorar la eficiencia de este proceso”. 
+
+Específicamente: 
+
+ Analizar el proceso actual para la creación de las cuentas de usuario en la 
+
+Universidad Central “Marta Abreu” de Las Villas.  
+
+ Seleccionar las herramientas a utilizar para la elaboración de un sistema de gestión y 
+
+control de cuentas de usuario en la Universidad Central “Marta Abreu” de Las Villas. 
+
+ Diseñar un sistema que permita automatizar la gestión y control de las cuentas de 
+
+usuario en la Universidad Central “Marta Abreu” de Las Villas. 
+
+ Implementar y analizar el sistema diseñado. 
+
+Con este trabajo se pretende contribuir al desarrollo de sistemas automatizados que 
+
+aumenten la eficiencia y eficacia del proceso de creación de cuentas de usuario en la 
+
+Universidad Central “Marta Abreu” de Las Villas. De esta forma se obtiene un ahorro de 
+
+recursos y se brinda un servicio de mayor calidad a estudiantes, trabajadores y visitantes. 
+
+La parte administrativa contará con una potente interfaz para la gestión y el control de las 
+
+cuentas de usuario. El empleo de esta solución con el uso de herramientas libres y de 
+
+código abierto, contribuye con las políticas trazadas por la Dirección de Informatización de 
+
+la universidad y el país. 
+
+
+
+INTRODUCCIÓN 
+3 
+
+Organización del informe 
+
+El informe está estructurado de la siguiente forma: introducción, capitulario, conclusiones, 
+
+recomendaciones, referencias bibliográficas, glosario de términos y anexos. A 
+
+continuación, se resume brevemente el contenido de los capítulos: 
+
+ 
+
+Capítulo 1: Sistemas para la gestión y control de las cuentas de usuario.   
+
+Se dedica a la caracterización de las tecnologías existentes para el desarrollo de 
+
+aplicaciones web, así como la metodología a seguir en el diseño y construcción de 
+
+software.  
+
+Capítulo 2: Desarrollo de la aplicación web. 
+
+Describe de manera breve el proceso de creación de cuentas de usuario en la Universidad 
+
+Central “Marta Abreu” de Las Villas y aborda la realización del diseño y puesta en práctica 
+
+de los métodos a seguir para la construcción de la aplicación web. 
+
+ 
+
+Capítulo 3: Implementación y análisis de los resultados 
+
+Muestra los resultados obtenidos a partir de la implementación de la aplicación web en un 
+
+ambiente de desarrollo que presenta características similares al entorno real. Ofrece un 
+
+manual de uso de la aplicación para administradores y usuarios, lo cual facilita la 
+
+administración e interacción con el sistema. 
+
+ 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+4 
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE 
+
+LAS CUENTAS DE USUARIO 
+
+En la actualidad un gran número de empresas e instituciones utilizan sistemas informáticos 
+
+para gestionar y controlar la interacción del personal de la entidad con sus medios y 
+
+servicios informáticos, la vía más utilizada para acceder a estos servicios, es la 
+
+identificación mediante cuentas de usuario, cuya razón principal es la de verificar la 
+
+identidad personalizada de cada individuo, así como permitir los privilegios de acceso. Por 
+
+esta razón universidades de todo el mundo aplican dichos sistemas para garantizar el 
+
+control de acceso de sus usuarios informáticos. 
+
+El presente capítulo aborda conceptos generales sobre los sistemas informáticos, los 
+
+usuarios informáticos y las cuentas de usuario. Se muestran las ventajas de las aplicaciones 
+
+web como sistema informático, así como su estructura, consideraciones técnicas y otras 
+
+características. Se resumen los aspectos generales sobre las metodologías a seguir en el 
+
+desarrollo de software. 
+
+1.1. Sistema informático 
+
+Según diversos autores se puede definir un sistema informático como: un sistema de 
+
+información que basa la parte fundamental de su procesamiento, en el empleo de la 
+
+computación, como cualquier sistema, es un conjunto de funciones interrelacionadas, 
+
+hardware, software y de Recurso Humano. Los sistemas informáticos, así como sus 
+
+diferentes tipos forman parte de los sistemas de información como muestra el esquema 
+
+jerárquico (Figura. 1.2.1), sin embargo, no todos los sistemas de información están 
+
+estrictamente constituidos por sistemas informáticos (InformaticaHoy, 2015); podemos 
+
+referirnos a un sistema informático también como: una colección de múltiples equipos que 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+5 
+
+participan en la difusión de información. El hardware, el software, las conexiones e 
+
+información del sistema informático y los usuarios del sistema de informático conforman el 
+
+sistema informático. (Techopedia, 2016) 
+
+Los sistemas informáticos son: piezas fundamentales en el desarrollo de la humanidad 
+
+actual. Tan importante es su papel hoy en día, que es prácticamente imposible pensar en 
+
+separar al ser humano de una computadora o sistema de información. Tal es la simbiosis 
+
+entre ambos que, sin estos elementos en sus manos, la Humanidad a esta altura de su 
+
+historia no podría seguir desarrollándose. (InformaticaHoy, 2015) 
+
+ 
+
+Figura. 1.2.1 Niveles de los sistemas de información.  (Mos, 2015) 
+
+Tipos de sistemas informáticos (Kimble, 2015) (Beaumont, 2012) 
+
+ Sistemas de procesamiento básico de la información: son aquellos en que las 
+
+computadoras se limitan a realizar las operaciones de procesamiento físico de la 
+
+información. Las personas que integran el sistema, asumen todas las labores de 
+
+generación de la información primaria y de análisis de información de resultados. 
+
+ Sistemas de apoyo a la toma de decisiones o Decision Support System (DDS): se 
+
+apoyan en los sistemas de procesamiento básico de la información, los que crean y 
+
+actualizan las bases de datos, que los primeros utilizan. Los DSS se destinan a la 
+
+toma de decisiones, están hechos para apoyar el trabajo individual o para las 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+6 
+
+decisiones en grupo. Ejemplo de estas decisiones son el empleo de técnicas de ruta 
+
+crítica para dirigir proyectos de construcciones. Un tipo muy importante de DSS son 
+
+los sistemas empresariales de planificación de recursos. 
+
+ Sistemas basados en la inteligencia artificial: la inteligencia artificial, es una rama 
+
+de la ciencia de la computación que busca emular las capacidades intelectuales del 
+
+ser humano, mediante el empleo de software especializado y las computadoras. 
+
+Abarca muchos campos, entre los que se encuentra la robótica, la solución general 
+
+de problemas, identificación y reconocimiento de patrones visuales, auditivos y 
+
+digitales, la simulación del movimiento, el análisis y la síntesis del lenguaje natural 
+
+y la potenciación del conocimiento humano. Representan un paso adelante en 
+
+relación con los anteriores, pueden asumir actividades más “humanas”, más activas 
+
+en los procesos de dirección, pues tiene incorporados muchos elementos que los 
+
+hacen actuar similarmente como lo haría un humano. 
+
+ Sistemas de gestión del conocimiento: es conocido que el conocimiento está 
+
+asociado a la información, pero es mucho más, el conocimiento es, desde la 
+
+perspectiva de la ciencia de la dirección, la capacidad de solucionar problemas, el 
+
+saber qué hacer, cómo hacerlo, dónde hacerlo, y para qué hacerlo. 
+
+ Sistemas basados en técnicas web: el auge en el mundo de uno de los servicios de la 
+
+Internet, el World Wide Web (W.W.W) ha hecho que surja una nueva modalidad de 
+
+sistemas a partir de la tecnología web, y en el concepto de hipertexto e hipermedia. 
+
+Los sistemas basados en la web pueden ser de uso interno, o externo ya sea para comunicar 
+
+información al entorno de la entidad (clientes, suministradores, niveles superiores, agencias 
+
+gubernamentales, público en general y otras entidades políticas o administrativas de 
+
+control). En estos casos la información que aparecerá en el sitio web estará acorde con la 
+
+misión y los objetivos de la entidad. 
+
+Estos sistemas pueden proveer una comunicación activa entre el usuario y la información, 
+
+lo que permite acceder a los datos de modo interactivo, por lo que constituyen también, 
+
+aplicaciones web. 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+7 
+
+1.2. Aplicación web 
+
+En la ingeniería de software se denomina aplicación web a: aquellas herramientas que los 
+
+usuarios pueden utilizar accediendo a un servidor web a través de Internet o de una intranet 
+
+mediante un navegador. (LifeWire, 2016). En otras palabras, es una aplicación software que 
+
+se codifica en un lenguaje soportado por los navegadores web en la que se confía la 
+
+ejecución al navegador.   
+
+Las aplicaciones web son populares debido a lo práctico del navegador web como cliente 
+
+ligero, a la independencia del sistema operativo, así como a la facilidad para actualizar y 
+
+mantener aplicaciones web sin distribuir e instalar software a miles de usuarios potenciales. 
+
+Es importante mencionar que una página web puede contener elementos que permiten una 
+
+comunicación activa entre el usuario y la información. Esto posibilita que el usuario acceda 
+
+a los datos de modo interactivo, gracias a que la página responderá a cada una de sus 
+
+acciones, como por ejemplo: rellenar y enviar formularios, participar en juegos diversos y 
+
+acceder a gestores de base de datos de todo tipo. (LifeWire, 2016) 
+
+Una aplicación web está compuesta por tres capas, las cuales son mostradas en la siguiente 
+
+figura, así como su interacción entre ellas: 
+
+ 
+
+Figura. 1.2.2 Capas lógicas de una aplicación web. 
+
+Ventajas (Magic Web Solutions, 2017) (INTERNET YA, 2014) 
+
+ Ahorra tiempo: Se pueden realizar tareas sencillas sin necesidad de descargar ni 
+
+instalar ningún programa. 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+8 
+
+ No existen problemas de compatibilidad: Basta tener un navegador actualizado para 
+
+poder utilizarlas. 
+
+ No almacenamiento en el disco duro. 
+
+ Actualizaciones inmediatas: Como el software es gestionado por el propio 
+
+desarrollador, al hacer uso del mismo el usuario obtiene la última versión lanzada. 
+
+ Bajo consumo de recursos: Dado que toda (o gran parte) de la aplicación no se 
+
+encuentra en el ordenador, muchas de las tareas que realiza el software no 
+
+consumen recursos porque se realizan desde otro ordenador. 
+
+ Multiplataforma: Se pueden usar desde cualquier sistema operativo porque sólo es 
+
+necesario tener un navegador. 
+
+ Portables: Es independiente del ordenador donde se utilice (un PC de sobremesa, un 
+
+portátil, etc.) porque se accede a través de una página web (sólo es necesario 
+
+disponer de acceso a Internet). La reciente tendencia al acceso a las aplicaciones 
+
+web a través de teléfonos móviles requiere sin embargo un diseño específico de los 
+
+ficheros CSS para no dificultar el acceso de estos usuarios. 
+
+ Alta disponibilidad: Suele ser alta porque el servicio se ofrece desde múltiples 
+
+localizaciones para asegurar la continuidad del mismo. 
+
+ Libre de virus: No dañan los datos porque éstos están guardados en el servidor de la 
+
+aplicación. 
+
+ Colaboración: Gracias a que el acceso al servicio se realiza desde una única 
+
+ubicación es sencillo el acceso y compartición de datos por parte de varios usuarios. 
+
+Tiene mucho sentido, por ejemplo, en aplicaciones en línea de calendarios u oficina. 
+
+ Compatibilidad: Los navegadores ofrecen cada vez más y mejores funcionalidades 
+
+para crear Aplicaciones de Internet Enriquecidas (Rich Internet Applications, RIAs). 
+
+Desventajas 
+
+ Habitualmente ofrecen menos funcionalidades que las aplicaciones de escritorio. Se 
+
+debe a que las funcionalidades que se pueden realizar desde un navegador son más 
+
+limitadas que las que se pueden realizar desde el sistema operativo. Pero cada vez 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+9 
+
+los navegadores están más preparados para mejorar en este aspecto. La aparición de 
+
+HTML 5 del inglés (HyperText Markup Language) representa un hito en este 
+
+sentido. Es posible añadir funcionalidades a estas aplicaciones gracias al uso de 
+
+Aplicaciones de Internet Enriquecidas. 
+
+ La disponibilidad depende de un tercero, el proveedor de la conexión a internet o el 
+
+que provee el enlace entre el servidor de la aplicación y el cliente. Así que la 
+
+disponibilidad del servicio está supeditada al proveedor. 
+
+Estructura 
+
+Aunque existen gran cantidad de variaciones posibles, una aplicación web está 
+
+normalmente estructurada como una aplicación de tres capas (Figura 1.2.3). En su forma 
+
+más común, el navegador web constituye la primera capa, al interpretar el código. El 
+
+servidor que ofrece este código y toda la información es la segunda capa. Por último, una 
+
+base de datos constituye la tercera y última capa. 
+
+El navegador web envía peticiones a la capa intermedia, la cual ofrece servicios valiéndose 
+
+de consultas y actualizaciones a la base de datos y, a su vez, proporciona una interfaz de 
+
+usuario. 
+
+ 
+
+Figura. 1.2.3 Distribución de los leguajes y tecnologías en las capas de una aplicación web. 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+10 
+
+1.2.1 Capa del navegador 
+
+Son muy utilizados lenguajes o arquitecturas que no son propiamente lenguajes de 
+
+programación, con la intención de ofrecer los datos adecuados a las necesidades del 
+
+usuario, en función de cómo hayan sido definidos por el propietario de la aplicación. 
+
+Los desarrolladores web generalmente utilizan lenguajes interpretados (scripts) en el lado 
+
+del cliente para añadir más funcionalidades, especialmente para ofrecer una experiencia 
+
+interactiva que no requiera recargar la página cada vez (lo que suele resultar molesto a los 
+
+usuarios).  
+
+En esta capa se encuentran tecnologías como: HTML, XHTML, CSS y JavaScript. Las 
+
+aplicaciones web en su totalidad usan estas tecnologías, cuyas funcionalidades no son 
+
+reemplazadas por otras.  
+
+1.2.2 Capa del servidor 
+
+Existen numerosos lenguajes de programación empleados para el desarrollo de aplicaciones 
+
+web en el servidor, como: PHP, Java (tecnologías Java Servlets y JavaServer Pages), 
+
+Javascript en su modalidad SSJS: Server Side Javascript (Javascript del lado del servidor), 
+
+Perl, Ruby, Python, C# y Visual Basic con sus tecnologías ASP/ASP.NET. 
+
+El autor del presente trabajo realizó un estudio detallado sobre aquellos que ofrecen mayor 
+
+flexibilidad y ventajas de acuerdo a las condiciones donde se aplicará la solución propuesta 
+
+y tuvo en cuenta los recursos disponibles.  
+
+Server Side Javascript 
+
+JavaScript no está limitado sólo a los navegadores web, en realidad puede correr en 
+
+cualquier ambiente que tenga instalado el intérprete para sus instrucciones (también 
+
+conocido como motor). Esta flexibilidad ha hecho que a partir del año 2000 haya una 
+
+creciente proliferación de implementaciones de Javascript en el lado del servidor, donde 
+
+Node.js es una de las más populares.  (Mozilla Developer Network and individual 
+
+contributors, 2016) 
+
+Ejecutar JavaScript en el servidor también significa que las mismas instrucciones que se 
+
+usan para construir la interfaz de una aplicación web pueden usarse para construir el núcleo 
+
+del sistema, la interacción con la capa de datos y de lógica del negocio. 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+11 
+
+Node.js es una plataforma para el desarrollo de aplicaciones escalables construida sobre el 
+
+intérprete de JavaScript de Google Chrome y puede ejecutarse en Windows, Linux o Mac 
+
+OS X sin cambiar una línea de código. 
+
+Su diseño está enfocado en maximizar el rendimiento y la eficiencia. El sistema de 
+
+comunicación no bloqueante y los eventos asíncronos lo convierten en una opción ideal 
+
+para el desarrollo de aplicaciones que manejan datos en tiempo real o de cómputo 
+
+intensivo. 
+
+Se puede plantear que Node.js es un framework que trabaja sobre JavaScript que 
+
+proporciona herramientas para poder construir desde aplicaciones web hasta programas de 
+
+cómputo intensivo.  
+
+ASP.NET 
+
+ASP.NET es un modelo de desarrollo web unificado que incluye los servicios necesarios 
+
+para crear aplicaciones web empresariales con el código mínimo. ASP.NET forma parte de 
+
+.NET Framework y al codificar las aplicaciones ASP.NET tiene acceso a las clases en 
+
+.NET Framework. El código de las aplicaciones puede escribirse en cualquier lenguaje 
+
+compatible con el Common Language Runtime (CLR), entre ellos Microsoft Visual Basic, 
+
+C#, JScript .NET y J#. Dichos lenguajes permiten desarrollar aplicaciones ASP.NET que se 
+
+benefician del Common Language Runtime, seguridad de tipos, herencia, etc. (Microsoft, 
+
+2017) 
+
+Características 
+
+ Marco de trabajo de página y controles. 
+
+ Compilador de ASP.NET. 
+
+ Infraestructura de seguridad. 
+
+ Funciones de administración de estado. 
+
+ Configuración de la aplicación. 
+
+ Supervisión de estado y características de rendimiento. 
+
+ Capacidad de depuración. 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+12 
+
+ Marco de trabajo de servicios web XML. 
+
+ Entorno de host extensible y administración del ciclo de vida de las aplicaciones. 
+
+ Entorno de diseñador extensible. 
+
+PHP 
+
+PHP (acrónimo recursivo de PHP: Hypertext Preprocessor) es un lenguaje de código 
+
+abierto muy popular especialmente adecuado para el desarrollo web y que puede ser 
+
+incrustado en HTML. (The PHP Group, 2017) 
+
+Lo que distingue a PHP de un lenguaje del lado del cliente como Javascript es que el 
+
+código es ejecutado en el servidor, lo que genera código HTML que se envía al cliente. El 
+
+cliente recibirá el resultado de ejecutar el script, aunque no se conocerá el código 
+
+subyacente que era. El servidor web puede ser configurado incluso para que procese todos 
+
+los archivos HTML con PHP, por lo que no hay manera de que los usuarios puedan saber 
+
+qué contiene el archivo original. 
+
+PHP se caracteriza por una extrema simplicidad para los principiantes, pero a su vez ofrece 
+
+características avanzadas a los programadores profesionales. 
+
+Características 
+
+ Orientado al desarrollo de aplicaciones web dinámicas con acceso a información 
+
+almacenada en una base de datos. 
+
+ El código fuente escrito en PHP es invisible al navegador web y al cliente, ya que es 
+
+el servidor el que se encarga de ejecutar el código y enviar su resultado HTML al 
+
+navegador. 
+
+ Capacidad de conexión con la mayoría de los motores de base de datos que se 
+
+utilizan en la actualidad, destaca su conectividad con MySQL y PostgreSQL. 
+
+ Posee una amplia documentación en su sitio web oficial, entre la cual se destaca que 
+
+todas las funciones del sistema están explicadas y ejemplificadas en un único 
+
+archivo de ayuda. 
+
+ Es libre, por lo que se presenta como una alternativa de fácil acceso para todos. 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+13 
+
+ Debido a su flexibilidad ha tenido una gran acogida como lenguaje base para las 
+
+aplicaciones web de manejo de contenido, y es su uso principal. 
+
+1.2.3 Capa de persistencia 
+
+La capa de persistencia constituye el soporte para el almacenamiento de la información. Es 
+
+posible utilizar diferentes bases de datos para este propósito como: Cassandra, CouchBase, 
+
+Datomic, Firebase, InfluxDB, MariaDB, Memcached, mnesia, MongoDB, MySQL, Oracle 
+
+Database, PostgreSQL, SQLite, SqlServer, entre otras. A continuación de describen en 
+
+detalles algunas, consideradas por el autor del presente trabajo como posibles candidatas 
+
+para la construcción de la aplicación web. 
+
+MySQL 
+
+Es un sistema de gestión de bases de datos relacional desarrollado bajo licencia dual 
+
+GPL/Licencia comercial por Oracle Corporation y está considerada como la base datos de 
+
+código abierto (open source) más popular del mundo, y una de las más populares en 
+
+general junto a Oracle y Microsoft SQL Server, sobre todo para entornos de desarrollo web.  
+
+(Oracle Corporation, 2017) 
+
+Está desarrollado en su mayor parte en ANSI C y C++. Tradicionalmente se considera uno 
+
+de los cuatro componentes de la pila de desarrollo LAMP y WAMP. 
+
+MySQL es usado por muchos sitios web grandes y populares, como Google (aunque no 
+
+para búsquedas), Facebook, Twitter, Flickr, y YouTube.  
+
+Características 
+
+ Amplio subconjunto del lenguaje SQL. Algunas extensiones son incluidas 
+
+igualmente. 
+
+ Disponibilidad en gran cantidad de plataformas y sistemas. 
+
+ Posibilidad de selección de mecanismos de almacenamiento que ofrecen diferentes 
+
+velocidades de operación, soporte físico, capacidad y distribución geográfica. 
+
+ Conectividad segura. 
+
+ Replicación. 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+14 
+
+ Búsqueda e indexación de campos de texto. 
+
+Características distintivas 
+
+ Permite escoger entre múltiples motores de almacenamiento para cada tabla. 
+
+ Agrupación de transacciones, que reúne múltiples transacciones de varias 
+
+conexiones para incrementar el número de transacciones por segundo. 
+
+Microsoft SQL Server 
+
+Es un sistema de gestión de bases de datos relacionales en inglés Relational database 
+
+management system (RDBMS) de Microsoft que está diseñado para el entorno empresarial. 
+
+Microsoft SQL Server se ejecuta en T-SQL (Transact -SQL), un conjunto de extensiones de 
+
+programación de Sybase y Microsoft que añaden varias características a SQL estándar, 
+
+incluyendo control de transacciones, excepción y manejo de errores, procesamiento fila, así 
+
+como variables declaradas.  (Microsoft, 2017) 
+
+Características 
+
+ Soporte de transacciones. 
+
+ Soporta procedimientos almacenados. 
+
+ Incluye también un entorno gráfico de administración, que permite el uso de 
+
+comandos DDL y DML gráficamente. 
+
+ Permite trabajar en modo cliente-servidor, donde la información y datos se alojan en 
+
+el servidor y los terminales o clientes de la red sólo acceden a la información. 
+
+ Además, permite administrar información de otros servidores de datos. 
+
+Este sistema incluye una versión reducida, llamada MSDE con el mismo motor de base de 
+
+datos, pero orientado a proyectos más pequeños, que en sus versiones 2005 y 2008 pasa a 
+
+ser el SQL Express Edition, que se distribuye en forma gratuita. 
+
+Es común desarrollar proyectos completos mediante el empleo de Microsoft SQL Server y 
+
+Microsoft Access a través de los llamados ADP (Access Data Project). De esta forma se 
+
+completa la base de datos (Microsoft SQL Server), con el entorno de desarrollo (VBA 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+15 
+
+Access), a través de la implementación de aplicaciones de dos capas mediante el uso de 
+
+formularios Windows.  
+
+Para el desarrollo de aplicaciones más complejas (tres o más capas), Microsoft SQL Server 
+
+incluye interfaces de acceso para varias plataformas de desarrollo, entre ellas .NET. 
+
+MongoDB 
+
+Dentro de las bases de datos NoSQL, probablemente una de las más famosas sea 
+
+MongoDB; con un concepto muy diferente al de las bases de datos relacionales.  
+
+(MongoDB, Inc., 2017) 
+
+MongoDB es una base de datos orientada a documentos. Esto significa que, en lugar de 
+
+guardar los datos en registros, guarda los datos en documentos. Estos documentos son 
+
+almacenados en BSON, que es una representación binaria de JSON. 
+
+Una de las diferencias más importantes con respecto a las bases de datos relacionales, es 
+
+que no es necesario seguir un esquema. Los documentos de una misma colección (concepto 
+
+similar a una tabla de una base de datos relacional) pueden tener esquemas diferentes. 
+
+Características 
+
+ Consultas Ad hoc: Soporta la búsqueda por campos, consultas de rangos y 
+
+expresiones regulares. Las consultas pueden devolver un campo específico del 
+
+documento, pero también puede ser una función JavaScript definida por el usuario. 
+
+ Indexación: Cualquier campo en un documento de MongoDB puede ser indexado, 
+
+al igual que es posible hacer índices secundarios. El concepto de índices en 
+
+MongoDB es similar a los encontrados en base de datos relacionales. 
+
+ Replicación: Soporta el tipo de replicación primario-secundario. Cada grupo de 
+
+primario y sus secundarios se denomina replica set. El primario puede ejecutar 
+
+comandos de lectura y escritura. Los secundarios replican los datos del primario y 
+
+sólo se pueden usar para lectura o para copia de seguridad, pero no se pueden 
+
+realizar escrituras. Los secundarios tienen la habilidad de poder elegir un nuevo 
+
+primario en caso de que el primario actual deje de responder. 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+16 
+
+ Almacenamiento de archivos: Puede ser utilizado como un sistema de archivos, 
+
+tomando la ventaja de la capacidad que tiene MongoDB para el balance de carga y 
+
+la replicación de datos al utilizar múltiples servidores para el almacenamiento de 
+
+archivos. Esta función se llama GridFS y es más bien una implementación en los 
+
+controladores (drivers), no en el servidor, por lo que está incluida en los drivers 
+
+oficiales que la compañía de MongoDB desarrolla. Estos, exponen funciones y 
+
+métodos para la manipulación de archivos y contenido a los desarrolladores. En un 
+
+sistema con múltiples servidores, los archivos pueden ser distribuidos y replicados 
+
+entre los mismos y de una forma transparente, de esta forma se crea un sistema 
+
+eficiente que maneja fallos y balance de carga. 
+
+ Agregación: Proporciona un framework de agregación que permite realizar 
+
+operaciones similares a las que se obtienen con el comando SQL "GROUP BY". El 
+
+framework de agregación está construido como un pipeline en el que los datos se 
+
+pasan a través de diferentes etapas en los cuales estos datos son modificados, 
+
+agregados, filtrados y formateados hasta obtener el resultado deseado. Todo este 
+
+procesado es capaz de utilizar índices si existieran y se produce en memoria. 
+
+Asimismo, MongoDB proporciona una función MapReduce que puede ser utilizada 
+
+para el procesamiento por lotes de datos y operaciones de agregación. 
+
+ Ejecución de JavaScript del lado del servidor: Tiene la capacidad de realizar 
+
+consultas al utilizar JavaScript y hacer que estas sean enviadas directamente a la 
+
+base de datos para ser ejecutadas. 
+
+1.3. Metodología de desarrollo de software 
+
+La metodología que se utiliza para el análisis y modelado de los procesos de desarrollo de 
+
+software es el Proceso Racional Unificado (Rational Unified Process, RUP). Este proceso 
+
+de desarrollo de software, unido al Lenguaje Unificado de Modelado (UML acrónimo del 
+
+inglés Unified Modeling Language), constituye la metodología estándar más utilizada en la 
+
+actualidad para el análisis, implementación y documentación de sistemas orientados a 
+
+objetos. 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+17 
+
+RUP no es un sistema con pasos firmemente establecidos, sino un conjunto de 
+
+metodologías adaptables al contexto y necesidades de cada organización.  (Tech Terms, 
+
+2017) 
+
+UML es un estándar que se ha adoptado a nivel internacional por numerosos organismos y 
+
+empresas para crear esquemas, diagramas y documentación relativa a los desarrollos de 
+
+software.  (Object Management Group, Inc., 2017) 
+
+1.4. Usuarios informáticos y cuentas de usuario 
+
+Se define a los usuarios informáticos a estos como el personal de la empresa que requiere 
+
+un soporte informático que verifique su identidad para acceder a los medios y servicios 
+
+informáticos de dicha empresa. El soporte informático más común para realizar esta tarea 
+
+es la cuenta de usuario. (Computer Hope, 2015) 
+
+Existen varias definiciones o enfoques para las cuentas de usuario. Se puede referir a una 
+
+cuenta de usuario como: una colección de información que indica al sistema operativo los 
+
+archivos y carpetas a los que puede tener acceso un determinado usuario del equipo, los 
+
+cambios que puede realizar en él y sus preferencias personales. En este caso se trata de las 
+
+cuentas de usuario de un equipo local. (Coursera Inc., 2017) (Computer Hope, 2015) 
+
+Una cuenta de usuario también puede proveer acceso a diferentes servicios y recursos en la 
+
+red, esto se logra al almacenar la información de los usuarios y equipos en una estructura 
+
+accesible, que los identifica y valida, conocida como servicios de directorio, de los cuales el 
+
+Directorio Activo es el más utilizado. 
+
+El Directorio Activo es un servicio de directorio que almacena información acerca de los 
+
+usuarios, equipos y recursos de red y permite el acceso a estos por parte de los usuarios. 
+
+Asimismo, proporciona una forma coherente de asignar nombres, describir, localizar, 
+
+administrar y proteger la información de estos recursos.  (Microsoft, 2017) 
+
+Toda cuenta de usuario en su mayoría está compuesta por un nombre de usuario y una 
+
+contraseña. 
+
+El nombre de usuario desde el punto de vista del sistema, es la respuesta a la pregunta 
+
+"¿quién es usted?", como tal, los nombres de usuarios tienen un requerimiento principal, 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+18 
+
+deben ser únicos, en otras palabras, cada usuario debe tener un nombre de usuario que sea 
+
+diferente a todos los otros usuarios en ese sistema. 
+
+Debido a este requerimiento, es vital determinar por adelantado cómo se crean los nombres 
+
+de usuario, de lo contrario, puede encontrarse en la posición de ser forzado a reaccionar 
+
+cada vez que un nuevo usuario solicita una cuenta. Lo que se necesita es una convención de 
+
+nombres para sus cuentas de usuario. 
+
+La creación de un convenio de nombres evita tener que crear un nombre razonable para 
+
+cada nuevo usuario que se cree. 
+
+La naturaleza exacta del convenio de nombres debe tomar varios factores en cuenta: 
+
+ El tamaño de la organización. 
+
+ La estructura de la organización. 
+
+ La naturaleza de la organización. 
+
+Si el nombre de usuario responde a la pregunta "¿Quién es usted?", la contraseña es la 
+
+respuesta a la pregunta que inevitablemente sigue: "Demuéstrelo" 
+
+En términos más prácticos, una contraseña proporciona una forma de probar la autenticidad 
+
+de la persona que dice ser el usuario con ese nombre de usuario. La efectividad de un 
+
+esquema basado en contraseñas recae en gran parte sobre varios aspectos de la contraseña: 
+
+ La confidencialidad de la contraseña. 
+
+ La resistencia de adivinar la contraseña. 
+
+ La resistencia de la contraseña ante un ataque de fuerza bruta. 
+
+Las contraseñas que efectivamente toman en cuenta estos problemas se conocen como: 
+
+contraseñas robustas, mientras que aquellas que no, se les llama: débiles. Es importante 
+
+para la seguridad de la organización crear contraseñas robustas, mientras más robustas sean 
+
+las contraseñas, hay menos chances de que estas sean descubiertas o que se adivinen. Hay 
+
+dos opciones disponibles para reforzar el uso de contraseñas robustas: 
+
+ El administrador del sistema puede crear contraseñas para todos los usuarios. 
+
+
+
+CAPÍTULO 1. SISTEMAS PARA LA GESTIÓN Y CONTROL DE LAS CUENTAS DE USUARIO 
+19 
+
+ El administrador del sistema puede dejar que los usuarios creen sus propias 
+
+contraseñas, a la vez que se verifica que las contraseñas sean lo suficientemente 
+
+robustas. 
+
+Al crear contraseñas para todos los usuarios asegura que estas sean robustas, pero se vuelve 
+
+una tarea pesada a medida que crece la organización. También incrementa el riesgo de que 
+
+los usuarios escriban sus contraseñas. 
+
+Por estas razones, la mayoría de los administradores de sistemas prefieren dejar que los 
+
+propios usuarios creen sus contraseñas. Sin embargo, un buen administrador de sistemas 
+
+tomará los pasos adecuados para verificar que las contraseñas sean robustas. 
+
+1.5. Conclusiones parciales del capítulo 
+
+La bibliografía consultada demuestra que las aplicaciones web por las ventajas que poseen 
+
+resultan ser, una opción factible a utilizar para la gestión de contenidos dentro de los 
+
+diferentes tipos de sistemas informáticos. 
+
+Luego del análisis de las tecnologías a utilizar para la creación de una aplicación web, se 
+
+concluye que existe una gran variedad de ellas, cada una con sus particularidades, que 
+
+ofrecen ventajas o desventajas de acuerdo a las necesidades y características del sistema a 
+
+desarrollar. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+20 
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+
+El desarrollo de una aplicación web requiere un análisis cuidadoso de la metodología y 
+
+tecnologías a aplicar. Se deben tener en cuenta las necesidades de la institución donde se 
+
+implementará, para dar solución a estas eficientemente, con las funcionalidades de la 
+
+aplicación. El uso de herramientas libres es un aspecto importante a tener en cuenta porque 
+
+garantiza la sustentabilidad y portabilidad del proyecto, además de seguir la política trazada 
+
+por el país de migración hacia plataformas de Software Libre. 
+
+El presente capítulo ofrece un breve análisis del proceso actual para la creación de cuentas 
+
+de usuario en la Universidad Central “Marta Abreu” de Las Villas (UCLV). Y a 
+
+continuación, se hace un estudio de los requisitos necesarios para la construcción de la 
+
+aplicación, la selección de la tecnologías y herramientas a emplear, así como el proceso de 
+
+modelación de la misma; este último constituye un factor importante en las actividades que 
+
+conducen al desarrollo de un buen software porque permite comprender mejor el sistema y 
+
+facilita su simplificación y análisis. 
+
+El uso de la herramienta Visual Paradigm, un software profesional para modelado UML, 
+
+hizo posible el análisis y diseño de la aplicación con la calidad y las características 
+
+requeridas. 
+
+2.1 Situación actual del proceso de creación de cuentas de usuario en la UCLV 
+
+En la UCLV el proceso de creación de cuentas de usuario está dividido en dos etapas 
+
+(Figura 2.1.1) y utiliza como fuente de datos los registros de estudiantes y trabajadores de 
+
+dicha universidad. Los registros de estudiantes son proporcionados por el Sistema de 
+
+Gestión para la Nueva Universidad (SIGENU) y los de trabajadores por el sistema ASSET 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+21 
+
+(Sistema presente en las universidades de todo el país para la gestión de personal docente y 
+
+no docente). 
+
+ 
+
+Figura 2.1.1. Diagrama del proceso de creación de cuentas de usuario en la UCLV. 
+
+En la primera etapa del proceso se exporta del SIGENU los registros de estudiantes 
+
+ordenados por facultad y especialidad a un archivo de texto en formato CSV. Sin embargo, 
+
+este primer paso no se puede realizar de igual forma con el ASSET, porque este sistema no 
+
+posee dicha funcionalidad, por lo es necesario imprimir los listados de trabajadores para 
+
+posteriormente procesarlos. 
+
+En la segunda etapa se procede a insertar en el Directorio Activo los registros de 
+
+estudiantes y trabajadores. En esta etapa se hace un tratamiento diferente para cada fuente 
+
+de datos: ASSET y SIGENU. 
+
+Los registros de estudiantes que previamente se han exportado a un archivo en formato 
+
+CSV son insertados en el Directorio Activo mediante la utilización de un script que analiza 
+
+el archivo y genera una cuenta de usuario para cada registro de estudiante al tener en 
+
+consideración su nombre y apellidos, dicho script también analiza la facultad y especialidad 
+
+para su correcta ubicación en el directorio. 
+
+Para la creación de las cuentas de los trabajadores se entrega el listado impreso en formato 
+
+duro al personal administrativo pertinente y de manera manual son agregadas las cuentas de 
+
+usuario al Directorio Activo. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+22 
+
+Este proceso de creación de cuentas de usuario puede tomar un largo período de tiempo 
+
+hasta su culminación, lo que en ocasiones provoca inconformidades. También está expuesto 
+
+a errores humanos debido a que gran parte de este se realiza de forma manual.  
+
+2.2 Selección de las tecnologías y herramientas 
+
+La adecuada selección de las tecnologías y herramientas a emplear garantiza el buen 
+
+funcionamiento y desempeño del sistema a desarrollar por lo que se seleccionaron 
+
+cuidadosamente cada una de ellas. 
+
+2.2.1 Capa del navegador 
+
+En esta capa se utilizarán las tecnologías estándar para el desarrollo de páginas web en el 
+
+navegador, como son: HTML (versión 5, HTML5), CSS (versión 3, CSS3) y JavaScript 
+
+que constituyen la base de diseño y estructura de la aplicación. 
+
+2.2.2 Capa del servidor 
+
+En la capa del servidor se decide utilizar el lenguaje de programación PHP por las ventajas 
+
+que ofrece como: ser multiplataforma, de código abierto, tener gran comunidad y ser rápido 
+
+y eficiente en relación con otras tecnologías. Al tener en cuenta estas características el autor 
+
+considera que resulta ser la opción más recomendada a utilizar como lenguaje del lado del 
+
+servidor para la construcción de la aplicación web y dentro de sus versiones la 5 será la 
+
+empleada debido a su estabilidad y rendimiento como muestra la Figura 2.2.1. A 
+
+continuación, la Figura 2.2.2 muestra los principales lenguajes empleados del lado del 
+
+servidor, donde PHP tiende a ser el más usado por los desarrolladores. 
+
+ 
+
+Figura 2.2.1. Porcientos de uso de las diferentes versiones de PHP.  (W3techs, 2017) 
+
+ 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+23 
+
+ 
+
+Figura 2.2.2. Porcientos de uso de los lenguajes del lado del servidor.  (W3techs, 2017) 
+
+2.2.3 Capa de persistencia 
+
+Analizadas las posibles variantes a utilizar como base de datos principal de la aplicación 
+
+web, el autor decide elegir el sistema de gestión de base de datos: MongoDB, que posee 
+
+excelentes velocidades de acceso y escritura de datos y al tener                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
+en cuenta que la aplicación almacenará datos provenientes de diversas fuentes, con 
+
+esquemas y estructuras de tablas diferentes, características que MongoDB maneja de 
+
+manera eficiente. Las tablas del Anexo 1 y Anexo 2 evidencian sus ventajas de uso en 
+
+relación a otras tecnologías de bases de datos. 
+
+2.3 Descripción de los requerimientos 
+
+Como parte del proceso de desarrollo de un software es de gran importancia la 
+
+identificación de los requerimientos, estos se dividen en funcionales y no funcionales. Se 
+
+puede decir que los requerimientos son propiedades características que hacen al producto 
+
+atractivo, usable, rápido, confiable y condicionan el éxito del mismo.  
+
+Se realizó un análisis los requerimientos funcionales y no funcionales del sitio para 
+
+garantizar que todos son posibles de implementar. 
+
+2.3.1 Requerimientos funcionales de la aplicación web 
+
+1. La aplicación debe ser capaz de conectarse con el sistema SIGENU y el sistema 
+
+ASSET para unificar los registros de estudiantes y trabajadores en una misma base de 
+
+datos. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+24 
+
+2. La aplicación debe poseer privilegios de lectura y escritura en el Directorio Activo 
+
+para crear las cuentas de usuario correspondientes a los registros de estudiantes y 
+
+trabajadores. 
+
+3. El sistema debe implementar adecuadas políticas de seguridad y privacidad (Este 
+
+requisito impone una funcionalidad que será la autenticación de los usuarios). 
+
+4. Un usuario anónimo debe ser capaz de cambiar su contraseña mediante un método 
+
+de recuperación. 
+
+5. La aplicación debe tener una interfaz gráfica que le permita a los usuarios acceder 
+
+al sistema. 
+
+6. Los usuarios deben ser capaces de cambiar su contraseña.  
+
+7. Los usuarios deben ser capaces de modificar su configuración. 
+
+8. Los usuarios que ya poseen cuentas en el Directorio Activo deben ser capaces de 
+
+vincular su cuenta para preservar su nombre de usuario. 
+
+9. Los administradores deben tener acceso a gestionar las cuentas usuarios (este 
+
+requisito impone los casos de uso: Buscar usuario, Cambiar contraseña por 
+
+administrador, Habilitar usuario, Deshabilitar usuario y Restablecer configuración de 
+
+usuario). 
+
+10. Los administradores deben tener acceso a visualizar el listado de eventos que 
+
+suceden en la aplicación. 
+
+11. Los administradores deben tener acceso a exportar un reporte con el listado de 
+
+las cuentas de usuario creadas. 
+
+2.3.2 Requerimientos no funcionales de la aplicación web 
+
+1. La aplicación debe ser accesible desde la red universitaria. 
+
+2. La interfaz debe ser intuitiva y fácil de usar por usuarios y administradores. 
+
+3. La interfaz debe implementar una arquitectura de diseño adaptable para diferentes 
+
+resoluciones y dispositivos. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+25 
+
+4. La aplicación debe ser compatible con la mayoría de los navegadores web y sus 
+
+versiones antiguas. 
+
+5. La aplicación debe ser capaz de correr sobre cualquier servidor web de las 
+
+diferentes distribuciones de Linux. 
+
+6. La conexión con el servidor donde se aloja aplicación se debe realizar a través una 
+
+conexión segura, mediante el uso de certificados SSL emitidos por una entidad 
+
+certificadora de autoridad. 
+
+2.4 Descripción de los actores del sistema 
+
+Se considera un Actor del Sistema todo aquello que interactúe e intercambie información 
+
+con la aplicación, el cual representa el Rol que desempeña una o varias, un equipo o un 
+
+sistema automatizado y además intercambia información con él o ser recipientes pasivos de 
+
+información (Ivar Jacobson, 2004). A continuación, se definen los siguientes actores y sus 
+
+funcionalidades:  
+
+Sistema SIGENU: Este actor representa el sistema de gestión de base de datos PostgreSQL 
+
+del SIGENU que proporciona los registros de estudiantes. 
+
+Sistema ASSET: Este actor representa el sistema de gestión de base de datos Microsoft 
+
+SQL Server del ASSET que proporciona los registros de trabajadores. 
+
+Sistema de Directorio Activo: Este actor representa el servicio de directorio que almacena 
+
+información acerca de los usuarios, equipos y recursos de red en la UCLV. 
+
+Usuario anónimo: Está representado por usuarios que aún no se han autenticado en el 
+
+sistema. 
+
+Usuario registrado: Todos los usuarios que se autentiquen en el sistema se verán 
+
+representados por este actor. Estos tienen acceso a las funcionalidades de la aplicación que 
+
+se encuentran disponibles para las cuentas de usuario generadas a partir de los registros de 
+
+estudiantes y trabajadores, como son el cambio de su contraseña y preferencias. 
+
+Administrador: Estos poseen todos los privilegios del sistema y tienen todas las 
+
+funcionalidades del usuario registrado, además de las administrativas como son: editar la 
+
+información y configuración de los usuarios, habilitar o deshabilitar sus cuentas, cambiar 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+26 
+
+sus contraseñas, acceder al registro de eventos del sistema y modificar las configuraciones 
+
+propias de la aplicación. 
+
+Los distintos tipos de diagramas del sitio ayudan a la comprensión del funcionamiento del 
+
+mismo. A continuación, se presenta en las (Figura 2.5.1; 2; 3) el diagrama de casos de uso. 
+
+2.5 Diagramas de casos de uso 
+
+Un diagrama de casos de uso describe las relaciones entre los requisitos, los usuarios y los 
+
+componentes principales. Todos los casos de uso juntos constituyen el modelo de casos de 
+
+uso, el cual describe la funcionalidad total del sistema. (Ivar Jacobson, 2004). 
+
+ 
+
+Figura 2.5.1. Diagrama de casos de uso para los actores: Sistema SIGENU, Sistema ASSET 
+
+y Sistema de Directorio Activo. 
+
+ 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+27 
+
+ 
+
+Figura 2.5.2. Diagrama de casos de uso para los actores: Usuario anónimo y Usuario 
+
+registrado. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+28 
+
+ 
+
+Figura 2.5.3. Diagrama de casos de uso para el actor Administrador. 
+
+A continuación, se describen los casos de uso presentes en el sistema que muestran las 
+
+funcionalidades del mismo. 
+
+2.6 Descripción de los casos de uso del sistema 
+
+Un caso de uso es: una descripción de los pasos o las actividades que deberán realizarse 
+
+para llevar a cabo algún proceso. Estos representan la interacción típica entre el usuario y el 
+
+sistema informático. Los personajes o entidades que participarán en un caso de uso se 
+
+denominan actores, como se definieron anteriormente (Ivar Jacobson, 2004).  
+
+Tabla 2.1 Descripción del caso de uso: Unificar registros de estudiantes y trabajadores. 
+
+Caso de uso Unificar registros de estudiantes y trabajadores 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+29 
+
+Actores Sistema SIGENU y Sistema ASSET 
+
+Propósito Unificar los registros de estudiantes y trabajadores en una sola base 
+
+de datos. 
+
+Resumen El caso de uso comienza cuando la aplicación se conecta al sistema 
+
+SIGENU y al sistema ASSET para obtener los registros de 
+
+estudiantes y trabajadores respectivamente. 
+
+Tabla 2.2 Descripción del caso de uso: Crear cuentas de usuario. 
+
+Caso de uso Crear cuentas de usuario 
+
+Actores Sistema de Directorio Activo 
+
+Propósito Crear una cuenta de usuario para cada registro de estudiante y 
+
+trabajador en la base de datos de la aplicación. 
+
+Resumen El caso de uso comienza cuando la aplicación procesa los registros 
+
+de estudiantes y trabajadores, creando para cada uno de estos una 
+
+cuenta de usuario en el Directorio Activo. 
+
+Tabla 2.3 Descripción del caso de uso: Autenticar usuario. 
+
+Caso de uso Autenticar usuario 
+
+Actores Usuario anónimo 
+
+Propósito Acceder a la aplicación 
+
+Resumen El caso de uso comienza cuando el usuario introduce sus datos 
+
+correspondientes en el formulario para acceder al sitio. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+30 
+
+Tabla 2.4 Descripción del caso de uso: Cambiar contraseña a través de un método de 
+
+recuperación. 
+
+Caso de uso Cambiar contraseña a través de un método de recuperación 
+
+Actores Usuario anónimo 
+
+Propósito Cambiar la contraseña 
+
+Resumen El caso de uso comienza cuando el usuario necesita cambiar su 
+
+contraseña, pero ha olvidado la misma. Necesitará proporcionarle al 
+
+sistema su nombre de usuario y validar su método de recuperación 
+
+para cambiarla. 
+
+ 
+
+Tabla 2.5 Descripción del caso de uso: Vincular cuenta. 
+
+Caso de uso Vincular cuenta 
+
+Actores Usuario registrado y Administrador 
+
+Propósito Vincular la cuenta del usuario 
+
+Resumen El caso de uso comienza cuando el usuario introduce su carnet de 
+
+identidad en la sección de vinculación y verifica que se su 
+
+información es correcta.  
+
+Tabla 2.6 Descripción del caso de uso: Cambiar contraseña. 
+
+Caso de uso Cambiar contraseña 
+
+Actores Usuario registrado y Administrador 
+
+Propósito Cambiar la contraseña del usuario 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+31 
+
+Resumen El caso de uso comienza cuando el usuario accede a la sección de 
+
+cambio de contraseña. 
+
+Tabla 2.7 Descripción del caso de uso: Establecer método de recuperación. 
+
+Caso de uso Establecer método de recuperación 
+
+Actores Usuario registrado y Administrador 
+
+Propósito Proporcionar un método para recuperar la contraseña 
+
+Resumen El caso de uso comienza cuando el usuario accede a su 
+
+configuración y define una de las opciones: PIN o preguntas de 
+
+seguridad como método de verificación alternativo para cambiar su 
+
+contraseña en caso de extraviarla. 
+
+Tabla 2.8 Descripción del caso de uso: Habilitar el recordatorio de expiración de la 
+
+contraseña. 
+
+Caso de uso Habilitar el recordatorio de expiración de la contraseña 
+
+Actores Usuario registrado, Administrador 
+
+Propósito Indicarle al sistema que el usuario desea recibir una notificación 
+
+cuando su contraseña esté a punto de expirar. 
+
+Resumen El caso de uso comienza cuando el usuario entra a su configuración 
+
+y activa la opción “Notificación de Expiración”. Con esta 
+
+preferencia establecida el sistema enviará una notificación vía correo 
+
+electrónico al usuario siete días antes de que su contraseña expire. 
+
+Tabla 2.9 Descripción del caso de uso: Buscar usuario. 
+
+Caso de uso Buscar usuario 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+32 
+
+Actores Administrador 
+
+Propósito Buscar un usuario y obtener información acerca de este. 
+
+Resumen El caso de uso comienza cuando un administrador accede a la opción 
+
+“Gestionar cuenta” en el panel administrativo, introduce un nombre 
+
+de usuario en la barra de búsqueda y hace clic en buscar. 
+
+Tabla 2.10 Descripción del caso de uso: Cambiar contraseña por un administrador. 
+
+Caso de uso Cambiar contraseña por el administrador 
+
+Actores Administrador 
+
+Propósito Cambiar la contraseña de un usuario por un administrador del 
+
+sistema 
+
+Resumen El caso de uso comienza cuando un administrador previamente ha 
+
+buscado un usuario y hace clic en el botón “Cambiar contraseña” 
+
+que aparece debajo de la información, luego introduce una nueva 
+
+contraseña y hace clic en “Aceptar” en la ventana emergente que 
+
+aparece. 
+
+Tabla 2.11 Descripción del caso de uso: Deshabilitar cuenta. 
+
+Caso de uso Deshabilitar cuenta 
+
+Actores Administrador 
+
+Propósito Deshabilitar la cuenta de un usuario por un administrador del sistema 
+
+Resumen El caso de uso comienza cuando un administrador previamente ha 
+
+buscado un usuario y hace clic en el botón “Deshabilitar cuenta” que 
+
+aparece debajo de la información, luego de introducir una 
+
+justificación y hace clic en el botón “Aceptar” de la ventana 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+33 
+
+emergente que aparece. 
+
+Tabla 2.12 Descripción del caso de uso: Habilitar cuenta. 
+
+Caso de uso Habilitar cuenta 
+
+Actores Administrador 
+
+Propósito Habilitar la cuenta de un usuario por un administrador del sistema 
+
+Resumen El caso de uso comienza cuando un administrador previamente ha 
+
+buscado un usuario y hace clic en el botón “Habilitar cuenta” que 
+
+aparece debajo de su información. 
+
+Tabla 2.13 Descripción del caso de uso: Restablecer configuración de usuario. 
+
+Caso de uso Restablecer configuración de usuario 
+
+Actores Administrador 
+
+Propósito Restablecer la configuración de usuario de un usuario por un 
+
+administrador del sistema 
+
+Resumen El caso de uso comienza cuando un administrador previamente ha 
+
+buscado un usuario y hace clic en el botón “Restablecer 
+
+configuración” que aparece debajo de su información, lo que 
+
+devuelve la configuración del usuario a su estado por defecto. 
+
+Tabla 2.14 Descripción del caso de uso: Ver listado de eventos. 
+
+Caso de uso Ver listado de eventos 
+
+Actores Administrador 
+
+Propósito Ver el listado de eventos del sistema 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+34 
+
+Resumen El caso de uso comienza cuando un administrador accede a la opción 
+
+“Logs” en el panel administrativo, lo que le permite mostrar y filtrar 
+
+el listado de eventos del sistema. 
+
+Tabla 2.15 Descripción del caso de uso: Exportar listado de cuentas. 
+
+Caso de uso Exportar listado de cuentas 
+
+Actores Administrador 
+
+Propósito Exportar un listado con las cuentas de usuario creadas para 
+
+estudiantes y profesores. 
+
+Resumen El caso de uso comienza cuando un administrador accede a la opción 
+
+“Reporte” en el panel administrativo, lo que le permite exportar un a 
+
+un archivo la lista de cuentas de usuario que el sistema generó para 
+
+estudiantes y profesores, además de obtenerlas al aplicar ciertos 
+
+filtros de búsqueda. 
+
+Tabla 2.16 Descripción del caso de uso: Vincular cuenta de usuario por el administrador. 
+
+Caso de uso Vincular cuenta de usuario por el administrador 
+
+Actores Administrador 
+
+Propósito Vincular las cuentas que 
+
+Resumen El caso de uso comienza cuando un administrador accede a la opción 
+
+“Vincular cuenta” en el panel administrativo, luego de acceder a un 
+
+formulario donde puede introducir el carnet de identidad del 
+
+estudiante o profesor que desea vincular con la cuenta de usuario que 
+
+el sistema generó para este.   
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+35 
+
+2.6.1 Flujos normal y alterno de eventos para los casos de uso 
+
+El flujo normal de eventos de un caso de uso describe los pasos que se esperan que sucedan 
+
+para obtener un resultado, mientras que los flujos alternativos representan las variantes 
+
+alternas que se pueden obtener si cambian las condiciones en ciertos puntos del flujo 
+
+normal. 
+
+Tabla 2.17 Flujo Normal y Alterno de Eventos para el caso de uso: Unificar registros de 
+
+estudiantes y trabajadores. 
+
+Caso de uso Unificar registros de estudiantes y trabajadores 
+
+Actores Sistema SIGENU y Sistema ASSET 
+
+Resumen El caso de uso comienza cuando la aplicación se conecta al sistema 
+
+SIGENU y al sistema ASSET para obtener los registros de 
+
+estudiantes y trabajadores respectivamente. 
+
+Prioridad Crítico 
+
+Precondiciones Debe existir una tarea programada en el sistema que ejecute el 
+
+proceso rutinariamente. 
+
+Flujo normal 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+  1. La aplicación intenta 
+
+establecer una conexión 
+
+con el sistema de gestión 
+
+de base de datos 
+
+PostgreSQL del SIGENU. 
+
+ 2. El sistema SIGENU acepta la 
+
+conexión. 
+
+3. La aplicación realiza una 
+
+consulta a la base de datos 
+
+para solicitar todos los 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+36 
+
+registros de estudiantes 
+
+existentes. 
+
+ 4. El sistema SIGENU responde 
+
+con el listado de registros de 
+
+estudiantes. 
+
+5. La aplicación guarda los 
+
+registros de estudiantes en 
+
+la base de datos local 
+
+sostenida sobre MongoDB. 
+
+6. La aplicación intenta 
+
+establecer una conexión 
+
+con el sistema de gestión 
+
+de base de datos Microsoft 
+
+SQL Server del ASSET. 
+
+ 7. El sistema ASSET acepta la 
+
+conexión. 
+
+8. La aplicación realiza una 
+
+consulta a la base de datos 
+
+para solicitar todos los 
+
+registros de trabajadores 
+
+existentes. 
+
+ 9. El sistema ASSET responde 
+
+con el listado de registros de 
+
+trabajadores. 
+
+10. La aplicación guarda los 
+
+registros de estudiantes en 
+
+la base de datos local. 
+
+Flujos alternos 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 2. El sistema SIGENU no 
+
+responde o rechaza la 
+
+conexión. 
+
+3. La aplicación reintenta la 
+
+conexión durante un 
+
+determinado número de 
+
+veces y finaliza el proceso 
+
+si no obtiene resultados. 
+
+Flujos alternos Acción del actor Respuesta del Sistema 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+37 
+
+de eventos 
+
+ 7. El sistema ASSET no 
+
+responde o rechaza la 
+
+conexión. 
+
+8. La aplicación reintenta la 
+
+conexión durante un 
+
+determinado número de 
+
+veces y finaliza el proceso 
+
+si no obtiene resultados. 
+
+ 
+
+Tabla 2.18 Flujo Normal y Alterno de Eventos para el caso de uso: Crear cuentas de 
+
+usuario. 
+
+Caso de uso Crear cuentas de usuario 
+
+Actores Sistema SIGENU y Sistema ASSET 
+
+Resumen El caso de uso comienza cuando la aplicación procesa los registros 
+
+de estudiantes y trabajadores, y crea para cada uno de estos una 
+
+cuenta de usuario en el Directorio Activo. 
+
+Prioridad Crítico 
+
+Precondiciones Debe existir una tarea programada en el sistema que ejecute el 
+
+proceso rutinariamente. 
+
+Flujo normal 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+  1. La aplicación procesa uno 
+
+a uno los registros de 
+
+estudiantes y trabajadores, 
+
+y posteriormente genera 
+
+para estos un nombre de 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+38 
+
+usuario y una contraseña. 
+
+2. La aplicación intenta 
+
+establecer una conexión 
+
+con el sistema de 
+
+Directorio Activo. 
+
+ 3. El sistema de Directorio 
+
+Activo acepta la conexión. 
+
+4. La aplicación intenta crear 
+
+las cuentas de usuario 
+
+añadiendo cada nombre de 
+
+usuario y contraseña al 
+
+Directorio Activo. 
+
+ 5. El sistema de Directorio 
+
+Activo crea correctamente 
+
+cada cuenta de usuario. 
+
+6. La aplicación finaliza la 
+
+conexión. 
+
+Flujos alternos 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 3. El sistema de Directorio 
+
+Activo no responde o rechaza 
+
+la conexión. 
+
+4. La aplicación reintenta la 
+
+conexión durante un 
+
+determinado número de 
+
+veces y finaliza el proceso 
+
+si no obtiene resultados. 
+
+Tabla 2.19 Flujo Normal y Alterno de Eventos para el caso de uso: Autenticar usuario. 
+
+Caso de uso Autenticar usuario 
+
+Actores Usuario anónimo 
+
+Resumen El caso de uso comienza cuando el usuario introduce sus datos 
+
+correspondientes en el formulario para acceder al sitio. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+39 
+
+Prioridad Crítico 
+
+Precondiciones El usuario debe existir en el sistema 
+
+Flujo normal 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 1. El usuario anónimo accede a 
+
+la aplicación. 
+
+2. La aplicación muestra los 
+
+campos que debe llenar el 
+
+usuario para tener acceso a 
+
+la misma. 
+
+ 3. El usuario introduce su 
+
+nombre de usuario y 
+
+contraseña. 
+
+4. La aplicación chequea si el 
+
+usuario existe. 
+
+5. La aplicación chequea si la 
+
+contraseña corresponde al 
+
+usuario que se está 
+
+autenticando. 
+
+6. La aplicación muestra, en 
+
+correspondencia con el rol 
+
+al cual pertenezca el 
+
+usuario, la interfaz de 
+
+acuerdo a dicho rol. 
+
+ 
+
+ 
+
+Figura 2.6.1. Boceto de la página de autenticación. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+40 
+
+Flujos alternos 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+  4.1. La aplicación no encuentra 
+
+el usuario o no encuentra 
+
+correspondencia entre la 
+
+contraseña y el usuario que se 
+
+autentica. Muestra al usuario 
+
+un mensaje de error. 
+
+ 
+
+ 
+
+Figura 2.6.2. Boceto de la página de autenticación al mostrar errores. 
+
+Tabla 2.20 Flujo Normal y Alterno de Eventos para el caso de uso: Cambiar contraseña a 
+
+través de un método de recuperación. 
+
+Caso de uso Cambiar contraseña a través de un método de recuperación 
+
+Actores Usuario anónimo 
+
+Resumen El caso de uso comienza cuando el usuario necesita cambiar su 
+
+contraseña, pero ha olvidado la misma. Necesitará proporcionarle al 
+
+sistema su nombre de usuario y validar su método de recuperación 
+
+para poder cambiarla. 
+
+Prioridad Crítico 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+41 
+
+Precondiciones El usuario debe existir en el sistema y haber definido un método de 
+
+recuperación de contraseña. 
+
+Flujo normal 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 1. El usuario anónimo accede a 
+
+la sección de recuperación de 
+
+contraseña. 
+
+2. La aplicación le solicita un 
+
+nombre de usuario. 
+
+ 3. El usuario introduce su 
+
+nombre de usuario. 
+
+4. La aplicación chequea si el 
+
+usuario existe. 
+
+5. La aplicación muestra el 
+
+método de recuperación 
+
+definido por el usuario, 
+
+PIN de seguridad o 
+
+preguntas de seguridad y 
+
+le solicita que valide el 
+
+mismo. 
+
+ 6. El usuario valida el método 
+
+de recuperación al responder 
+
+con la información que se 
+
+solicita. 
+
+7. La aplicación valida el 
+
+método y muestra la 
+
+página de cambio de 
+
+contraseña. 
+
+ 8. El usuario introduce una 
+
+nueva contraseña. 
+
+9. La aplicación valida la 
+
+contraseña, aplica los 
+
+cambios y notifica al 
+
+usuario. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+42 
+
+ 
+
+ 
+
+Figura 2.6.3. Boceto de la página de recuperación de contraseña al 
+
+solicitar el nombre de usuario o al solicitar el PIN de seguridad. 
+
+ 
+
+Figura 2.6.4. Boceto de la página de recuperación de contraseña al 
+
+solicitar las preguntas de seguridad. 
+
+ 
+
+Figura 2.6.5. Boceto de la página de cambio de contraseña. 
+
+Flujos alternos 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+  4.1. La aplicación no encuentra 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+43 
+
+el usuario. Muestra un mensaje 
+
+de error. 
+
+5.1 La aplicación no encuentra 
+
+un método de recuperación de 
+
+contraseña para el usuario. 
+
+Muestra un mensaje de error. 
+
+7.1 La validación del método 
+
+de recuperación de contraseña 
+
+es incorrecta. Muestra un 
+
+mensaje de error. 
+
+ 
+
+ 
+
+Figura 2.6.6. Boceto de la página de recuperación de contraseña al 
+
+mostrar error. 
+
+Tabla 2.21 Flujo Normal y Alterno de Eventos para el caso de uso: Vincular cuenta. 
+
+Caso de uso Vincular cuenta 
+
+Actores Usuario registrado y Administrador 
+
+Resumen El caso de uso comienza cuando el usuario introduce su carnet de 
+
+identidad en la sección de vinculación y verifica que se su 
+
+información es correcta. 
+
+Prioridad Crítico 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+44 
+
+Precondiciones El usuario debe existir en el sistema, estar autenticado y no haber 
+
+realizado aún el proceso de vinculación. 
+
+Flujo normal 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 1. El usuario accede a la 
+
+sección de vinculación. 
+
+2. La aplicación solicita que 
+
+ingrese carnet de 
+
+identidad. 
+
+ 3. El usuario introduce su 
+
+carnet de identidad. 
+
+4. La aplicación muestra la 
+
+información relacionada 
+
+con el carnet de identidad. 
+
+ 5. El usuario confirma que la 
+
+información mostrada 
+
+corresponde con su 
+
+información personal y 
+
+procede a vincular la cuenta. 
+
+6. La aplicación vincula la 
+
+cuenta. 
+
+ 
+
+ 
+
+Figura 2.6.7. Boceto de la página de vinculación al solicitar el carnet de 
+
+identidad. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+45 
+
+ 
+
+Figura 2.6.8. Boceto de la página de vinculación al mostrar 
+
+información del usuario. 
+
+ 
+
+Flujos alternos 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+  4.1. El sistema no puede 
+
+encontrar un usuario 
+
+relacionado con el carnet de 
+
+identidad. Muestra un mensaje 
+
+de advertencia. 
+
+ 5.1. La información mostrada no 
+
+coincide con la del usuario. Este 
+
+pudo haber introducido un carnet 
+
+de identidad erróneo o su 
+
+información está realmente 
+
+incorrecta, en este caso debe 
+
+acudir personalmente a la 
+
+Dirección de Informatización. 
+
+ 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+46 
+
+ 
+
+ 
+
+Figura 2.6.9. Boceto de la página de vinculación al mostrar 
+
+advertencia. 
+
+Tabla 2.22 Flujo Normal y Alterno de Eventos para el caso de uso: Cambiar contraseña. 
+
+Caso de uso Cambiar contraseña 
+
+Actores Usuario registrado y Administrador 
+
+Resumen El caso de uso comienza cuando el usuario accede a la sección de 
+
+cambio de contraseña. 
+
+Prioridad Crítico 
+
+Precondiciones El usuario debe existir en el sistema y estar autenticado. 
+
+Flujo normal 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 1. El usuario accede a la 
+
+sección de cambio de 
+
+contraseña. 
+
+2. La aplicación le solicita 
+
+que valide su método de 
+
+recuperación para acceder 
+
+a esta sección. 
+
+ 3. El usuario valida el método 
+
+de recuperación con la 
+
+información que le solicita. 
+
+4. La aplicación muestra el 
+
+formulario para el cambio 
+
+de contraseña. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+47 
+
+ 5. El usuario introduce una 
+
+nueva contraseña y la 
+
+confirma. 
+
+6. La aplicación cambia su 
+
+contraseña, cierra la sesión 
+
+y le solicita que ingrese 
+
+nuevamente al sistema.  
+
+ 
+
+ 
+
+Figura 2.6.10. Boceto de la página de cambio de contraseña al solicitar 
+
+validación del método de recuperación “PIN de seguridad”. 
+
+ 
+
+Figura 2.6.11. Boceto de la página de cambio de contraseña al solicitar 
+
+validación del método de recuperación “Preguntas de seguridad”. 
+
+ 
+
+Figura 2.6.12. Boceto de la página de cambio de contraseña al mostrar 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+48 
+
+el formulario para una nueva contraseña. 
+
+Flujos alternos 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+  2. La aplicación no encuentra 
+
+un método de recuperación 
+
+definido para el usuario y 
+
+solicita que establezca uno. 
+
+ 
+
+ 
+
+Figura 2.6.13. Boceto de la página de cambio de contraseña al solicitar 
+
+que se defina un método de recuperación. 
+
+Flujos alternos 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 3. La validación del método de 
+
+recuperación es incorrecta. 
+
+4. La aplicación muestra un 
+
+mensaje de error al usuario. 
+
+ 
+
+ 
+
+Figura 2.6.14. Boceto de la página de cambio de contraseña al mostrar 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+49 
+
+error de validación. 
+
+Tabla 2.23 Flujo Normal y Alterno de Eventos para el caso de uso: Establecer método de 
+
+recuperación. 
+
+Caso de uso Establecer método de recuperación 
+
+Actores Usuario registrado y Administrador 
+
+Resumen El caso de uso comienza cuando el usuario accede a su configuración 
+
+y define una de las opciones: PIN o preguntas de seguridad como 
+
+método de verificación alternativo para cambiar su contraseña en 
+
+caso de extraviarla. 
+
+Prioridad Crítico 
+
+Precondiciones El usuario debe existir en el sistema y estar autenticado. 
+
+Flujo normal 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 1. El usuario accede a la 
+
+sección de configuración. 
+
+2. La aplicación muestra la 
+
+configuración del usuario. 
+
+ 3. El usuario selecciona un 
+
+método de recuperación de 
+
+contraseña, PIN de seguridad 
+
+o preguntas de seguridad. 
+
+4. La aplicación solicita que 
+
+defina correctamente dicho 
+
+método. 
+
+ 5. El usuario introduce la 
+
+información requerida. 
+
+6. El sistema valida la 
+
+información, aplica los 
+
+cambios y notifica al 
+
+usuario. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+50 
+
+ 
+
+ 
+
+Figura 2.6.15. Boceto de la página de configuración. 
+
+ 
+
+Figura 2.6.16. Boceto de la página de configuración al mostrar que los 
+
+cambios se han aplicado satisfactoriamente. 
+
+Flujos alternos 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+  6.  La validación no es 
+
+correcta, la aplicación muestra 
+
+un mensaje de error. 
+
+ 
+
+ 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+51 
+
+Figura 2.6.17. Boceto de la página de configuración al mostrar mensaje 
+
+de error. 
+
+Tabla 2.24 Flujo Normal y Alterno de Eventos para el caso de uso: Buscar usuario. 
+
+Caso de uso Buscar usuario 
+
+Actores Administrador 
+
+Resumen El caso de uso comienza cuando un administrador accede a la opción 
+
+“Gestionar cuenta” en el panel administrativo, introduce un nombre 
+
+de usuario en la barra de búsqueda y hace clic en buscar. 
+
+Prioridad Crítico 
+
+Precondiciones El usuario debe estar autenticado y poseer privilegios de 
+
+administrador. 
+
+Flujo normal 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 1. El administrador selecciona 
+
+la opción “Gestionar cuenta” 
+
+en el panel administrativo. 
+
+2. La aplicación le solicita 
+
+que ingrese un nombre de 
+
+usuario. 
+
+ 3. El administrador introduce 
+
+un nombre de usuario y hace 
+
+clic en “Buscar”. 
+
+4. La aplicación muestra la 
+
+información referente al 
+
+usuario. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+52 
+
+ 
+
+ 
+
+Figura 2.6.18. Boceto de la página para gestionar cuentas al mostrar 
+
+formulario de búsqueda. 
+
+ 
+
+Figura 2.6.19. Boceto de la página para gestionar cuentas al mostrar 
+
+información del usuario. 
+
+Flujos alternos 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+  4. La aplicación no puede 
+
+encontrar un usuario vinculado 
+
+al nombre de usuario 
+
+introducido. Muestra un 
+
+mensaje de error. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+53 
+
+ 
+
+ 
+
+Figura 2.6.20. Boceto de la página para gestionar cuentas al mostrar 
+
+mensaje de error. 
+
+Tabla 2.25 Flujo Normal y Alterno de Eventos para el caso de uso: Deshabilitar cuenta. 
+
+Caso de uso Deshabilitar cuenta 
+
+Actores Administrador 
+
+Resumen El caso de uso comienza cuando un administrador previamente ha 
+
+buscado un usuario y hace clic en el botón “Deshabilitar cuenta” que 
+
+aparece debajo de la información. Seguidamente debe introducir una 
+
+justificación y hacer clic en “Aceptar” en la ventana emergente que 
+
+aparece. 
+
+Prioridad Crítico 
+
+Precondiciones El usuario debe estar autenticado y poseer privilegios de 
+
+administrador. 
+
+Flujo normal 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 1. El administrar hace clic en el 
+
+botón “Deshabilitar cuenta” 
+
+que aparece debajo la 
+
+2. La aplicación le solicita 
+
+que introduzca un motivo 
+
+por el cual se deshabilita la 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+54 
+
+información de un usuario 
+
+que ha buscado previamente. 
+
+cuenta. 
+
+ 3. El administrador escribe el 
+
+motivo y hace clic en el 
+
+botón “Aceptar”. 
+
+4. La aplicación deshabilita 
+
+la cuenta y le notifica al 
+
+administrador. 
+
+ 
+
+ 
+
+Figura 2.6.21. Boceto de la página para gestionar cuentas al mostrar 
+
+formulario de deshabilitar cuenta de usuario. 
+
+ 
+
+Figura 2.6.22. Boceto de la página para gestionar cuentas al mostrar 
+
+notificación satisfactoria. 
+
+ 
+
+ 
+
+Flujos alternos 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 3. El administrador cancela el 4. La aplicación oculta el 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+55 
+
+formulario y decide no 
+
+deshabilitar la cuenta. 
+
+formulario. 
+
+Tabla 2.26 Flujo Normal y Alterno de Eventos para el caso de uso: Exportar listado de 
+
+cuentas. 
+
+Caso de uso Exportar listado de cuentas 
+
+Actores Administrador 
+
+Resumen El caso de uso comienza cuando un administrador accede a la opción 
+
+“Reporte” en el panel administrativo, lo que le permite exportar un 
+
+archivo con la lista de cuentas de usuario que el sistema generó para 
+
+estudiantes y profesores, además obtenerlas tras aplicar ciertos filtros 
+
+de búsqueda. 
+
+Prioridad Crítico 
+
+Precondiciones El usuario debe estar autenticado y poseer privilegios de 
+
+administrador. 
+
+Flujo normal 
+
+de eventos 
+
+Acción del actor Respuesta del Sistema 
+
+ 1. El administrador selecciona 
+
+la opción “Reporte” en el 
+
+panel administrativo. 
+
+2. La aplicación muestra la 
+
+interfaz de reporte. 
+
+ 3. El administrador selecciona 
+
+que tipo de cuentas desea 
+
+exportar: cuentas de 
+
+estudiantes o cuentas de 
+
+trabajadores. 
+
+4. La aplicación carga el 
+
+listado de cuentas. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+56 
+
+ 5. El administrador hace clic en 
+
+el botón “Exportar” 
+
+6. La aplicación exporta el 
+
+listado de cuenta a un 
+
+archivo en formato CSV a 
+
+través del navegador. 
+
+ 
+
+ 
+
+Figura 2.6.23. Boceto de la página de reporte. 
+
+2.7 Diagramas de Actividades 
+
+Un diagrama de actividades entre sus funcionalidades se encuentra el modelado de procesos 
+
+de negocio en estructuras y flujos de trabajos organizacionales. Muestra el flujo de control 
+
+entre actividades. Se utilizan para modelar los aspectos dinámicos de un sistema, lo cual 
+
+implica representar los pasos secuenciales (y posiblemente concurrentes) de un proceso 
+
+computacional. (James Rumbaugh, 2000). Seguidamente se muestran los diagramas de 
+
+actividades correspondientes a cada caso de uso. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+57 
+
+ 
+
+Figura 2.7.1. Diagrama de actividades para el caso de uso “Unificar registros de estudiantes 
+
+y trabajadores”. 
+
+ 
+
+Figura 2.7.2. Diagrama de actividades para el caso de uso “Crear cuentas de usuario”. 
+
+ 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+58 
+
+ 
+
+Figura 2.7.3. Diagrama de actividades para el caso de uso “Autenticar usuario”. 
+
+ 
+
+Figura 2.7.4. Diagrama de actividades para el caso de uso “Cambiar contraseña mediante 
+
+un método de recuperación”. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+59 
+
+ 
+
+Figura 2.7.5. Diagrama de actividades para el caso de uso “Vincular cuenta”. 
+
+ 
+
+Figura 2.7.6. Diagrama de actividades para el caso de uso “Cambiar contraseña”. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+60 
+
+ 
+
+Figura 2.7.7. Diagrama de actividades para el caso de uso “Establecer método de 
+
+recuperación”. 
+
+ 
+
+Figura 2.7.8. Diagrama de actividades para el caso de uso “Habilitar el recordatorio de 
+
+expiración de la contraseña”. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+61 
+
+  
+
+Figura 2.7.9. Diagrama de actividades para el caso de uso “Buscar usuario”. 
+
+ 
+
+Figura 2.7.10. Diagrama de actividades para el caso de uso “Cambiar contraseña por 
+
+Administrador”. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+62 
+
+ 
+
+Figura 2.7.11. Diagrama de actividades para el caso de uso “Deshabilitar cuenta”. 
+
+ 
+
+Figura 2.7.12. Diagrama de actividades para el caso de uso “Habilitar cuenta”. 
+
+ 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+63 
+
+ 
+
+Figura 2.7.13. Diagrama de actividades para el caso de uso “Restablecer configuración de 
+
+usuario”. 
+
+ 
+
+Figura 2.7.14. Diagrama de actividades para el caso de uso “Ver listado de eventos”. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+64 
+
+ 
+
+Figura 2.7.15. Diagrama de actividades para el caso de uso “Exportar listado de cuentas”. 
+
+2.8 Diagrama de despliegue 
+
+El Diagrama de despliegue es un diagrama estructurado que muestra la arquitectura del 
+
+sistema desde el punto de vista del despliegue de los artefactos del software en los destinos 
+
+de despliegue. Este se utiliza para modelar el hardware utilizado en las implementaciones 
+
+de sistemas y las relaciones entre sus componentes. Muestra la configuración de nodos de 
+
+procesamiento en tiempo de ejecución y los artefactos que residen en ellos. 
+
+ 
+
+Figura 2.8.1. Diagrama de despliegue. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+65 
+
+2.9 Seguridad y privacidad de la información 
+
+La seguridad y privacidad de la información, es el aspecto de la tecnología de la 
+
+información (TI) que se ocupa de la capacidad que una organización o individuo tiene para 
+
+garantizar que el intercambio de datos con sus clientes se realiza de forma segura y privada. 
+
+2.9.1 Conexiones seguras 
+
+Una conexión segura son protocolos criptográficos que proporcionan comunicaciones 
+
+seguras por una red (T. Dierks, E. Rescorla, 2008). Para garantizar la comunicación segura 
+
+entre los usuarios y la aplicación web, se emplea un certificado SSL emitido por la entidad 
+
+certificadora de autoridad Let´s Encrypt. Esto permite que toda la información 
+
+intercambiada se envíe y se reciba de forma cifrada, lo que garantiza así la seguridad de los 
+
+datos. 
+
+2.9.2 Seguridad y privacidad de los datos 
+
+Todos los datos sensibles que almacena la aplicación se guardan en las bases de datos de 
+
+forma cifrada, lo que proporciona un alto nivel de seguridad de los mismos. El sistema no 
+
+comparte ninguna de la información con otras fuentes o servicios, lo que garantiza la 
+
+privacidad de la información de los usuarios. 
+
+2.9.3 Mecanismos de autoprotección 
+
+La aplicación cuenta con la instalación de diferentes módulos que le permiten defenderse 
+
+de los ataques que son comúnmente empleados contra este tipo de sistemas, como: ataques 
+
+de denegación de servicios, inyección SQL, ataques CSRF, entre otros. Dentro de los 
+
+módulos utilizados para PHP se puede mencionar: Suhosin, el cual está diseñado para 
+
+proteger a los servidores de fallas conocidas y desconocidas en las aplicaciones PHP y el 
+
+núcleo de PHP. En el servidor web Apache se incorporó: mod Security, este es un firewall 
+
+de aplicaciones web que se ejecuta como módulo del servidor web Apache, al cual provee 
+
+protección contra diversos ataques hacia aplicaciones web y permite monitorizar tráfico 
+
+HTTP, así como realizar análisis en tiempo real sin necesidad de hacer cambios a la 
+
+infraestructura existente. 
+
+
+
+CAPÍTULO 2. DESARROLLO DE LA APLICACIÓN WEB 
+66 
+
+2.10 Conclusiones parciales del capítulo 
+
+Descrito de manera breve el proceso para la creación de las cuentas de usuario en la UCLV, 
+
+se evidenció la necesidad de implementar un sistema que agilice esta gestión y garantice un 
+
+adecuado control. 
+
+Se seleccionaron las tecnologías a emplear para el desarrollo de la aplicación. En la capa 
+
+del navegador se utilizará: HTML, CSS y JavaScript, en la capa del servidor: PHP por las 
+
+ventajas que este lenguaje ofrece y en la capa de persistencia teniendo en cuenta las 
+
+necesidades del proyecto, MongoDB constituye la opción más recomendada a implementar. 
+
+De igual forma se siguen adecuadamente las metodologías de construcción de software, 
+
+como la RUP. Se realizó el diseño mediante el uso del lenguaje UML y se tuvo en cuenta 
+
+los requisitos funcionales y no funcionales de los diferentes actores que interactúan con el 
+
+sistema. Se detallaron los casos de uso y se elaboraron los diagramas de actividades y 
+
+diagrama de despliegue que contribuyen a comprender cómo funciona la aplicación. 
+
+Se describen las políticas de seguridad y privacidad que implementa el sistema para 
+
+garantizar la confiabilidad, integridad, disponibilidad y no repudio de los datos. 
+
+ 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+67 
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS 
+
+RESULTADOS 
+
+El presente capítulo muestra un análisis de los resultados obtenidos al realizar las pruebas 
+
+necesarias en un ambiente de desarrollo, que cuenta con todas las características que 
+
+presentará el ambiente real en el cual se aplicará la propuesta. 
+
+Cuenta además con la elaboración de un manual que ofrece los conocimientos necesarios 
+
+para que administradores y usuarios aprendan a interactuar con el sistema; este mostrará el 
+
+diagrama de navegación y su vez una explicación detallada de las funcionalidades con que 
+
+cuenta la aplicación. 
+
+3.1 Prueba de la aplicación web en el servidor de desarrollo 
+
+Para realizar las pruebas se solicita a la Dirección de Informatización un servidor de 
+
+desarrollo que posea características muy similares al entorno de producción donde se 
+
+implementará la aplicación. El servidor de pruebas deberá ser capaz de acceder a todos los 
+
+servicios y sistemas complementarios que requiere la aplicación para su correcto 
+
+funcionamiento como se describe en sus requisitos funcionales y no funcionales. 
+
+Se ofrece al autor un servidor instalado con el sistema operativo GNU/Linux, distribución 
+
+Ubuntu Server 14.04 LTS previamente configurado con Apache 2.4, PHP 5.6 y MongoDB 
+
+3.2, que constituyen las herramientas necesarias para el funcionamiento de una aplicación 
+
+web. Aunque se usa PHP 5.6 por ser la versión estable actualmente, este mantiene 
+
+compatibilidad con las nuevas versiones de PHP como la versión 7 que aún se encuentra en 
+
+fase de pruebas y desarrollo. 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+68 
+
+3.1.1 Conectividad 
+
+Una vez solicitadas, se incorporaron a la aplicación las credenciales necesarias para acceder 
+
+a los sistemas y servicios que utiliza la misma para realizar correctamente sus 
+
+funcionalidades. 
+
+Se comprobó la conectividad con los sistemas SIGENU y ASSET de los cuales se obtuvo el 
+
+listado de estudiantes y trabajadores respectivamente. Los tiempos de accesos obtenidos 
+
+fueron medidos a partir de funciones que incluye PHP como muestra el fragmento de 
+
+código del Anexo 3. La Tabla 3.1.1 muestra los tiempos de accesos al sistema SIGENU 
+
+para obtener 100, 500 y 2000 registros respectivamente. La Tabla 3.1.2 muestra estos 
+
+tiempos para el sistema ASSET. 
+
+Tabla 3.1.1 Tiempos de respuesta del sistema SIGENU para la solicitud de registros de 
+
+estudiantes. 
+
+Cantidad de registros Tiempo de respuesta * 
+
+100 0.9 
+
+500 2.8 
+
+2000 5.3 
+
+*  Tiempo de respuesta en segundos (s) 
+
+Tabla 3.1.2 Tiempos de respuesta del sistema ASSET para la solicitud de registros de 
+
+trabajadores. 
+
+Cantidad de registros Tiempo de respuesta * 
+
+100 1.1 
+
+500 3.4 
+
+2000 6.0 
+
+*  Tiempo de respuesta en segundos (s) 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+69 
+
+Se procedió a verificar el acceso y los permisos en el Directorio Activo, donde los tiempos 
+
+de respuesta para la creación de nuevos usuarios se encuentra entre los rangos permisibles 
+
+como se aprecia en la siguiente tabla. 
+
+Tabla 3.1.3 Tiempos de respuesta del Directorio Activo para la creación de cuentas de 
+
+usuario. 
+
+Cantidad de cuentas de usuario Tiempo de respuesta * 
+
+1 0.2 
+
+10 1.05 
+
+100 3.2 
+
+*  Tiempo de respuesta en segundos (s) 
+
+3.1.2 Velocidad y compatibilidad 
+
+Para verificar que la aplicación web carga en tiempos razonables y se muestra 
+
+correctamente en distintos tipos de navegadores se realizaron pruebas en los navegadores 
+
+Opera, Internet Explorer, Microsoft Edge, Firefox y Chrome. Para garantizar que los 
+
+resultados fueran certeros se realizaron cinco pruebas de carga de la página de inicio de la 
+
+aplicación en cada uno de ellos. 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+70 
+
+Opera 
+
+ 
+
+Figura 3.1.1. Captura de la página de autenticación de usuario visitada desde el navegador 
+
+Opera. 
+
+Tabla 3.1.4 Tiempos de respuesta de la página de autenticación visitada desde el navegador 
+
+Opera. 
+
+Número de muestra Tiempo de respuesta * 
+
+1 0.8 
+
+2 0.5 
+
+3 0.6 
+
+4 0.3 
+
+5 0.4 
+
+*  Tiempo de respuesta en segundos (s) 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+71 
+
+Internet Explorer 
+
+ 
+
+Figura 3.1.2. Captura de la página de autenticación de usuario visitada desde el navegador 
+
+Internet Explorer. 
+
+Tabla 3.1.5 Tiempos de respuesta de la página de autenticación visitada desde el navegador 
+
+Internet Explorer. 
+
+Número de muestra Tiempo de respuesta * 
+
+1 1.1 
+
+2 0.7 
+
+3 0.4 
+
+4 0.7 
+
+5 0.5 
+
+*  Tiempo de respuesta en segundos (s) 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+72 
+
+Microsoft Edge 
+
+ 
+
+Figura 3.1.3. Captura de la página de autenticación de usuario visitada desde el navegador 
+
+Microsoft Edge. 
+
+Tabla 3.1.6 Tiempos de respuesta de la página de autenticación visitada desde el navegador 
+
+Microsoft Edge. 
+
+Número de muestra Tiempo de respuesta * 
+
+1 0.6 
+
+2 0.9 
+
+3 0.5 
+
+4 1.2 
+
+5 0.6 
+
+*  Tiempo de respuesta en segundos (s) 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+73 
+
+Mozilla Firefox 
+
+ 
+
+Figura 3.1.4. Captura de la página de autenticación de usuario visitada desde el navegador 
+
+Mozilla Firefox. 
+
+Tabla 3.1.7 Tiempos de respuesta de la página de autenticación visitada desde el navegador 
+
+Mozilla Firefox. 
+
+Número de muestra Tiempo de respuesta * 
+
+1 0.7 
+
+2 0.3 
+
+3 0.4 
+
+4 0.5 
+
+5 0.5 
+
+*  Tiempo de respuesta en segundos (s) 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+74 
+
+Google Chrome 
+
+ 
+
+Figura 3.1.5. Captura de la página de autenticación de usuario visitada desde el navegador 
+
+Google Chrome. 
+
+Tabla 3.1.8 Tiempos de respuesta de la página de autenticación visitada desde el navegador 
+
+Google Chrome. 
+
+Número de muestra Tiempo de respuesta * 
+
+1 0.5 
+
+2 0.4 
+
+3 0.4 
+
+4 0.3 
+
+5 0.4 
+
+*  Tiempo de respuesta en segundos (s) 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+75 
+
+3.2 Análisis de los resultados obtenidos 
+
+Luego de realizar las pruebas necesarias se obtuvo gran cantidad de información sobre el 
+
+funcionamiento y los recursos que administra la aplicación, así como el aumento de la 
+
+eficiencia en el proceso de creación de cuentas de usuario. 
+
+Los resultados anteriores muestran que la aplicación se visualiza de manera rápida y 
+
+adecuada en los navegadores probados, con un promedio de 0.55 segundos para mostrar la 
+
+página de autenticación de usuario. 
+
+El principal resultado y objetivo del proyecto se cumplió como muestra el análisis de 
+
+tiempo del proceso de creación de cuentas de usuario a través de la aplicación web diseñada 
+
+y su comparación con el vigente. 
+
+El proceso de creación de cuentas de usuario mediante el uso de la aplicación propuesta 
+
+comprende 4 etapas: 
+
+1.  Obtención de los registros de estudiantes y trabajadores. 
+
+2. Creación de las cuentas de usuario. 
+
+3. Impresión del listado de cuentas de usuario. 
+
+4. Entrega de las cuentas de usuario a trabajadores y estudiantes. 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+76 
+
+ 
+
+Figura 3.2.1. Gráfico de líneas que muestra la comparación de tiempo por etapas entre el 
+
+proceso actual para la creación de cuentas y el proceso de creación mediante la aplicación 
+
+diseñada. 
+
+El análisis del gráfico de la Figura 3.2.1 muestra el considerable ahorro de tiempo que 
+
+ofrece el uso de la aplicación para realizar el proceso de creación de cuentas de usuario. Al 
+
+aplicar la solución propuesta sólo toma aproximadamente ocho días realizar dicha tarea, 
+
+mientras que el procedimiento actual toma 16 días, el doble del tiempo. Se puede señalar 
+
+que la mayor parte del tiempo lo ocupa la etapa de entrega de las cuentas de usuarios a los 
+
+trabajadores y estudiantes, donde para ambos procesos toma aproximadamente de siete a 
+
+ocho días. 
+
+Otro ahorro considerable, es la cantidad de personal necesario para realizar este proceso, al 
+
+tener en cuenta que la mayor parte de las tareas las realiza la aplicación de forma 
+
+automática y necesitar solamente la supervisión de un administrador para garantizar que el 
+
+proceso se ejecute correctamente. 
+
+Como resultados adicionales se pudo obtener información sobre la cantidad de estudiantes 
+
+y trabajadores que componen la UCLV como muestra la Figura 3.2.2. 
+
+
+
+CAPÍTULO 3. IMPLEMENTACIÓN Y ANÁLISIS DE LOS RESULTADOS 
+77 
+
+ 
+
+ 
+
+Figura 3.2.2. Gráfico de pastel que muestra la cantidad de estudiantes y trabajadores que 
+
+componen la UCLV (Encuestado en septiembre de 2016). 
+
+3.3 Manual de uso de la aplicación para usuarios y administradores 
+
+Un aspecto importante para el buen uso de la aplicación, es la necesidad de que usuarios y 
+
+administradores aprendan a utilizar la misma, por lo que se elaboró un manual de usuario</pre>
