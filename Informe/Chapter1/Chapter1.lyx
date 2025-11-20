@@ -544,7 +544,15 @@ literal "false"
 Seguridad Robusta:
 
 \series default
- Se extiende más allá de las contraseñas para implementar Autenticación Multifactor (MFA) y políticas de seguridad adaptativas.
+ Se extiende más allá de las contraseñas para implementar Autenticación Multifactor (MFA) 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "jesus_alberto_triana_gomez_alisis_2025"
+literal "false"
+
+\end_inset
+
+ y políticas de seguridad adaptativas.
  Incorpora monitoreo continuo y análisis del comportamiento del usuario para detectar anomalías en tiempo real,
  formando parte de un modelo de seguridad Zero Trust que "nunca confía,
  siempre verifica".
@@ -688,7 +696,7 @@ El sistema de autenticación unificado implementa una autenticación multifactor
 \begin_layout Standard
 La arquitectura orientada a APIs 
 \begin_inset CommandInset citation
-LatexCommand citet
+LatexCommand citep
 key "brajesh_de_api_2023"
 literal "false"
 
@@ -860,7 +868,8 @@ En muchas instituciones educativas,
 Problemas comunes incluyen falta de visibilidad del estado de las cuentas,
  procesos manuales ineficientes,
  interfaces arcaicas y dificultades en la integración entre sistemas.
- Estas limitaciones han llevado a la necesidad de desarrollar soluciones integradas que aborden la gestión de identidades digitales.[
+ Estas limitaciones han llevado a la necesidad de desarrollar soluciones integradas que aborden la gestión de identidades digitales.
+ [
 \size large
 Unified Institute Management System for Efficient Administra-tion and Accurate Data Management
 \size default
@@ -984,7 +993,7 @@ En el contexto de la Universidad "José Martí Pérez",
  manteniendo altos estándares de usabilidad y accesibilidad para una comunidad universitaria diversa y geográficamente distribuida.
  La adopción de aplicaciones web modernas permite además la integración seamless con sistemas existentes mediante APIs RestFul 
 \begin_inset CommandInset citation
-LatexCommand citet
+LatexCommand citep
 key "brajesh_de_api_2023"
 literal "false"
 
@@ -1015,7 +1024,7 @@ La capacidad de automatización constituye uno de los aportes más significativo
  Esta automatización no solo reduce los tiempos de procesamiento en aproximadamente un 60-70%,
  sino que minimiza errores humanos y libera al personal administrativo para actividades de mayor valor agregado.
 \begin_inset CommandInset citation
-LatexCommand citet
+LatexCommand citep
 key "ajisebutu_undergraduates_2024"
 literal "false"
 
@@ -1031,8 +1040,16 @@ El modelo de aplicaciones web elimina la necesidad de infraestructura cliente-se
  Esta ventaja se manifiesta en ahorros sustanciales en licencias de software,
  servidores locales y soporte técnico descentralizado.
  Adicionalmente,
- el modelo de actualizaciones centralizadas reduce los costos de mantenimiento en aproximadamente un 40-50% compared con sistemas tradicionales,
+ el modelo de actualizaciones centralizadas reduce los costos de mantenimiento en aproximadamente un 40-50% comparado con sistemas tradicionales,
  mientras que la escalabilidad bajo demanda evita inversiones anticipadas en capacidad infrautilizada.
+\begin_inset CommandInset citation
+LatexCommand citep
+key "brajesh_de_api_2023"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1047,7 +1064,8 @@ Las interfaces modernas e intuitivas de las aplicaciones web contemporáneas tra
 \end_layout
 
 \begin_layout Standard
-Las aplicaciones web modernas incorporan herramientas que facilitan el trabajo en equipo across departamentos y facultades,
+Las aplicaciones web modernas incorporan herramientas que facilitan el trabajo en equipo,
+ departamentos y facultades,
  rompiendo silos de información tradicionales.
  Plataformas colaborativas integradas permiten la gestión documental compartida,
  coordinación de proyectos de investigación,
@@ -1060,9 +1078,16 @@ La implementación de estándares actualizados de ciberseguridad en aplicaciones
  Esto incluye protocolos de encriptación end-to-end,
  autenticación multifactor,
  gestión centralizada de identidades y auditoría continua de accesos,
- esenciales para proteger datos personales,
- investigaciones académicas y información financiera.
+ esenciales para proteger datos personales.
  Esta robustez seguridad no solo mitiga riesgos de ciberseguridad sino que asegura el cumplimiento de regulaciones de protección de datos y estándares educativos nacionales e internacionales.
+\begin_inset CommandInset citation
+LatexCommand citep
+key "jesus_alberto_triana_gomez_alisis_2025"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -1082,15 +1107,24 @@ Las Progressive Web Applications representan un paradigma que combina lo mejor d
  Estas aplicaciones ofrecen funcionalidad similar a aplicaciones nativas mediante capacidades avanzadas como trabajo offline,
  notificaciones push y acceso a hardware del dispositivo,
  todo ello accesible a través de navegadores web estándar.
- La implementación de PWAs en el contexto universitario permite experiencias de usuario consistentes across dispositivos,
- reduciendo significativamente los costos de desarrollo y mantenimiento compared con el desarrollo de aplicaciones nativas separadas para múltiples plataformas.
+ La implementación de PWAs en el contexto universitario permite experiencias de usuario consistentes dispositivos,
+ reduciendo significativamente los costos de desarrollo y mantenimiento comparado con el desarrollo de aplicaciones nativas separadas para múltiples plataformas.
+ 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "maharani_pengembangan_2025,chaniotis_is_2015"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 El desplazamiento desde arquitecturas monolíticas hacia enfoques basados en microservicios representa una transformación fundamental en el diseño de sistemas.
  Esta aproximación descompone aplicaciones complejas en servicios independientes y altamente cohesionados,
  cada uno con responsabilidades específicas y interfaces bien definidas.
- Para instituciones universitarias como la "José Martí Pérez",
+ Para instituciones universitarias como la "UNISS",
  esta arquitectura permite actualizaciones incrementales,
  mejora la resiliencia del sistema mediante el aislamiento de fallos,
  y facilita la escalabilidad selectiva de componentes bajo demanda,
@@ -1098,7 +1132,7 @@ El desplazamiento desde arquitecturas monolíticas hacia enfoques basados en mic
 \end_layout
 
 \begin_layout Standard
-La integración de capacidades de Inteligencia Artificial y Machine Learning trasciende la automatización básica para ofrecer personalización inteligente y capacidades predictivas.
+La integración de capacidades de Inteligencia Artificial trasciende la automatización básica para ofrecer personalización inteligente y capacidades predictivas.
  En el ecosistema universitario,
  esto se manifiesta en sistemas de recomendación de contenidos educativos,
  asistentes virtuales para soporte estudiantil,
@@ -1117,6 +1151,15 @@ El diseño mobile-first evoluciona desde una práctica recomendada hacia una nec
  Para una universidad con población estudiantil mayoritariamente móvil,
  esta aproximación garantiza accesibilidad universal y experiencia de usuario consistente,
  independientemente del dispositivo o condiciones de conectividad.
+ 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "cameron_introduction_2020"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1152,7 +1195,15 @@ La arquitectura backend del sistema de gestión de cuentas de usuario de la Univ
  ejecutándose sobre Node.js,
  debido a su capacidad para gestionar múltiples solicitudes concurrentes de manera eficiente mediante un modelo asíncrono basado en eventos.
  Esta característica es fundamental para soportar picos de demanda en entornos universitarios,
- como procesos de matrícula o acceso masivo a servicios digitales 1.
+ como procesos de matrícula o acceso masivo a servicios digitales 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "kaur_comparison_2023"
+literal "false"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -1180,6 +1231,15 @@ La arquitectura propuesta sigue un enfoque API-first y es compatible con patrone
  lo que facilita la integración progresiva con sistemas legacy y la evolución modular del sistema 12.
  Asimismo,
  se consideraron prácticas recomendadas como el monitoreo mediante herramientas especializadas y la compatibilidad con despliegues tanto en la nube como en entornos locales.
+ 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "qadeer_profile_2009"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1511,6 +1571,14 @@ Una de las principales ventajas de Next.js es su capacidad para el renderizado h
  heredado de React,
  minimiza las operaciones costosas sobre el DOM real,
  garantizando una experiencia de usuario fluida incluso en interfaces complejas como dashboards administrativos o tablas masivas de usuarios.
+\begin_inset CommandInset citation
+LatexCommand citep
+key "jartarghar_react_2022"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1850,6 +1918,7 @@ PostgreSQL,
  se integran servicios clave como un servidor de correo SMTP para la gestión de notificaciones y comunicaciones automatizadas,
  y un Active Directory LDAP,
  que permite la autenticación centralizada y la gestión eficiente de usuarios y permisos.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -1863,6 +1932,14 @@ Esta combinación tecnológica permite a los equipos técnicos trabajar de maner
  Next.js y TailwindCSS.
  El uso de SMTP asegura la entrega confiable de correos electrónicos críticos,
  mientras que LDAP garantiza la integración con infraestructuras de identidad existentes.
+\begin_inset CommandInset citation
+LatexCommand citep
+key "qadeer_profile_2009"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1871,7 +1948,7 @@ La solidez de estas tecnologías está respaldada por comunidades activas y una 
  La arquitectura resultante sigue estándares de la industria y mejores prácticas,
  como el diseño de APIs RESTful,
  la normalización de esquemas de bases de datos,
- la aplicación de patrones de seguridad en todas las capas y la implementación de observabilidad unificada con herramientas como Prometheus y Grafana para la monitorización centralizada.
+ la aplicación de patrones de seguridad en todas las capas y la implementación de observabilidad.
 \end_layout
 
 \begin_layout Standard
@@ -1883,6 +1960,15 @@ Esta integración tecnológica no solo facilita el despliegue flexible en infrae
  la elección de este ecosistema tecnológico posiciona a la Universidad "José Martí Pérez" con una arquitectura moderna,
  mantenible y preparada para evolucionar,
  asegurando tanto la eficiencia en el desarrollo inicial como la sostenibilidad y adaptabilidad a largo plazo del sistema de gestión de identidades.
+ 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "ikwuanusi_digital_2024"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -2000,17 +2086,6 @@ literal "false"
  La integración de estas herramientas permite un flujo de trabajo cohesivo,
  donde cada fase y disciplina del RUP se apoya en soluciones tecnológicas que refuerzan la trazabilidad,
  la documentación y la colaboración.
-\end_layout
-
-\begin_layout Standard
-\align center
-\begin_inset CommandInset label
-LatexCommand label
-name "Figura 4 Principales herramientas y su rol en el proceso RUP."
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Standard

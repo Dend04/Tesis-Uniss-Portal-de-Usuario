@@ -100,6 +100,15 @@ El desarrollo de una aplicación web requiere un análisis cuidadoso de la metod
  con las funcionalidades de la aplicación.
  El uso de herramientas libres es un aspecto importante a tener en cuenta porque garantiza la sustentabilidad y portabilidad del proyecto,
  además de seguir la política trazada por el país de migración hacia plataformas de Software Libre.
+ 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "lehtola_free_2022"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -116,6 +125,14 @@ El presente capítulo ofrece un breve análisis del proceso actual para la creac
 El uso de la herramienta Visual Paradigm,
  un software profesional para modelado UML,
  hizo posible el análisis y diseño de la aplicación con la calidad y las características requeridas.
+\begin_inset CommandInset citation
+LatexCommand citep
+key "lu_systematic_2023"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -123,8 +140,24 @@ Situación actual del proceso de creación de cuentas de usuario en la UNISS
 \end_layout
 
 \begin_layout Standard
-En la UNISS el proceso de creación de cuentas de usuario está dividido en dos etapas (Figura 2.1.1) y utiliza como fuente de datos los registros de estudiantes y trabajadores de dicha universidad.
- Los registros de estudiantes son proporcionados por el Sistema de Gestión para la Nueva Universidad (SIGENU) y los de trabajadores por el sistema ASSET (Sistema presente en las universidades de todo el país para la gestión de personal docente y no docente).
+En la UNISS el proceso de creación de cuentas de usuario está dividido en dos etapas (Figura 2.1) y utiliza como fuente de datos los registros de estudiantes y trabajadores de dicha universidad.
+ Los registros de estudiantes son proporcionados por el Sistema de Gestión para la Nueva Universidad (SIGENU) 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "castillo_sigenu-dss-lite_2015"
+literal "false"
+
+\end_inset
+
+ y los de trabajadores por el sistema ASSET (Sistema presente en las universidades de todo el país para la gestión de personal docente y no docente).
+\begin_inset CommandInset citation
+LatexCommand citep
+key "diaz_aplicacion_2007"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -165,34 +198,43 @@ Explicación del proceso actual
 \end_layout
 
 \begin_layout Standard
-En la primera etapa del proceso se exporta del SIGENU los registros de estudiantes ordenados por facultad y especialidad a un archivo de texto en formato CSV.
- Sin embargo,
- este primer paso no se puede realizar de igual forma con el ASSET,
- porque este sistema no posee dicha funcionalidad,
- por lo es necesario imprimir los listados de trabajadores para posteriormente procesarlos.
- 
+Para el caso de los estudiantes,
+ la información no se extrae de forma automatizada del sistema SIGENU,
+ sino que depende de la recopilación primaria realizada por los profesores al inicio del primer año.
+ Esta recopilación inicial carece de un protocolo unificado,
+ ya que algunos docentes registran los datos directamente en hojas de papel,
+ otros utilizan archivos Excel de forma no estandarizada,
+ y en otros casos,
+ los alumnos son enviados de manera presencial a las oficinas del administrador de redes para solicitar la creación de sus credenciales en el Directorio Activo LDAP.
 \end_layout
 
 \begin_layout Standard
-En la segunda etapa se procede a insertar en el Directorio Activo los registros de estudiantes y trabajadores.
- En esta etapa se hace un tratamiento diferente para cada fuente de datos:
- ASSET y SIGENU.
+De manera análoga,
+ para los trabajadores,
+ el proceso es igualmente dependiente de acciones manuales.
+ El empleado debe dirigirse personalmente a las oficinas o,
+ alternativamente,
+ el personal del departamento de Recursos Humanos envía ocasionalmente un listado en formato Excel.
+ Es crucial destacar que,
+ si bien estos datos de estudiantes y trabajadores son introducidos posteriormente en las bases de datos de los sistemas institucionales SIGENU y ASSET,
+ no existe una conexión operativa que permita tomarlos como fuente directa para la creación de las cuentas.
+ He aquí la problemática central que justifica el desarrollo del software propuesto.
 \end_layout
 
 \begin_layout Standard
-Los registros de estudiantes que previamente se han exportado a un archivo en formato CSV son insertados en el Directorio Activo mediante la utilización de un script que analiza el archivo y genera una cuenta de usuario para cada registro de estudiante al tener en consideración su nombre y apellidos,
- dicho script también analiza la facultad y especialidad para su correcta ubicación en el directorio.
- 
-\end_layout
-
-\begin_layout Standard
-Para la creación de las cuentas de los trabajadores se entrega el listado impreso en formato duro al personal administrativo pertinente y de manera manual son agregadas las cuentas de usuario al Directorio Activo
-\end_layout
-
-\begin_layout Standard
-Este proceso de creación de cuentas de usuario puede tomar un largo período de tiempo hasta su culminación,
- lo que en ocasiones provoca inconformidades.
- También está expuesto a errores humanos debido a que gran parte de este se realiza de forma manual.
+En la práctica,
+ esto significa que toda la información,
+ independientemente de su origen,
+ debe ser procesada manualmente por el personal administrativo para su inserción en el Directorio Activo.
+ Este proceso conlleva inherentemente un período de ejecución prolongado,
+ generando demoras que suelen provocar inconformidades entre los usuarios.
+ Además,
+ la alta dependencia de la intervención humana en la transcripción y gestión de los datos lo hace propenso a errores,
+ comprometiendo la integridad y la consistencia de la información en el directorio.
+ La creación de una solución software se plantea,
+ por tanto,
+ como una necesidad imperante para unificar los flujos de datos,
+ automatizar los procedimientos y eliminar los cuellos de botella que caracterizan al sistema actual.
 \end_layout
 
 \begin_layout Section
@@ -208,30 +250,46 @@ El análisis exhaustivo de los actores del sistema y trabajadores del negocio co
 \begin_layout Standard
 Dentro del marco de análisis se han identificado cuatro actores principales del sistema.
  En primer lugar,
- el Solicitante de Cuenta representa el rol primario que engloba tanto a estudiantes como a profesores que requieren acceso a los servicios digitales institucionales.
+ el Solicitante de Cuenta representa el rol primario que engloba tanto a estudiantes como a trabajadores que requieren acceso a los servicios digitales institucionales.
  Este actor general se especializa en dos categorías específicas:
  los Estudiantes,
  que demandan acceso inmediato y protegido a los servicios educativos digitales y cuyo registro se gestiona exclusivamente a través del sistema SIGENU;
  y el Personal Docente,
  que requiere una administración eficaz de credenciales y autorizaciones para desempeñar sus labores académicas,
- siendo gestionados mediante el sistema ASSET.
+ siendo gestionados mediante el sistema ASSETS.
  Completa este ecosistema de actores los Administradores del Sistema,
  constituido por personal especializado encargado de la operación diaria del sistema y la emisión de reportes institucionales.
 \end_layout
 
 \begin_layout Standard
 Esta caracterización diferencial y jerárquica de actores permite establecer de manera estructurada los requisitos fundamentales del sistema.
- Entre estos se destaca la automatización integral del ciclo de vida de las identidades digitales con un esquema de integración dual que contempla la conexión específica con SIGENU para la gestión de estudiantes y con ASSET para el personal docente.
+ Entre estos se destaca la automatización integral del ciclo de vida de las identidades digitales con un esquema de integración dual que contempla la conexión específica con SIGENU para la gestión de estudiantes y con ASSETS para el personal docente.
  Adicionalmente,
  se derivan requisitos relacionados con el despliegue de medidas de seguridad avanzadas que incorporen autenticación multifactorial,
  la capacidad de producir informes de auditoría detallados que satisfagan las necesidades de transparencia institucional,
  y el aseguramiento de una interfaz intuitiva y universalmente accesible que garantice una experiencia de usuario óptima para todos los actores identificados.
+\begin_inset CommandInset citation
+LatexCommand citep
+key "cruz_rbac-sc_2018"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 La conjunción de estos elementos converge en la transformación del proceso actual -caracterizado por su naturaleza intensivamente manual y su susceptibilidad a errores- hacia un modelo automatizado,
  confiable y coherente con los objetivos estratégicos de modernización digital de la institución,
  cumpliendo así con los principios de trazabilidad y especificidad que exigen tanto las buenas prácticas para el desarrollo de tesis académicas como la metodología RUP.
+\begin_inset CommandInset citation
+LatexCommand citep
+key "prihartono_rational_2023,kaur_comparison_2023"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -246,6 +304,14 @@ El proceso de creación de cuentas para usuarios sin registro previo se conceptu
  La implementación de este proceso refleja la aplicación sistemática de disciplinas de ingeniería de software,
  particularmente en lo concerniente al modelado de negocio,
  análisis de requisitos y diseño de la solución.
+\begin_inset CommandInset citation
+LatexCommand citep
+key "ajisebutu_undergraduates_2024"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -263,7 +329,7 @@ Los objetivos que orientan este proceso se articulan de manera coherente con las
 \begin_layout Standard
 En segundo término,
  el proceso busca automatizar la creación de cuentas basándose en fuentes primarias confiables,
- lo que conlleva el diseño de interfaces de comunicación robustas con los sistemas Sigenu y Assets existentes.
+ lo que conlleva el diseño de interfaces de comunicación robustas con los sistemas SIGENU y ASSETS existentes.
  Esta automatización se desarrolla mediante ciclos sucesivos de implementación,
  incorporando mecanismos de sincronización de datos en tiempo real y estableciendo protocolos de contingencia para escenarios de indisponibilidad que pudieran afectar la experiencia del usuario.
 \end_layout
@@ -279,10 +345,27 @@ Como tercer objetivo fundamental,
 \begin_layout Standard
 Finalmente,
  el proceso garantiza la consistencia de datos entre sistemas mediante la implementación de políticas de sincronización unidireccional y el establecimiento de mecanismos de resolución de conflictos,
- manteniendo una trazabilidad completa de las transacciones entre sistemas.
+ manteniendo una trazabilidad completa de las transacciones entre sistemas todo eso representado en el diagrama de caso de uso 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "gutierrez_casos_2011"
+literal "false"
+
+\end_inset
+
+ de la figura 2.2.
  Este objetivo técnico se alinea con las mejores prácticas de ingeniería de software,
  particularmente en lo referente al diseño de sistemas distribuidos,
- donde se definieron los modelos de datos y las interfaces entre sistemas que hacen posible esta consistencia transaccional a lo largo del ciclo de vida de las cuentas de usuario
+ donde se definieron los modelos de datos y las interfaces entre sistemas que hacen posible esta consistencia transaccional a lo largo del ciclo de vida de las cuentas de usuario.
+ 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "cameron_introduction_2020"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -328,8 +411,18 @@ Diagrama de Flujo de Actividad del Proceso
 
 \begin_layout Standard
 Para visualizar de manera clara y accesible la secuencia de pasos que conforman el proceso de creación de cuentas,
- se ha diseñado un diagrama de flujo de actividad que representa gráficamente el recorrido completo del usuario.
- Este diagrama se ubicaría como Figura 2.3.2 dentro del cuerpo del documento,
+ se ha diseñado un diagrama de flujo 
+\size large
+[Los diagramas de flujo:
+ su definición,
+ objetivo,
+ ventajas,
+ elaboración,
+ fases,
+ reglas y ejemplos de aplicaciones]
+\size default
+ de actividad que representa gráficamente el recorrido completo del usuario.
+ Este diagrama se ubicaría como Figura 2.3 dentro del cuerpo del documento,
  preferiblemente en la página siguiente a esta descripción,
  permitiendo una referencia visual inmediata que complementa la explicación textual.
 \end_layout
@@ -390,8 +483,24 @@ El proceso comienza cuando el usuario accede al sistema y selecciona la opción 
  A continuación,
  el sistema realiza una consulta automática a las fuentes primarias de información institucional.
  Para los estudiantes,
- esta verificación se realiza contra la base de datos de SIGENU,
- mientras que para el personal docente y administrativo se utiliza el sistema ASSET.
+ esta verificación se realiza contra la base de datos de SIGENU 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "castillo_sigenu-dss-lite_2015"
+literal "false"
+
+\end_inset
+
+,
+ mientras que para el personal docente y administrativo se utiliza el sistema ASSETS 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "diaz_aplicacion_2007"
+literal "false"
+
+\end_inset
+
+.
  Este paso es fundamental para confirmar que el solicitante pertenece efectivamente a la comunidad universitaria y tiene derecho a una cuenta institucional.
 \end_layout
 
@@ -451,6 +560,21 @@ Diagrama de Colaboración,
 \end_layout
 
 \begin_layout Standard
+Por su parte,
+ el diagrama de colaboración figura 2.4 detalla las interacciones específicas entre los objetos del sistema durante la gestión de configuraciones.
+ El proceso inicia cuando el usuario establece los ajustes deseados desde la interfaz principal (home),
+ generando una solicitud al componente de configuración para obtener los ajustes actuales del usuario.
+ El controlador principal coordina las operaciones,
+ validando los datos proporcionados y gestionando las posibles respuestas del sistema.
+ Cuando se detectan errores en la validación,
+ el sistema muestra mensajes de error específicos al usuario;
+ mientras que cuando la validación es exitosa,
+ procede a guardar los nuevos ajustes en el sistema.
+ Este flujo colaborativo involucra componentes especializados para la gestión de dispositivos y configuración de email,
+ demostrando la arquitectura modular del sistema.
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float figure
 placement document
 alignment document
@@ -472,7 +596,7 @@ status open
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
-Diagrama de diseño Caso Solicitante
+Diagrama de diseño Caso Solicitar credenciales
 \end_layout
 
 \end_inset
@@ -482,6 +606,93 @@ Diagrama de diseño Caso Solicitante
 
 \end_inset
 
+El diagrama de clases de diseño para el caso de uso "Solicitar credenciales" 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "rodriguez_herramienta_2012"
+literal "false"
+
+\end_inset
+
+ (Figura 2.5) revela la arquitectura interna del sistema,
+ destacando las principales entidades y sus responsabilidades en el proceso de creación de cuentas.
+ La clase Usuario constituye el núcleo del modelo de datos,
+ conteniendo atributos esenciales como CI (carnet de identidad),
+ nombre completo,
+ username,
+ correo de respaldo y configuraciones de doble verificación.
+ Esta clase implementa la interfaz <<ORM Persistable>>,
+ garantizando su persistencia en la base de datos mediante mapeo objeto-relacional,
+ lo que facilita las operaciones CRUD (Crear,
+ Leer,
+ Actualizar,
+ Eliminar) sobre los datos de los usuarios.
+\end_layout
+
+\begin_layout Standard
+Los controladores especializados 
+\family typewriter
+StudentsController
+\family default
+ y 
+\family typewriter
+WorkersController
+\family default
+ manejan la lógica de negocio para la verificación de estudiantes y trabajadores respectivamente,
+ interactuando con los sistemas SIGENU y ASSETS a través de los métodos 
+\family typewriter
+buscarEstudiante()
+\family default
+ y 
+\family typewriter
+verificarTrabajador()
+\family default
+.
+ Esta separación de responsabilidades permite un manejo diferenciado y especializado de cada tipo de usuario,
+ adaptándose a las particularidades de cada sistema fuente.
+ La clase LDAPUtils proporciona la funcionalidad crítica para la creación de cuentas en el directorio LDAP mediante el método 
+\family typewriter
+addAccount()
+\family default
+,
+ encapsulando la complejidad de la integración con el servicio de directorio activo.
+\end_layout
+
+\begin_layout Standard
+Las interfaces de usuario
+\family typewriter
+ F_Activate-account
+\family default
+ captura los datos del solicitante,
+ incluyendo CI,
+ tomo y folio del carnet de identidad,
+ y proporcionan el mecanismo de validación inicial a través de un botón dedicado.
+ El 
+\family typewriter
+SP_Active Account
+\family default
+ encapsula las operaciones del sistema para buscar en las fuentes primarias,
+ crear la cuenta en LDAP,
+ enviar el email de confirmación y manejar posibles errores durante el proceso,
+ actuando como orquestador principal del flujo de activación.
+ El
+\family typewriter
+ CP_Activate-account
+\family default
+ funciona como un controlador de presentación que media entre la interfaz de usuario y la lógica de negocio,
+ coordinando las interacciones entre los diferentes componentes.
+\end_layout
+
+\begin_layout Standard
+Esta estructura de clases evidencia un diseño cohesivo y desacoplado,
+ donde cada componente tiene responsabilidades bien definidas,
+ facilitando el mantenimiento y la escalabilidad del sistema.
+ La separación entre la capa de presentación,
+ la capa de controladores y la capa de servicios especializados sigue los principios de arquitectura en capas,
+ promoviendo la reutilización de código y la testabilidad de los componentes individuales.
+\end_layout
+
+\begin_layout Standard
 Con toda la información recolectada y validada,
  el sistema procede a crear la cuenta en el directorio LDAP,
  asignando los permisos y grupos correspondientes según el perfil del usuario.
@@ -544,7 +755,8 @@ Complementando estas funcionalidades,
  Este historial detallado incluye información temporal,
  geográfica y contextual sobre cada evento,
  proporcionando transparencia completa y facilitando la identificación temprana de actividades potencialmente sospechosas.
- La implementación de este módulo refleja el compromiso con la autonomía del usuario mientras se mantienen los más altos estándares de seguridad y confiabilidad en la gestión de identidades digitales.
+ La implementación de este módulo refleja el compromiso con la autonomía del usuario mientras se mantienen los más altos estándares de seguridad y confiabilidad en la gestión de identidades digitales,
+ todo esto representado en la figura 2.6.
 \end_layout
 
 \begin_layout Standard
@@ -589,7 +801,7 @@ Diagrama de Flujo del Proceso de Vinculación
 \begin_layout Standard
 Para representar específicamente el proceso de vinculación entre la verificación de identidad y la creación de la cuenta,
  se ha diseñado un diagrama de flujo especializado que ilustra esta secuencia crítica.
- Este diagrama se ubicaría como Figura 2.4.2 en el documento,
+ Este diagrama se ubicaría como Figura 2.7 en el documento,
  mostrando de manera precisa el camino que sigue el sistema para conectar la validación inicial con la configuración final de la cuenta de usuario.
 \end_layout
 
@@ -643,13 +855,9 @@ Esta integración incluye la asociación de los datos institucionales con las cr
 
 \begin_layout Standard
 El proceso culmina con la generación de notificaciones automáticas que confirman la vinculación exitosa,
- tanto al usuario a través del correo electrónico registrado como a los sistemas de auditoría internos que registran el evento para fines de trazabilidad.
+ a los sistemas de auditoría internos que registran el evento para fines de trazabilidad.
  Este flujo específico de vinculación asegura que cada cuenta creada mantenga consistencia entre los datos autoritarios de los sistemas fuente y las preferencias de seguridad establecidas por el usuario,
  estableciendo las bases para una gestión de identidades robusta y confiable.
-\end_layout
-
-\begin_layout Subsection
-Análisis de Problemas y Oportunidades de Mejora
 \end_layout
 
 \begin_layout Section
@@ -658,13 +866,12 @@ Requerimientos funcionales
 
 \begin_layout Standard
 Los requerimientos funcionales representan la funcionalidad el sistema,
- y se modelan mediante casos de uso(Edith,
- 2019).
+ y se modelan mediante casos de uso.
  Para la identificación de los requerimientos funcionales del sistema se consideran las especificaciones de los casos de uso del negocio.
 \end_layout
 
 \begin_layout Standard
-Después de realizar las entrevistas con los usuarios del sistema quedaron definidos los principales requisitos funcionales que se muestran en la Tabla 2.3(ver Anexo A para consultar todos los requerimientos funcionales).
+Después de realizar las entrevistas con los usuarios del sistema quedaron definidos los principales requisitos funcionales:
 \end_layout
 
 \begin_layout Enumerate
@@ -755,11 +962,8 @@ Requerimientos no funcionales
 \begin_layout Standard
 Los requerimientos no funcionales son los atributos que debe exhibir el sistema como facilidad de uso,
  fiabilidad,
- eficiencia,
- portabilidad,
- etc.
+ eficiencia y portabilidad.
  Debe pensarse en estas propiedades como las características que hacen al producto atractivo,
- usable,
  rápido y confiable.
 \end_layout
 
@@ -800,6 +1004,106 @@ Debe poder ser accesible desde distintos dispositivos
 
 \begin_layout Enumerate
 Debe tener doble factor de autenticación
+\end_layout
+
+\begin_layout Section
+Arquitectura y Diseño de Despliegue
+\end_layout
+
+\begin_layout Standard
+El diseño de despliegue 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "visor_36_2014"
+literal "false"
+
+\end_inset
+
+ del sistema sigue una arquitectura de microservicios distribuida que garantiza escalabilidad,
+ mantenibilidad y alta disponibilidad para la gestión de cuentas de usuario en la UNISS.
+ La arquitectura se compone de múltiples capas interconectadas que trabajan de manera coordinada.
+ La capa de presentación está implementada mediante un frontend web responsive que se sirve a través del puerto 3330,
+ proporcionando una interfaz accesible desde cualquier dispositivo con conexión a la red universitaria.
+ Esta interfaz consume los servicios de la capa de negocio,
+ implementada através del backend de la plataforma que expone APIs RESTful para la gestión integral de cuentas.
+\end_layout
+
+\begin_layout Subsection
+Diagrama de Despliegue
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename D:/Escuela/DIAGRAMA DE DESPLIEGUE.jpg
+	scale 55
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Diagrama de Despliegue
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+El diagrama de despliegue
+\begin_inset CommandInset citation
+LatexCommand citep
+key "visor_36_2014"
+literal "false"
+
+\end_inset
+
+ representado en la figura 2.8 ilustra la topología física y lógica del sistema en la infraestructura de la UNISS,
+ mostrando la interconexión entre los diferentes componentes.
+ El frontend de la plataforma se comunica con el backend principal,
+ el cual a su vez coordina las operaciones con servicios especializados como el módulo "
+\family typewriter
+Account Create LDAP
+\family default
+" dedicado específicamente a la creación y gestión de cuentas en el directorio LDAP institucional.
+ Este microservicio implementa validaciones de negocio y transformación de datos,
+ manejando la sincronización unidireccional con los sistemas fuente.
+ La integración con los sistemas institucionales existentes se realiza mediante conexiones directas a las bases de datos de SIGENU y ASSETS,
+ utilizando el ORM Prisma 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "yang_techniques_2024"
+literal "false"
+
+\end_inset
+
+ con esquemas específicos para cada sistema (schema_sigenu.prisma para estudiantes y schema_assets.prisma para trabajadores),
+ lo que permite consultas en tiempo real para verificación de datos y sincronización de información académica y laboral.
+\end_layout
+
+\begin_layout Standard
+La estructura jerárquica del directorio LDAP permite además implementar políticas de seguridad diferenciadas por facultades y departamentos,
+ lo que añade una capa adicional de control de acceso acorde con las necesidades específicas de cada unidad organizativa.
+ Esta arquitectura garantiza que el sistema cumpla con los requerimientos de seguridad,
+ disponibilidad y integración definidos para la solución de gestión de cuentas de usuario en la UNISS.
 \end_layout
 
 \begin_layout Section
@@ -848,6 +1152,14 @@ El uso de herramientas profesionales como Visual Paradigm para el modelado UML f
  contribuyendo a una mejor comprensión del sistema y a la estandarización de los artefactos de diseño.
  La orientación hacia tecnologías de software libre asegura la sustentabilidad y portabilidad del proyecto,
  alineándose con las políticas institucionales y nacionales.
+\begin_inset CommandInset citation
+LatexCommand citep
+key "lu_systematic_2023"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
