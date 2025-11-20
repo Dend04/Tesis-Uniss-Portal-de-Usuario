@@ -6,8 +6,51 @@
 \origin unavailable
 \textclass UNISSThesisLyX
 \begin_preamble
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 \usepackage[spanish]{babel}
-\selectlanguage{spanish}
+
+% Configuración de natbib
+\usepackage[authoryear]{natbib}
+\setcitestyle{authoryear,open={(},close={)}}
+\bibliographystyle{unsrtnat}
+
+% Configuración para el índice
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+
+% Paquete para URLs
+\usepackage{url}
+\urlstyle{same}
+
+% Hyperref DEBE SER EL ÚLTIMO
+\usepackage[spanish]{hyperref}
+\hypersetup{
+    colorlinks=true,
+    citecolor=blue,
+    linkcolor=blue,
+    urlcolor=blue,
+    pdfborder={0 0 0},
+    bookmarks=true,
+    bookmarksopen=true,
+    bookmarksdepth=3,
+    pdftitle={Portal de Usuario para la Gestión de Identidades Digitales en la UNISS},
+    pdfauthor={Dairon Enamorado Bringuez},
+    linktocpage=true
+}
+
+% Solución para caracteres especiales en español
+\DeclareUnicodeCharacter{00F1}{\~n}
+\DeclareUnicodeCharacter{00E1}{\'a}
+\DeclareUnicodeCharacter{00E9}{\'e}
+\DeclareUnicodeCharacter{00ED}{\'i}
+\DeclareUnicodeCharacter{00F3}{\'o}
+\DeclareUnicodeCharacter{00FA}{\'u}
+\DeclareUnicodeCharacter{00C1}{\'A}
+\DeclareUnicodeCharacter{00C9}{\'E}
+\DeclareUnicodeCharacter{00CD}{\'I}
+\DeclareUnicodeCharacter{00D3}{\'O}
+\DeclareUnicodeCharacter{00DA}{\'U}
 \end_preamble
 \options a4paper,titlepage,12pt,numbered
 \use_default_options false

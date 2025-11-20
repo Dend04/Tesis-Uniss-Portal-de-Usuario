@@ -129,9 +129,35 @@ En la UNISS el proceso de creación de cuentas de usuario está dividido en dos 
 
 \begin_layout Standard
 \align center
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
 \begin_inset Graphics
 	filename C:/Users/DELL/Downloads/_- visual selection (5).png
 	scale 70
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Explicación del proceso actual 
+\end_layout
+
+\end_inset
+
+
+\end_layout
 
 \end_inset
 
@@ -237,7 +263,7 @@ Los objetivos que orientan este proceso se articulan de manera coherente con las
 \begin_layout Standard
 En segundo término,
  el proceso busca automatizar la creación de cuentas basándose en fuentes primarias confiables,
- lo que conlleva el diseño de interfaces de comunicación robustas con los sistemas SIgenu y Assets existentes.
+ lo que conlleva el diseño de interfaces de comunicación robustas con los sistemas Sigenu y Assets existentes.
  Esta automatización se desarrolla mediante ciclos sucesivos de implementación,
  incorporando mecanismos de sincronización de datos en tiempo real y estableciendo protocolos de contingencia para escenarios de indisponibilidad que pudieran afectar la experiencia del usuario.
 \end_layout
@@ -575,9 +601,34 @@ El diagrama se enfoca exclusivamente en el proceso de vinculación,
 \end_layout
 
 \begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
 \begin_inset Graphics
 	filename D:/Escuela/Diagrama de flujo (vincular cuenta de usuario existente).jpg
 	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Diagrama de flujo (Vinculación de Cuentas)
+\end_layout
+
+\end_inset
+
+
+\end_layout
 
 \end_inset
 
@@ -593,7 +644,7 @@ Esta integración incluye la asociación de los datos institucionales con las cr
 \begin_layout Standard
 El proceso culmina con la generación de notificaciones automáticas que confirman la vinculación exitosa,
  tanto al usuario a través del correo electrónico registrado como a los sistemas de auditoría internos que registran el evento para fines de trazabilidad.
- Este flujo específico de vinculación asegura que cada cuenta creada mantenga consistencia entre los datos autoritativos de los sistemas fuente y las preferencias de seguridad establecidas por el usuario,
+ Este flujo específico de vinculación asegura que cada cuenta creada mantenga consistencia entre los datos autoritarios de los sistemas fuente y las preferencias de seguridad establecidas por el usuario,
  estableciendo las bases para una gestión de identidades robusta y confiable.
 \end_layout
 
@@ -820,136 +871,6 @@ status open
 
 \backslash
 begin{landscape}
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-placement document
-alignment document
-wide false
-sideways false
-status collapsed
-
-\begin_layout Plain Layout
-\begin_inset Float figure
-placement document
-alignment document
-wide false
-sideways false
-status collapsed
-
-\begin_layout Plain Layout
-\align center
-\begin_inset Graphics
-	filename Figs/Raster/minion.png
-	lyxscale 30
-	width 30col%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-Minions
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\begin_inset Float figure
-placement document
-alignment document
-wide false
-sideways false
-status collapsed
-
-\begin_layout Plain Layout
-\align center
-\begin_inset Graphics
-	filename Figs/Raster/TomandJerry.png
-	lyxscale 30
-	width 30col%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-Tom y Jerry
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\begin_inset Float figure
-placement document
-alignment document
-wide false
-sideways false
-status collapsed
-
-\begin_layout Plain Layout
-\align center
-\begin_inset Graphics
-	filename Figs/Raster/WallE.png
-	lyxscale 30
-	width 30col%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-Wall-E
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-Las mejores películas animadas
-\end_layout
-
-\end_inset
-
-
 \end_layout
 
 \end_inset

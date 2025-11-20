@@ -150,12 +150,6 @@ literal "false"
 \end_layout
 
 \begin_layout Standard
-
-\series bold
-Principios Rectores y Componentes Clave
-\end_layout
-
-\begin_layout Standard
 Un sistema robusto de gestión de identidades y accesos (IAM) se sustenta en varios principios y componentes clave 
 \begin_inset CommandInset citation
 LatexCommand citet
@@ -286,7 +280,7 @@ Impacto
 \begin_layout Plain Layout
 
 \series bold
-Creación e 
+Creación e
 \end_layout
 
 \begin_layout Plain Layout
@@ -301,7 +295,7 @@ Incorporación
 \begin_inset Text
 
 \begin_layout Plain Layout
-Creación y configuración 
+Creación y configuración
 \end_layout
 
 \begin_layout Plain Layout
@@ -314,15 +308,15 @@ inicial de la identidad digital
 \begin_inset Text
 
 \begin_layout Plain Layout
-Garantiza que nuevos usuarios 
+Garantiza que nuevos usuarios
 \end_layout
 
 \begin_layout Plain Layout
-tengan acceso inmediato a los 
+tengan acceso inmediato a los
 \end_layout
 
 \begin_layout Plain Layout
-sistemas necesarios para sus 
+sistemas necesarios para sus
 \end_layout
 
 \begin_layout Plain Layout
@@ -339,7 +333,7 @@ funciones.
 \begin_layout Plain Layout
 
 \series bold
-Gestión y 
+Gestión y
 \end_layout
 
 \begin_layout Plain Layout
@@ -354,7 +348,7 @@ Mantenimiento
 \begin_inset Text
 
 \begin_layout Plain Layout
-Mantenimiento y actualización 
+Mantenimiento y actualización
 \end_layout
 
 \begin_layout Plain Layout
@@ -367,15 +361,15 @@ de permisos y atributos
 \begin_inset Text
 
 \begin_layout Plain Layout
-Asegura el cumplimiento del 
+Asegura el cumplimiento del
 \end_layout
 
 \begin_layout Plain Layout
-principio de menor privilegio y 
+principio de menor privilegio y
 \end_layout
 
 \begin_layout Plain Layout
-previene la acumulación de acceso 
+previene la acumulación de acceso
 \end_layout
 
 \begin_layout Plain Layout
@@ -401,11 +395,11 @@ Desaprovisionamiento
 \begin_inset Text
 
 \begin_layout Plain Layout
-Revocación sistemática de 
+Revocación sistemática de
 \end_layout
 
 \begin_layout Plain Layout
-accesos al finalizar la 
+accesos al finalizar la
 \end_layout
 
 \begin_layout Plain Layout
@@ -419,11 +413,10 @@ relación con la organización
 
 \begin_layout Plain Layout
 Mitiga riesgos de seguridad critica,
- 
 \end_layout
 
 \begin_layout Plain Layout
-previniendo el acceso no autorizado 
+previniendo el acceso no autorizado
 \end_layout
 
 \begin_layout Plain Layout
@@ -438,12 +431,6 @@ mediante credenciales obsoletas.
 \end_inset
 
 
-\end_layout
-
-\begin_layout Standard
-
-\series bold
-Importancia y Beneficios
 \end_layout
 
 \begin_layout Standard
@@ -622,10 +609,17 @@ arquitectura modular
  de estos sistemas,
  a menudo vista en frameworks
 \size large
-[Comparison and Analysis of Popular Frontend Frameworks and Libraries:
- An Evaluation of Parameters for Frontend Web Development
+
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kaur_comparison_2023"
+literal "false"
+
+\end_inset
+
+
 \size default
-] modernos como 
+ modernos como 
 \series bold
 Identity Fabric 
 \begin_inset CommandInset citation
@@ -744,19 +738,29 @@ Automatización y Beneficios Estratégicos
 La automatización de estos sistemas aporta beneficios estratégicos claros que realmente transforman el funcionamiento de las instituciones.
  Por ejemplo,
  el tiempo necesario para crear nuevas cuentas se reduce entre un 60% y un 80%,
- pasando de los habituales 2 o 3 días laborales a tan solo 15 o 30 minutos.
+ pasando de los habituales 2 o 3 días laborales a tan solo 15 o 30 minutos 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "vladyslav_reducing_2025"
+literal "false"
+
+\end_inset
+
+.
  Además,
  automatizar el 95% de los procesos de baja al finalizar la relación institucional ayuda a prevenir accesos no autorizados.
  Al mismo tiempo,
  el personal de TI ve reducida su carga administrativa en aproximadamente un 70%,
  gracias a interfaces de autoservicio fáciles de usar.
- Estas herramientas permiten que los propios usuarios gestionen aspectos básicos de sus cuentas sin depender del equipo técnico.
- En cuanto a la seguridad,
- se ha logrado disminuir en un 90% los incidentes relacionados con credenciales comprometidas,
- gracias a políticas de contraseñas más estrictas y la autenticación multifactor obligatoria.
- Todo esto se complementa con un monitoreo continuo basado en machine learning,
- que detecta patrones de acceso inusuales en tiempo real,
- y con auditorías automáticas para cumplir con las normativas de protección de datos.
+ Estas herramientas permiten que los propios usuarios gestionen aspectos básicos de sus cuentas sin depender del equipo técnico 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "ajisebutu_undergraduates_2024"
+literal "false"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -772,11 +776,27 @@ La experiencia del usuario también mejora notablemente.
  En cuanto a la gobernanza,
  el control de acceso basado en contexto utiliza modelos avanzados que consideran el rol académico,
  el tiempo,
- la ubicación y el dispositivo.
+ la ubicación y el dispositivo 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "li_context-aware_2024"
+literal "false"
+
+\end_inset
+
+.
  El cumplimiento automatizado de políticas garantiza que las normas de seguridad se apliquen de manera uniforme en todos los sistemas integrados.
  Los reportes ejecutivos consolidados ofrecen paneles unificados con métricas clave para acreditaciones y evaluaciones institucionales.
  Así,
  la gestión de identidades deja de ser una función técnica aislada y se convierte en un pilar estratégico para la excelencia educativa.
+\begin_inset CommandInset citation
+LatexCommand citet
+key "university_of_kufa_iraq_automation_2025"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -786,7 +806,15 @@ Como base de la transformación digital universitaria,
  y crea un entorno propicio para la investigación en learning analytics.
  La sostenibilidad operativa también se ve reforzada,
  ya que la consolidación y optimización de sistemas reduce los costos totales,
- permite escalar según las necesidades de la institución y asegura la continuidad operativa gracias a la redundancia y el failover automático.
+ permite escalar según las necesidades de la institución y asegura la continuidad operativa gracias a la redundancia 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "university_of_kufa_iraq_automation_2025"
+literal "false"
+
+\end_inset
+
+.
  La gestión de dispositivos y accesos se fortalece mediante la vinculación segura por direcciones MAC,
  lo que permite un inventario automatizado y un control de acceso según el tipo y la seguridad del dispositivo.
  Además,
@@ -832,7 +860,11 @@ En muchas instituciones educativas,
 Problemas comunes incluyen falta de visibilidad del estado de las cuentas,
  procesos manuales ineficientes,
  interfaces arcaicas y dificultades en la integración entre sistemas.
- Estas limitaciones han llevado a la necesidad de desarrollar soluciones integradas que aborden la gestión de identidades digitales.
+ Estas limitaciones han llevado a la necesidad de desarrollar soluciones integradas que aborden la gestión de identidades digitales.[
+\size large
+Unified Institute Management System for Efficient Administra-tion and Accurate Data Management
+\size default
+]
 \end_layout
 
 \begin_layout Subsection
@@ -893,12 +925,15 @@ Las aplicaciones web representan un paradigma fundamental en el desarrollo de so
  constituyendo programas informáticos construidos mediante tecnologías web estandarizadas como HTML5,
  CSS3,
  JavaScript,
- TypeScript y frameworks modernos [
-\size large
-Comparison and Analysis of Popular Frontend Frameworks and Libraries:
- An Evaluation of Parameters for Frontend Web Development
-\size default
-].
+ TypeScript y frameworks modernos 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kaur_comparison_2023"
+literal "false"
+
+\end_inset
+
+.
  Estas soluciones permiten a los usuarios interactuar con sistemas complejos a través de navegadores web convencionales,
  facilitando a los desarrolladores la creación y administración de contenido en línea de manera eficiente y escalable
 \end_layout
@@ -979,6 +1014,14 @@ La capacidad de automatización constituye uno de los aportes más significativo
  y la generación automatizada de reportes institucionales.
  Esta automatización no solo reduce los tiempos de procesamiento en aproximadamente un 60-70%,
  sino que minimiza errores humanos y libera al personal administrativo para actividades de mayor valor agregado.
+\begin_inset CommandInset citation
+LatexCommand citet
+key "ajisebutu_undergraduates_2024"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1104,11 +1147,7 @@ Frameworks para el desarrollo backend
 \end_layout
 
 \begin_layout Standard
-La arquitectura backend del sistema de gestión de cuentas de usuario de la Universidad "José Martí Pérez" se diseñó considerando los principios de escalabilidad y modularidad recomendados para aplicaciones web de gran escala [
-\size large
-An API-first methodology for designing a microservice-based Backend as a Service platform
-\size default
-].
+La arquitectura backend del sistema de gestión de cuentas de usuario de la Universidad "José Martí Pérez" se diseñó considerando los principios de escalabilidad y modularidad recomendados para aplicaciones web de gran escala .
  Se seleccionó Express.js como framework principal,
  ejecutándose sobre Node.js,
  debido a su capacidad para gestionar múltiples solicitudes concurrentes de manera eficiente mediante un modelo asíncrono basado en eventos.
@@ -1120,11 +1159,7 @@ An API-first methodology for designing a microservice-based Backend as a Service
 Para fortalecer la robustez y mantenibilidad del código,
  se implementó TypeScript,
  que aporta tipado estático y facilita la detección temprana de errores,
- optimizando el trabajo colaborativo en equipos con distintos niveles de experiencia técnica [
-\size large
-Ten simple rules to complete successfully a computational MSc thesis project
-\size default
-].
+ optimizando el trabajo colaborativo en equipos con distintos niveles de experiencia técnica.
  La gestión y creación de bases de datos se realizó utilizando Prisma,
  una herramienta que permite conexiones seguras y eficientes con sistemas de almacenamiento relacional,
  simplificando las operaciones complejas y las migraciones controladas.
@@ -1532,9 +1567,15 @@ literal "false"
  para la gestión de datos estudiantiles;
  ASSETS,
  en SQL Server,
- [STRATEGIC CONSIDERATIONS FOR DATABASE SYSTEMS:
- POSTGRESQL VS.
- MICROSOFT SQL SERVER.]para la información del personal;
+ 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "popov_strategic_2025"
+literal "false"
+
+\end_inset
+
+para la información del personal;
  y una base de datos local en PostgreSQL destinada al registro de dispositivos de los usuarios.
 \end_layout
 
@@ -1856,9 +1897,17 @@ Metodologías tradicionales vs ágiles
 En el desarrollo del sistema de gestión de identidades para la Universidad "José Martí Pérez",
  se optó por la aplicación del Rational Unified Process (RUP) 
 \size large
-[Guía a rational unified process
+
+\begin_inset CommandInset citation
+LatexCommand citet
+key "martinez_guirational_2014"
+literal "false"
+
+\end_inset
+
+
 \size default
-] como metodología principal.
+ como metodología principal.
  RUP es un proceso de desarrollo de software iterativo e incremental que integra la disciplina y documentación de los enfoques tradicionales con la adaptabilidad y gestión del cambio propias de las metodologías modernas.
  A diferencia del modelo en cascada,
  que se caracteriza por una secuencia rígida de fases y una escasa capacidad de respuesta ante cambios en los requisitos,
@@ -1914,21 +1963,21 @@ RUP promueve un proceso iterativo e incremental,
  el control de versiones se realiza mediante Git,
  permitiendo la gestión ordenada del código fuente a través de ramas específicas para versiones estables,
  desarrollo de nuevas funcionalidades y correcciones,
- lo que facilita la colaboración y la integridad del código [
-\size large
-Rational Unified Process as a Software Development Method in Decision Support Systems Design with Simple Additive Weighting in Determining Priority Rehabilitations of Classrooms
-\size default
-].
+ lo que facilita la colaboración y la integridad del código 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "prihartono_rational_2023"
+literal "false"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
 Visual Studio Code se emplea como entorno de desarrollo principal,
  seleccionado por su compatibilidad con tecnologías modernas y su integración con sistemas de control de versiones,
- alineándose con la necesidad de mantener entornos de desarrollo consistentes y productivos [
-\size large
-Rational Unified Process as a Software Development Method in Decision Support Systems Design with Simple Additive Weighting in Determining Priority Rehabilitations of Classrooms
-\size default
-].
+ alineándose con la necesidad de mantener entornos de desarrollo consistentes y productivos.
  Para la documentación académica,
  LyX se utiliza como herramienta especializada,
  facilitando la generación de documentos extensos y estructurados,
@@ -1939,11 +1988,15 @@ Rational Unified Process as a Software Development Method in Decision Support Sy
 \begin_layout Standard
 La containerización de los componentes del sistema mediante Docker garantiza la reproducibilidad y coherencia entre los entornos de desarrollo,
  prueba y producción,
- lo que es fundamental para la calidad y sostenibilidad del proyecto [
-\size large
-Rational Unified Process as a Software Development Method in Decision Support Systems Design with Simple Additive Weighting in Determining Priority Rehabilitations of Classrooms
-\size default
-].
+ lo que es fundamental para la calidad y sostenibilidad del proyecto 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "prihartono_rational_2023"
+literal "false"
+
+\end_inset
+
+.
  La integración de estas herramientas permite un flujo de trabajo cohesivo,
  donde cada fase y disciplina del RUP se apoya en soluciones tecnológicas que refuerzan la trazabilidad,
  la documentación y la colaboración.

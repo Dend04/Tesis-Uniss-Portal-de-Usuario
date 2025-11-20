@@ -5,9 +5,6 @@
 \save_transient_properties true
 \origin unavailable
 \textclass UNISSThesisLyX
-\begin_preamble
-\usepackage[colorlinks=true, citecolor=blue, linkcolor=blue, urlcolor=blue]{hyperref}
-\end_preamble
 \options a4paper,titlepage,12pt,numbered
 \use_default_options false
 \maintain_unincluded_children no
@@ -93,23 +90,61 @@
 \begin_body
 
 \begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+chapter*{Introducción
+\backslash
+markboth{Introducción}{}}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+addcontentsline{toc}{chapter}{Introducción}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 En el panorama contemporáneo,
 
 \series bold
  la transformación digital
 \series default
  se ha consolidado como un pilar fundamental para la evolución de las instituciones educativas,
- redefiniendo sus procesos y estrategias mediante la integración de tecnologías avanzadas
+ redefiniendo sus procesos y estrategias mediante la integración de tecnologías avanzadas 
+\size large
+
 \begin_inset CommandInset citation
-LatexCommand citep
-key "olarte-pacco_innovacion_2025"
+LatexCommand citet
+key "timotheou_impacts_2023"
 literal "false"
 
 \end_inset
 
+
+\size default
 .
  En este contexto,
- la gestión eficiente de las credenciales de acceso representa un desafío operativo crítico.
+ la gestión eficiente de las credenciales de acceso representa un desafío operativo crítico .
  Tradicionalmente,
  muchas organizaciones han dependido de soluciones de escritorio específicas para sistemas operativos particulares,
  las cuales,
@@ -120,10 +155,9 @@ flexibilidad,
  mantenimiento y escalabilidad
 \series default
 .
- 
 \begin_inset CommandInset citation
 LatexCommand citet
-key "estacio_flores_gestion_2024"
+key "retracted_retracted_2025"
 literal "false"
 
 \end_inset
@@ -143,8 +177,8 @@ las aplicaciones web
  actualizaciones inmediatas y acceso remoto,
  optimizando así los recursos institucionales 
 \begin_inset CommandInset citation
-LatexCommand cite
-key "monsalves_inteligencia_2024"
+LatexCommand citet
+key "ikwuanusi_digital_2024"
 literal "false"
 
 \end_inset
@@ -158,8 +192,8 @@ literal "false"
  que buscan hacer más fluidas,
  accesibles y transparentes las interacciones entre las instituciones y sus usuarios 
 \begin_inset CommandInset citation
-LatexCommand cite
-key "berna_quispe_gobierno_2025"
+LatexCommand citet
+key "karnsomdee_e-government_2025"
 literal "false"
 
 \end_inset
@@ -167,6 +201,15 @@ literal "false"
 .
  La automatización de procesos mediante aplicaciones web ha demostrado reducir significativamente los tiempos de respuesta y mejorar la accesibilidad a la información,
  tal como se ha observado en estudios sobre gestión documental en el sector público.
+ 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kassen_blockchain_2022"
+literal "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -189,13 +232,27 @@ La persistencia de procesos manuales y la falta de una comunicación clara y flu
 \series bold
 eficiencia y la rendición de cuentas
 \series default
+ 
+\size large
+
+\begin_inset CommandInset citation
+LatexCommand citet
+key "timotheou_impacts_2023"
+literal "false"
+
+\end_inset
+
+
+\size default
 .
  Esta problemática evidencia la necesidad urgente de modernizar los procesos en la administración pública y educativa,
  una lección que se hizo aún más patente durante la pandemia de COVID-19.
  
+\size large
+
 \begin_inset CommandInset citation
-LatexCommand cite
-key "estacio_flores_gestion_2024"
+LatexCommand citet
+key "surjawan_digital_2025-1"
 literal "false"
 
 \end_inset
@@ -270,16 +327,6 @@ Implementar y validar el funcionamiento de la aplicación web desarrollada en el
 \begin_layout Standard
 Esta investigación contribuirá al desarrollo de sistemas automatizados que mejoren significativamente la eficiencia en la gestión de identidades digitales,
  ofreciendo además capacidades de seguridad mejoradas y una experiencia de usuario más completa en comparación con soluciones existentes.
-\begin_inset CommandInset bibtex
-LatexCommand bibtex
-btprint "btPrintCited"
-bibfiles "D:/vsc/tesis_2024_2025_informe_productos_servicios_cimex/References/Mi biblioteca Zotero"
-options "plain"
-encoding "default"
-
-\end_inset
-
-
 \end_layout
 
 \end_body
