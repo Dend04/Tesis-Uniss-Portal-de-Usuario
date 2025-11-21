@@ -91,8 +91,94 @@
 Validación del correcto funcionamiento para la aplicación web que contribuya a la gestión y control de cuentas de usuario en la Universidad "José Martí Pérez" de Sancti Spíritus
 \end_layout
 
+\begin_layout Standard
+El presente capítulo constituye la materialización práctica y la evaluación exhaustiva del sistema web desarrollado para la gestión integral de cuentas de usuario en la Universidad "José Martí Pérez" de Sancti Spíritus.
+ Partiendo del análisis de requisitos y diseño arquitectónico establecidos en el capítulo anterior,
+ este capítulo responde directamente a la tercera pregunta de investigación:
+ "
+\series bold
+¿Cómo implementar una solución tecnológica que integre funcionalidades avanzadas de administración,
+ seguridad y monitoreo para las cuentas de usuario?
+\series default
+"
+\end_layout
+
+\begin_layout Standard
+La implementación del sistema representa la fase de construcción donde los modelos teóricos y diseños conceptuales se transforman en una solución tecnológica operativa.
+ Siguiendo la metodología RUP adaptada al contexto institucional,
+ se procedió al desarrollo iterativo e incremental de todos los componentes del sistema,
+ priorizando la integración nativa con las plataformas universitarias existentes (SIGENU y ASSETS) y garantizando el cumplimiento de los estándares de seguridad informática establecidos por la política tecnológica de la universidad.
+\end_layout
+
+\begin_layout Standard
+La validación del sistema se abordó mediante un enfoque multidimensional que combinó técnicas cuantitativas y cualitativas.
+ Este proceso incluyó pruebas técnicas exhaustivas de funcionalidad y rendimiento,
+ evaluaciones de seguridad de los mecanismos implementados,
+ y una validación práctica con usuarios reales de la comunidad universitaria.
+ Esta triangulación metodológica permitió verificar no solo el correcto funcionamiento técnico del sistema,
+ sino también su adecuación a los flujos de trabajo institucionales y su aceptación por parte de los diferentes actores involucrados.
+\end_layout
+
+\begin_layout Standard
+Los objetivos específicos que orientan este capítulo son:
+\end_layout
+
+\begin_layout Enumerate
+
+\series bold
+Describir detalladamente
+\series default
+ el proceso de implementación del sistema y su integración con la infraestructura tecnológica existente en la UNISS
+\end_layout
+
+\begin_layout Enumerate
+
+\series bold
+Presentar sistemáticamente
+\series default
+ la metodología de pruebas y validación empleada,
+ incluyendo los instrumentos y métricas utilizados
+\end_layout
+
+\begin_layout Enumerate
+
+\series bold
+Analizar críticamente
+\series default
+ los resultados obtenidos en términos de funcionalidad,
+ rendimiento,
+ seguridad y usabilidad
+\end_layout
+
+\begin_layout Enumerate
+
+\series bold
+Evaluar objetivamente
+\series default
+ el cumplimiento de los objetivos planteados y cuantificar el impacto esperado en la optimización de los procesos de gestión de cuentas
+\end_layout
+
+\begin_layout Standard
+A través de este capítulo se demuestra la 
+\series bold
+viabilidad técnica y operativa
+\series default
+ de la solución propuesta,
+ estableciendo las bases para su implementación definitiva y su potencial escalamiento a otras instituciones del sistema de educación superior cubano.
+ Los resultados obtenidos constituyen una evidencia tangible del valor agregado que representa la automatización de procesos en la modernización de la gestión universitaria.
+\end_layout
+
+\begin_layout Standard
+La estructura del capítulo se organiza de la siguiente manera:
+ inicialmente se describe el proceso de implementación,
+ seguido por las pruebas de funcionalidad,
+ la evaluación de rendimiento,
+ la validación con usuarios finales,
+ el análisis integral de resultados y finalmente las conclusiones específicas del capítulo.
+\end_layout
+
 \begin_layout Section
-Primera sección
+Tratamiento de errores y seguridad
 \end_layout
 
 \begin_layout Standard
@@ -103,9 +189,7 @@ Y ahora comienzo mi tercer capítulo .
 \end_layout
 
 \begin_layout Subsection
-Primera subsección .
- .
- .
+Tratamiento de errores
 \end_layout
 
 \begin_layout Standard
@@ -113,66 +197,50 @@ y algo más
 \end_layout
 
 \begin_layout Subsection
-Segunda subsección .
- .
- .
- 
+Seguridad
 \end_layout
 
 \begin_layout Standard
 y algo más .
  .
- .
- 
-\end_layout
-
-\begin_layout Subsubsection
-Primera subsub sección .
- .
- .
- 
-\end_layout
-
-\begin_layout Standard
-y algo más en la primera subsub sección y un poquito más de texto para rellenar y así no parezca lo siempre lo mismo .
- .
- .
- 
-\end_layout
-
-\begin_layout Subsection
-Tercera subsección .
- .
- .
- 
-\end_layout
-
-\begin_layout Standard
-y algo más de texto .
- .
- .
- 
-\end_layout
-
-\begin_layout Subsubsection
-Primera subsub sección en la tercera subsección .
- .
- .
- 
-\end_layout
-
-\begin_layout Standard
-y algo más en la primera subsub sección y un poquito más de texto para rellenar y así no parezca lo siempre lo mismo .
- .
- .
- y un poquito más y más y más .
- .
- .
- 
 \end_layout
 
 \begin_layout Section
-Segunda sección con una tabla
+Prototipos de interfaz de usuario
+\end_layout
+
+\begin_layout Section
+Modelo de implementación
+\end_layout
+
+\begin_layout Subsection
+Diagrama de Componentes
+\end_layout
+
+\begin_layout Section
+Pruebas de Caja Negra
+\end_layout
+
+\begin_layout Subsection
+.
+ Prueba de Aceptación a la interfaz definida para el caso de uso «Gestionar Hecho,
+ Escenario Insertar»
+\end_layout
+
+\begin_layout Section
+Pruebas con Lighthouse
+\end_layout
+
+\begin_layout Subsection
+Pruebas a la interfaz del caso de uso «Usar Línea de Tiempo» utilizando la herramienta Lighthouse
+\end_layout
+
+\begin_layout Standard
+3.6.4 Cumplimiento de requisitos funcionales y no funcionales
+\end_layout
+
+\begin_layout Standard
+
 \end_layout
 
 \begin_layout Standard
